@@ -10,7 +10,8 @@
 Rototraslation::Rototraslation() {
 }
 
-Rototraslation::Rototraslation(Point3D traslation, EulerAngles rotation) : 
+Rototraslation::Rototraslation(const Point3D &traslation, 
+		const EulerAngles &rotation) : 
 	TRASLATION(traslation), ROTATION(rotation) {
 }
 

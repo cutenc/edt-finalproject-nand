@@ -10,7 +10,17 @@
 
 #include <iterator>
 
-#include "CNCMove.hpp"
+#include "common/Rototraslation.hpp"
+
+class CNCMove {
+	
+public:
+	CNCMove(const Rototraslation &stock, const Rototraslation &cutter) :
+		STOCK(stock), CUTTER(cutter) { };
+	virtual ~CNCMove() { }
+	
+	const Rototraslation STOCK, CUTTER;
+};
 
 class CNCMoveIterator: public std::iterator<std::input_iterator_tag, CNCMove> {
 public:

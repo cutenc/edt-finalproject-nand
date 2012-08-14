@@ -1,18 +1,18 @@
 /*
- * CNCMove.cpp
+ * Color.cpp
  *
- *  Created on: 13/ago/2012
+ *  Created on: 14/ago/2012
  *      Author: socket
  */
 
-#include "CNCMove.hpp"
+#include "Color.hpp"
 
-CNCMove::CNCMove() {
+Color::Color() {
 	// TODO Auto-generated constructor stub
 
 }
 
-CNCMove::~CNCMove() {
+Color::~Color() {
 	// TODO Auto-generated destructor stub
 }
 

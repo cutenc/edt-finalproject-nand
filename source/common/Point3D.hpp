@@ -8,13 +8,19 @@
 #ifndef POINT3D_HPP_
 #define POINT3D_HPP_
 
+#include <iostream>
+
 class Point3D {
 public:
 	Point3D();
 	Point3D(double x, double y, double z);
-	Point3D(Point3D &p);
 	
 	virtual ~Point3D();
+	
+	friend std::ostream &operator<<(std::ostream &os, const Point3D &p) {
+		os << "(" << p.X << "," << p.Y << "," << p.Z << ")";
+		return os;
+	}
 	
 	const double X, Y, Z;
 };

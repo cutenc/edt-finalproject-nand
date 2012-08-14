@@ -8,13 +8,19 @@
 #ifndef EULERANGLES_HPP_
 #define EULERANGLES_HPP_
 
+#include <iostream>
+
 class EulerAngles {
 public:
 	EulerAngles();
 	EulerAngles(double, double, double);
-	EulerAngles(EulerAngles &);
 	
 	virtual ~EulerAngles();
+	
+	friend std::ostream &operator<<(std::ostream &os, const EulerAngles &ea) {
+		os << "(" << ea.ALPHA << "," << ea.BETA << "," << ea.GAMMA << ")";
+		return os;
+	}
 	
 	const double ALPHA, BETA, GAMMA;
 };

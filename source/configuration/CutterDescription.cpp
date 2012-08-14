@@ -7,12 +7,17 @@
 
 #include "CutterDescription.hpp"
 
-CutterDescription::CutterDescription() {
-	// TODO Auto-generated constructor stub
-
+CutterDescription::CutterDescription(const GeometryPtr desc, const Color& color) :
+		DESCRIPTION(desc), COLOR(color) {
 }
 
 CutterDescription::~CutterDescription() {
-	// TODO Auto-generated destructor stub
 }
 
+const GeometryPtr CutterDescription::getGeometry() const {
+	return DESCRIPTION;
+}
+
+Color CutterDescription::getColor() const {
+	return COLOR;
+}

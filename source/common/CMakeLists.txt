@@ -1,6 +1,8 @@
 
 SET (common_SRC
 # add here both your sources (cpp) and header (hpp) files
+Color.cpp
+Color.hpp
 EulerAngles.cpp
 EulerAngles.hpp
 Mesh.cpp

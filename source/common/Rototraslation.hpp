@@ -8,14 +8,21 @@
 #ifndef ROTOTRASLATION_HPP_
 #define ROTOTRASLATION_HPP_
 
+#include <iostream>
+
 #include "Point3D.hpp"
 #include "EulerAngles.hpp"
 
 class Rototraslation {
 public:
 	Rototraslation();
-	Rototraslation(Point3D, EulerAngles);
+	Rototraslation(const Point3D &, const EulerAngles &);
 	virtual ~Rototraslation();
+	
+	friend std::ostream &operator<<(std::ostream &os, const Rototraslation &r) {
+		os << "[T:" << r.TRASLATION << "R:" << r.ROTATION << "]";
+		return os;
+	}
 	
 	const Point3D TRASLATION;
 	const EulerAngles ROTATION;
