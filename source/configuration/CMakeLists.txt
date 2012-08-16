@@ -8,8 +8,8 @@ ConfigurationManager.hpp
 CutterDescription.cpp
 CutterDescription.hpp
 Geometry.hpp
-StockDescriptor.cpp
-StockDescriptor.hpp
+StockDescription.cpp
+StockDescription.hpp
 )
 
 ADD_LIBRARY(configuration STATIC ${configuration_SRC})

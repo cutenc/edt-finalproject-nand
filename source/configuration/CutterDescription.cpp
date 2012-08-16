@@ -7,7 +7,7 @@
 
 #include "CutterDescription.hpp"
 
-CutterDescription::CutterDescription(const GeometryPtr desc, const Color& color) :
+CutterDescription::CutterDescription(const GeometryPtr &desc, const Color& color) :
 		DESCRIPTION(desc), COLOR(color) {
 }
 

@@ -7,12 +7,8 @@
 
 #include "CNCMoveIterator.hpp"
 
-CNCMoveIterator::CNCMoveIterator() {
-	// TODO Auto-generated constructor stub
-
+CNCMoveIterator::CNCMoveIterator(std::string filename, int nLineBuffer) {
 }
 
 CNCMoveIterator::~CNCMoveIterator() {
-	// TODO Auto-generated destructor stub
 }
-

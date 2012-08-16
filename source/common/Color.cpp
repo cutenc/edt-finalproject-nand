@@ -12,6 +12,10 @@ Color::Color() {
 
 }
 
+Color::Color(const std::string &color) {
+	// TODO Auto-generated constructor stub
+}
+
 Color::~Color() {
 	// TODO Auto-generated destructor stub
 }

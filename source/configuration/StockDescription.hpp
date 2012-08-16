@@ -8,17 +8,21 @@
 #ifndef STOCKDESCRIPTOR_HPP_
 #define STOCKDESCRIPTOR_HPP_
 
+#include <boost/shared_ptr.hpp>
+
 #include "Geometry.hpp"
 
 class StockDescription {
 public:
-	StockDescription(const GeometryPtr desc);
+	StockDescription(const RectCuboidPtr &desc);
 	virtual ~StockDescription();
 	
-	const GeometryPtr getGeometry() const;
+	const RectCuboidPtr getGeometry() const;
 	
 private:
-	const GeometryPtr DESCRIPTION;
+	const RectCuboidPtr DESCRIPTION;
 };
+
+typedef boost::shared_ptr<StockDescription> StockDescriptionPtr;
 
 #endif /* STOCKDESCRIPTOR_HPP_ */

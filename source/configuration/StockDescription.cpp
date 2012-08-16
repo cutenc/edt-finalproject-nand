@@ -5,15 +5,15 @@
  *      Author: socket
  */
 
-#include "StockDescriptor.hpp"
+#include "StockDescription.hpp"
 
-StockDescription::StockDescription(const GeometryPtr desc) :
+StockDescription::StockDescription(const RectCuboidPtr& desc) :
 		DESCRIPTION(desc) {
 }
 
 StockDescription::~StockDescription() {
 }
 
-const GeometryPtr StockDescription::getGeometry() const {
-	return DESCRIPTION;
+const RectCuboidPtr StockDescription::getGeometry() const {
+	return this->DESCRIPTION;
 }

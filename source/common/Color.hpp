@@ -8,9 +8,18 @@
 #ifndef COLOR_HPP_
 #define COLOR_HPP_
 
+#include <string>
+
 class Color {
 public:
 	Color();
+	
+	/**
+	 * Accept a color string given in HTML-hex format: \c 0xRRGGBB
+	 * 
+	 * @param color
+	 */
+	Color(const std::string &color);
 	virtual ~Color();
 };
 

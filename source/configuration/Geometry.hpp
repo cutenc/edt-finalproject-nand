@@ -28,7 +28,7 @@ public:
 	virtual GeometryType getType() const =0;
 	
 	/**
-	 * Handy method used to convert \t this instance to a derived class object:
+	 * Handy method used to convert \c this instance to a derived class object:
 	 * use with caution
 	 * @return
 	 */
@@ -42,11 +42,9 @@ public:
 
 };
 
-typedef boost::shared_ptr<Geometry> GeometryPtr;
-
 class Cylinder : public Geometry {
 public:
-	Cylinder(double r, double h) : RADIUS(r), HEIGHT(h) { }
+	Cylinder(const double r, const double h) : RADIUS(r), HEIGHT(h) { }
 	virtual ~Cylinder() { }
 	
 	virtual GeometryType getType() const { return CYLINDER; }
@@ -56,7 +54,7 @@ public:
 
 class Sphere : public Geometry {
 public:
-	Sphere(double r) : RADIUS(r) { }
+	Sphere(const double r) : RADIUS(r) { }
 	virtual ~Sphere() { }
 	
 	virtual GeometryType getType() const { return SPHERE; }
@@ -66,13 +64,13 @@ public:
 
 class RectCuboid : public Geometry {
 public:
-	RectCuboid(double l, double h, double w) :
-		LENGTH(l), HEIGHT(h), WIDTH(w) { }
+	RectCuboid(const double x, const double y, const double z) :
+		X(x), Y(y), Z(z) { }
 	virtual ~RectCuboid() { }
 	
 	virtual GeometryType getType() const { return RECTANGULAR_CUBOID; }
 	
-	const double LENGTH, HEIGHT, WIDTH;
+	const double X, Y, Z;
 };
 
 class MeshGeometry : public Geometry {
@@ -82,5 +80,10 @@ public:
 	
 	virtual GeometryType getType() const { return MESH; }
 };
+
+
+typedef boost::shared_ptr<Geometry> GeometryPtr;
+typedef boost::shared_ptr<RectCuboid> RectCuboidPtr;
+
 
 #endif /* GEOMETRY_HPP_ */

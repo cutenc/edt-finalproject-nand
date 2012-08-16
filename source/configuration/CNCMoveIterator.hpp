@@ -24,7 +24,7 @@ public:
 
 class CNCMoveIterator: public std::iterator<std::input_iterator_tag, CNCMove> {
 public:
-	CNCMoveIterator();
+	CNCMoveIterator(const std::string filename, const int nLineBuffer);
 	virtual ~CNCMoveIterator();
 };
 
