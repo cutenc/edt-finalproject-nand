@@ -6,9 +6,3 @@
  */
 
 #include "CNCMoveIterator.hpp"
-
-CNCMoveIterator::CNCMoveIterator(std::string filename, int nLineBuffer) {
-}
-
-CNCMoveIterator::~CNCMoveIterator() {
-}

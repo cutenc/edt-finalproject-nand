@@ -40,6 +40,10 @@ LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
 ADD_DEFINITIONS(${BoostT_DEFINITIONS})
 SET (MY_LIBS ${MY_LIBS} ${Boost_LIBRARIES})
 
+
+# output MY_LIBS definition
+MESSAGE(STATUS "*** MY_LIBS: ${MY_LIBS}")
+ 
 ###############
 
 #

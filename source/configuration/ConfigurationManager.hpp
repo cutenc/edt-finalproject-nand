@@ -20,59 +20,27 @@ class ConfigurationManager;
 typedef void (ConfigurationManager::*sectionParser)(std::ifstream &);
 typedef std::map< std::string, sectionParser > ParsersMap;
 
-typedef struct _readData {
-	std::string validLine;
-	std::streamoff dataRead;
-	std::streamoff lastDataRead;
-} readData;
 
 class ConfigurationManager {
+	
+	const std::string FILENAME;
+	const ParsersMap PARSERS;
+	StockDescriptionPtr stock;
+	CutterDescriptionPtr cutter;
+	std::streampos firstPointPos;
+	bool foundPoints, foundCutter, foundStock;
+	
 public:
-	ConfigurationManager(const std::string filename, const int nLinesBuffer);
+	ConfigurationManager(const std::string filename);
 	virtual ~ConfigurationManager();
 	
 	const StockDescriptionPtr getStockDescription() const;
 	const CutterDescriptionPtr getCutterDescription() const;
-	CNCMoveIterator getCNCMoveIterator() const;
+	CNCMoveIterator CNCMoveBegin() const;
+	CNCMoveIterator CNCMoveEnd() const;
 	
 private:
 	bool foundAll() const;
-	
-	/**
-	 * Checks if given string can be skipped during the parsing of the
-	 * configuration file. Line will be trimmed inside the method.
-	 * @param line
-	 * @return
-	 */
-	bool isSkippableLine(std::string &line) const;
-	
-	/**
-	 * Read and return a valid line from given std::ifstream
-	 * @param 
-	 * @return
-	 * 
-	 * @throw std::runtime_error if there's no other valid lines in the given
-	 * stream.
-	 */
-	readData readNextValidLine(std::ifstream &) const throw(std::runtime_error);
-	
-	/**
-	 * Returns the result of the match of given \c line against the reg.exp.
-	 * pattern formed as follow: 
-	 * @code
-	 * 	propName + "\\s*=\\s*(" + propValuePatter + ")"
-	 * @endcode
-	 * 
-	 * @param line
-	 * @param propName
-	 * @param propValuePattern
-	 * @param icase when enabled (default) perform a case-insensitive match.
-	 * @return
-	 * 
-	 * @throw std::runtime_error when given line does not match.
-	 */
-	std::string extractProperty(const std::string &line, const std::string &propName, 
-			const std::string &propValuePattern, bool icase = true) const throw(std::runtime_error);
 	
 	/**
 	 * Simply throws an exception with a standard-formatted message
@@ -93,12 +61,6 @@ private:
 		return m;
 	}
 	
-	const std::string FILENAME;
-	const int N_LINE_BUFFER;
-	const ParsersMap PARSERS;
-	StockDescriptionPtr stock;
-	CutterDescriptionPtr cutter;
-	bool foundPoints, foundCutter, foundStock;
 };
 
 #endif /* CONFIGURATIONMANAGER_HPP_ */

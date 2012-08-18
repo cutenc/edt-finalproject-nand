@@ -4,6 +4,8 @@
 #include <string>
 #include <fstream>
 
+#include <boost/regex.hpp>
+#include <boost/algorithm/string.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/assign.hpp>
@@ -51,12 +53,30 @@ int main(int argc, char **argv) {
 //	getline(ifs, line);
 //	cout << "post rl3 g[" << ifs.tellg() << "] '" << line << "'" << endl;
 	
-	ConfigurationManager confManager("positions.txt", 50);
-	cout << "file read" << endl;
-	CutterDescriptionPtr cutter = confManager.getCutterDescription();
-	cout << "Cutter: " << cutter->getGeometry()->getType() << endl;
-	RectCuboidPtr stock = confManager.getStockDescription()->getGeometry();
-	cout << "Stock: " << stock->X << "," << stock->Y << "," << stock->Z << endl;
+	ConfigurationManager confManager("positions.txt");
+//	cout << "file read" << endl;
+//	CutterDescriptionPtr cutter = confManager.getCutterDescription();
+//	cout << "Cutter: " << cutter->getGeometry()->getType() << endl;
+//	RectCuboidPtr stock = confManager.getStockDescription()->getGeometry();
+//	cout << "Stock: " << stock->X << "," << stock->Y << "," << stock->Z << endl;
+	
+	
+	CNCMoveIterator it = confManager.CNCMoveBegin();
+	cout << "first end? " << (it == confManager.CNCMoveEnd()) << endl;
+	cout << "tool: " << it->CUTTER << "|| product: " << it->STOCK << endl;
+	cout << "aft -> end? " << (it == confManager.CNCMoveEnd()) << endl;
+	
+	it++;
+	cout << "final end (should be true)? " << (it == confManager.CNCMoveEnd()) << endl;
+	
+	it = confManager.CNCMoveBegin();
+	cout << "tool: " << it->CUTTER << "|| product: " << it->STOCK << endl;
+	
+	long count = 0;
+	for(CNCMoveIterator it2 = confManager.CNCMoveBegin(); it2 != confManager.CNCMoveEnd(); it2++) {
+		count++;
+	}
+	cout << "There are " << count << " moves" << endl;
 	
 	return 0;
 }

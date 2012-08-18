@@ -22,7 +22,7 @@ public:
 		return os;
 	}
 	
-	const double ALPHA, BETA, GAMMA;
+	double ALPHA, BETA, GAMMA;
 };
 
 #endif /* EULERANGLES_HPP_ */

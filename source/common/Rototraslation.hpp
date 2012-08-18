@@ -24,8 +24,8 @@ public:
 		return os;
 	}
 	
-	const Point3D TRASLATION;
-	const EulerAngles ROTATION;
+	Point3D TRASLATION;
+	EulerAngles ROTATION;
 };
 
 #endif /* ROTOTRASLATION_HPP_ */

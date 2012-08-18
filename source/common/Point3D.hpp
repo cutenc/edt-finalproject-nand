@@ -22,7 +22,7 @@ public:
 		return os;
 	}
 	
-	const double X, Y, Z;
+	double X, Y, Z;
 };
 
 #endif /* POINT3D_HPP_ */

@@ -8,34 +8,31 @@
 #include "ConfigurationManager.hpp"
 
 #include <iostream>
+#include <istream>
 #include <fstream>
 #include <string>
 #include <stdexcept>
-#include <cassert>
 
 #include <boost/regex.hpp>
 #include <boost/assign/list_of.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string_regex.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "common/constants.hpp"
+#include "common/Utilities.hpp" 
 
-ConfigurationManager::ConfigurationManager(const std::string filename,
-		const int nLinesBuffer) : FILENAME(filename), N_LINE_BUFFER(nLinesBuffer),
-		PARSERS(fillParsers()) {
+ConfigurationManager::ConfigurationManager(const std::string filename) : 
+		FILENAME(filename), PARSERS(fillParsers()) {
 	
 	foundCutter = foundStock = foundPoints = false;
 	
-	std::ifstream ifs(filename.c_str(), std::ifstream::in);
-	
-	if (!ifs.is_open()) {
-		throw std::ios_base::failure("can't open given file");
-	}
+	std::ifstream ifs;
+	FileUtils::openFile(filename, ifs);
 	
 	while(ifs.good() && !foundAll()) {
-		std::string str = readNextValidLine(ifs).validLine;
+		std::string str = FileUtils::readNextValidLine(ifs).validLine;
 		
 		// checks if given line is a section string of type: [SMTHNG]
 		boost::smatch matcher;
@@ -80,49 +77,27 @@ const CutterDescriptionPtr ConfigurationManager::getCutterDescription() const {
 	return cutter;
 }
 
-CNCMoveIterator ConfigurationManager::getCNCMoveIterator() const {
+CNCMoveIterator ConfigurationManager::CNCMoveBegin() const {
+	boost::shared_ptr< std::ifstream > ifsp = boost::make_shared< std::ifstream >();
+	FileUtils::openFile(this->FILENAME, *ifsp);
+	
+	if (!ifsp->is_open()) {
+		throw std::runtime_error("File " + this->FILENAME + " is disappeared");
+	}
+	
+	ifsp->seekg(this->firstPointPos);
+	
+	return CNCMoveIterator(ifsp);
+}
+
+CNCMoveIterator ConfigurationManager::CNCMoveEnd() const {
+	return CNCMoveIterator();
 }
 
 bool ConfigurationManager::foundAll() const {
 	return this->foundCutter && this->foundStock && this->foundPoints;
 }
 
-readData ConfigurationManager::readNextValidLine(std::ifstream& ifs) const throw(std::runtime_error) {
-	std::string str;
-	std::streampos initPos = ifs.tellg();
-	std::streampos lastReadPos;
-	
-	do {
-		if (!ifs.good())
-			throw std::runtime_error("unexpected EOF");
-		
-		lastReadPos = ifs.tellg();
-		std::getline(ifs, str);
-	} while (isSkippableLine(str));
-	
-	std::streampos actualPos = ifs.tellg();
-	
-	readData data;
-	data.validLine = str;
-	data.dataRead = actualPos - initPos;
-	data.lastDataRead = actualPos - lastReadPos;
-	
-	return data;
-}
-
-bool ConfigurationManager::isSkippableLine(std::string &line) const {
-	boost::trim(line);
-	
-	// check if the trimmed string is empty
-	if (line.empty())
-		return true;
-	
-	// check if it is a comment
-	if (line[0] == CONF_COMMENT_CHAR)
-		return true;
-	
-	return false;
-}
 
 void ConfigurationManager::abortParsing(const std::string &cause) const 
 		throw(std::runtime_error) {
@@ -131,27 +106,11 @@ void ConfigurationManager::abortParsing(const std::string &cause) const
 	throw std::runtime_error(str);
 }
 
-std::string ConfigurationManager::extractProperty(const std::string &line,
-		const std::string &propName, const std::string &propValuePattern, bool icase) const 
-		throw(std::runtime_error){
-	
-	std::string strExp(propName + "\\s*=\\s*(" + propValuePattern + ")");
-	
-	boost::smatch match;
-	boost::regex regex(strExp, ((icase) ? boost::regex::icase : boost::regex::normal));
-	
-	if (!boost::regex_match(line, match, regex)) {
-		throw std::runtime_error("No match found in '" + line + "' for '" + strExp + "'");
-	}
-	
-	return match[1];
-}
-
 void ConfigurationManager::sectionParser_tool(std::ifstream& ifs) {
 	if (foundCutter)
 		abortParsing("Repeated TOOL section");
 	
-	std::string line = readNextValidLine(ifs).validLine;
+	std::string line = FileUtils::readNextValidLine(ifs).validLine;
 	
 	// 1- discover type
 	boost::smatch match;
@@ -167,11 +126,11 @@ void ConfigurationManager::sectionParser_tool(std::ifstream& ifs) {
 	GeometryPtr geometry;
 	if (type == "cylinder") {
 		// next line should be 'Height=NN':
-		line = readNextValidLine(ifs).validLine;
-		std::string heightStr = extractProperty(line, "Height", "[\\d\\.]+", true);
+		line = FileUtils::readNextValidLine(ifs).validLine;
+		std::string heightStr = StringUtils::extractProperty(line, "Height", "[\\d\\.]+", true);
 		// next line should be 'Diameter=NN':
-		line = readNextValidLine(ifs).validLine;
-		std::string diameterStr = extractProperty(line, "Diameter", "[\\d\\.]+", true);
+		line = FileUtils::readNextValidLine(ifs).validLine;
+		std::string diameterStr = StringUtils::extractProperty(line, "Diameter", "[\\d\\.]+", true);
 		
 		double height = boost::lexical_cast<double>(heightStr);
 		double diameter = boost::lexical_cast<double>(diameterStr);
@@ -180,8 +139,8 @@ void ConfigurationManager::sectionParser_tool(std::ifstream& ifs) {
 		
 	} else if (type == "sphere") {
 		// next line should be 'Diameter=NN':
-		line = readNextValidLine(ifs).validLine;
-		std::string diameterStr = extractProperty(line, "Diameter", "[\\d\\.]+", true);
+		line = FileUtils::readNextValidLine(ifs).validLine;
+		std::string diameterStr = StringUtils::extractProperty(line, "Diameter", "[\\d\\.]+", true);
 		
 		double diameter = boost::lexical_cast<double>(diameterStr);
 		
@@ -195,15 +154,15 @@ void ConfigurationManager::sectionParser_tool(std::ifstream& ifs) {
 	
 	// 3- find an _optional_ color specification
 	Color color;
-	readData data = readNextValidLine(ifs);
+	readData data = FileUtils::readNextValidLine(ifs);
 	try {
-		std::string colorStr = extractProperty(data.validLine, "color", "0x[\\da-f]{6}", true);
+		std::string colorStr = StringUtils::extractProperty(data.validLine, "color", "0x[\\da-f]{6}", true);
 		
 		color = Color(colorStr);
 		
 	} catch (const std::exception &e) {
 		// means no color is present => revert ifs back to the previous line
-		ifs.seekg(-data.lastDataRead, std::ios_base::cur);
+		ifs.seekg(data.lastReadPos);
 	}
 	
 	this->cutter = boost::make_shared<CutterDescription>(CutterDescription(geometry, color));
@@ -215,18 +174,18 @@ void ConfigurationManager::sectionParser_product(std::ifstream& ifs) {
 		abortParsing("Repeated PRODUCT section");
 	
 	// 1- X=NN
-	std::string line = readNextValidLine(ifs).validLine;
-	std::string XStr = extractProperty(line, "X", "[\\d\\.]+", true);
+	std::string line = FileUtils::readNextValidLine(ifs).validLine;
+	std::string XStr = StringUtils::extractProperty(line, "X", "[\\d\\.]+", true);
 	double X = boost::lexical_cast<double>(XStr);
 	
 	// 2- Y=NN
-	line = readNextValidLine(ifs).validLine;
-	std::string YStr = extractProperty(line, "Y", "[\\d\\.]+", true);
+	line = FileUtils::readNextValidLine(ifs).validLine;
+	std::string YStr = StringUtils::extractProperty(line, "Y", "[\\d\\.]+", true);
 	double Y = boost::lexical_cast<double>(YStr);
 	
 	// 3- Z=NN
-	line = readNextValidLine(ifs).validLine;
-	std::string ZStr = extractProperty(line, "Z", "[\\d\\.]+", true);
+	line = FileUtils::readNextValidLine(ifs).validLine;
+	std::string ZStr = StringUtils::extractProperty(line, "Z", "[\\d\\.]+", true);
 	double Z = boost::lexical_cast<double>(ZStr);
 	
 	RectCuboidPtr geom = boost::make_shared<RectCuboid>(RectCuboid(X, Y, Z));
@@ -237,10 +196,9 @@ void ConfigurationManager::sectionParser_product(std::ifstream& ifs) {
 
 void ConfigurationManager::sectionParser_points(std::ifstream& ifs) {
 	if (foundPoints)
-			abortParsing("Repeated POINTS section");
+		abortParsing("Repeated POINTS section");
 	
-	ifs.good(); // so GCC does not complain about unused variables
-	
+	this->firstPointPos = ifs.tellg();
 	this->foundPoints = true;
 	
 	if (!foundAll()) {
