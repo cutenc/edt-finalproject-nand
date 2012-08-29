@@ -9,6 +9,10 @@
 #define EULERANGLES_HPP_
 
 #include <iostream>
+#include <cmath>
+
+#include <Eigen/Geometry>
+#include <boost/math/constants/constants.hpp>
 
 class EulerAngles {
 public:
@@ -16,6 +20,17 @@ public:
 	EulerAngles(double, double, double);
 	
 	virtual ~EulerAngles();
+	
+	Eigen::Matrix3d asEigen() {
+		Eigen::Matrix3d mat;
+		double pi = boost::math::constants::pi<double>();
+		
+		mat = Eigen::AngleAxisd(ALPHA * pi, Eigen::Vector3d::UnitX())
+				* Eigen::AngleAxisd(BETA * pi, Eigen::Vector3d::UnitY())
+				* Eigen::AngleAxisd(GAMMA * pi, Eigen::Vector3d::UnitZ());
+		
+		return mat;
+	}
 	
 	friend std::ostream &operator<<(std::ostream &os, const EulerAngles &ea) {
 		os << "(" << ea.ALPHA << "," << ea.BETA << "," << ea.GAMMA << ")";

@@ -15,13 +15,13 @@
 #include "CutterDescription.hpp"
 #include "CNCMoveIterator.hpp"
 
-class ConfigurationManager;
+class ConfigFileParser;
 
-typedef void (ConfigurationManager::*sectionParser)(std::ifstream &);
+typedef void (ConfigFileParser::*sectionParser)(std::ifstream &);
 typedef std::map< std::string, sectionParser > ParsersMap;
 
 
-class ConfigurationManager {
+class ConfigFileParser {
 	
 	const std::string FILENAME;
 	const ParsersMap PARSERS;
@@ -31,8 +31,8 @@ class ConfigurationManager {
 	bool foundPoints, foundCutter, foundStock;
 	
 public:
-	ConfigurationManager(const std::string filename);
-	virtual ~ConfigurationManager();
+	ConfigFileParser(const std::string filename);
+	virtual ~ConfigFileParser();
 	
 	const StockDescriptionPtr getStockDescription() const;
 	const CutterDescriptionPtr getCutterDescription() const;
@@ -55,9 +55,9 @@ private:
 	
 	ParsersMap fillParsers() {
 		std::map< std::string, sectionParser > m;
-		m["TOOL"] = &ConfigurationManager::sectionParser_tool;
-		m["PRODUCT"] = &ConfigurationManager::sectionParser_product;
-		m["POINTS"] = &ConfigurationManager::sectionParser_points;
+		m["TOOL"] = &ConfigFileParser::sectionParser_tool;
+		m["PRODUCT"] = &ConfigFileParser::sectionParser_product;
+		m["POINTS"] = &ConfigFileParser::sectionParser_points;
 		return m;
 	}
 	

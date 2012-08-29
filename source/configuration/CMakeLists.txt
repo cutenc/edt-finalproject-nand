@@ -3,8 +3,10 @@ SET (configuration_SRC
 # add here both your sources (cpp) and header (hpp) files
 CNCMoveIterator.cpp
 CNCMoveIterator.hpp
-ConfigurationManager.cpp
-ConfigurationManager.hpp
+CommandLineParser.cpp
+CommandLineParser.hpp
+ConfigFileParser.cpp
+ConfigFileParser.hpp
 CutterDescription.cpp
 CutterDescription.hpp
 Geometry.hpp

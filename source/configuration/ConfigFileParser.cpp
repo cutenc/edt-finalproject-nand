@@ -5,7 +5,7 @@
  *      Author: socket
  */
 
-#include "ConfigurationManager.hpp"
+#include "ConfigFileParser.hpp"
 
 #include <iostream>
 #include <istream>
@@ -23,7 +23,7 @@
 
 #include "common/Utilities.hpp" 
 
-ConfigurationManager::ConfigurationManager(const std::string filename) : 
+ConfigFileParser::ConfigFileParser(const std::string filename) : 
 		FILENAME(filename), PARSERS(fillParsers()) {
 	
 	foundCutter = foundStock = foundPoints = false;
@@ -67,17 +67,17 @@ ConfigurationManager::ConfigurationManager(const std::string filename) :
 	}
 }
 
-ConfigurationManager::~ConfigurationManager() { }
+ConfigFileParser::~ConfigFileParser() { }
 
-const StockDescriptionPtr ConfigurationManager::getStockDescription() const {
+const StockDescriptionPtr ConfigFileParser::getStockDescription() const {
 	return stock;
 }
 
-const CutterDescriptionPtr ConfigurationManager::getCutterDescription() const {
+const CutterDescriptionPtr ConfigFileParser::getCutterDescription() const {
 	return cutter;
 }
 
-CNCMoveIterator ConfigurationManager::CNCMoveBegin() const {
+CNCMoveIterator ConfigFileParser::CNCMoveBegin() const {
 	boost::shared_ptr< std::ifstream > ifsp = boost::make_shared< std::ifstream >();
 	FileUtils::openFile(this->FILENAME, *ifsp);
 	
@@ -90,23 +90,23 @@ CNCMoveIterator ConfigurationManager::CNCMoveBegin() const {
 	return CNCMoveIterator(ifsp);
 }
 
-CNCMoveIterator ConfigurationManager::CNCMoveEnd() const {
+CNCMoveIterator ConfigFileParser::CNCMoveEnd() const {
 	return CNCMoveIterator();
 }
 
-bool ConfigurationManager::foundAll() const {
+bool ConfigFileParser::foundAll() const {
 	return this->foundCutter && this->foundStock && this->foundPoints;
 }
 
 
-void ConfigurationManager::abortParsing(const std::string &cause) const 
+void ConfigFileParser::abortParsing(const std::string &cause) const 
 		throw(std::runtime_error) {
 	
 	std::string str("[" + FILENAME + "] malformed configuration file: " + cause);
 	throw std::runtime_error(str);
 }
 
-void ConfigurationManager::sectionParser_tool(std::ifstream& ifs) {
+void ConfigFileParser::sectionParser_tool(std::ifstream& ifs) {
 	if (foundCutter)
 		abortParsing("Repeated TOOL section");
 	
@@ -169,7 +169,7 @@ void ConfigurationManager::sectionParser_tool(std::ifstream& ifs) {
 	this->foundCutter = true;
 }
 
-void ConfigurationManager::sectionParser_product(std::ifstream& ifs) {
+void ConfigFileParser::sectionParser_product(std::ifstream& ifs) {
 	if(foundStock)
 		abortParsing("Repeated PRODUCT section");
 	
@@ -194,7 +194,7 @@ void ConfigurationManager::sectionParser_product(std::ifstream& ifs) {
 	this->foundStock = true;
 }
 
-void ConfigurationManager::sectionParser_points(std::ifstream& ifs) {
+void ConfigFileParser::sectionParser_points(std::ifstream& ifs) {
 	if (foundPoints)
 		abortParsing("Repeated POINTS section");
 	

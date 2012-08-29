@@ -11,6 +11,10 @@
 #include <iostream>
 #include <stdexcept>
 
+#include <bits/postypes.h>
+
+#include <Eigen/Geometry>
+
 typedef struct _readData {
 	std::string validLine;
 	std::streampos lastReadPos;
@@ -62,6 +66,24 @@ public:
 	 */
 	static std::string extractProperty(const std::string &line, const std::string &propName, 
 			const std::string &propValuePattern, bool icase = true) throw(std::runtime_error);
+	
+};
+
+
+class GeometryUtils {
+	
+public:
+	
+	static void checkExtent(const Eigen::Vector3d extent) throw(std::invalid_argument) {
+		double eps = std::numeric_limits<double>::epsilon();
+		if (extent[0] < -eps || extent[1] < -eps || extent[2] < -eps) {
+			std::stringstream ss;
+			ss << "some dimensions are negative: [" << extent[0] <<
+					", " << extent[1] << ", " << extent[2] << "]";
+			
+			throw std::invalid_argument(ss.str());
+		}
+	}
 	
 };
 

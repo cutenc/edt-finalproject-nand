@@ -10,19 +10,26 @@
 
 #include <iostream>
 
+#include <Eigen/Geometry>
+
 class Point3D {
+	
+	Eigen::Vector3d point;
+	
 public:
 	Point3D();
 	Point3D(double x, double y, double z);
 	
 	virtual ~Point3D();
 	
-	friend std::ostream &operator<<(std::ostream &os, const Point3D &p) {
-		os << "(" << p.X << "," << p.Y << "," << p.Z << ")";
-		return os;
+	Eigen::Vector3d asEigen() {
+		return point;
 	}
 	
-	double X, Y, Z;
+	friend std::ostream &operator<<(std::ostream &os, const Point3D &p) {
+		os << "(" << p << ")";
+		return os;
+	}
 };
 
 #endif /* POINT3D_HPP_ */

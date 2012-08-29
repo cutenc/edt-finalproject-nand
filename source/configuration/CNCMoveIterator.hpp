@@ -8,7 +8,7 @@
 #ifndef CNCMOVEITERATOR_HPP_
 #define CNCMOVEITERATOR_HPP_
 
-#include <iostream>
+#include <istream>
 #include <fstream>
 #include <iterator>
 #include <vector>
@@ -103,7 +103,7 @@ private:
 				move = CNCMove(rt1, rt2);
 				
 			} catch (const std::exception &e) {
-				std::cerr << "bas rototraslation spec: " << e.what() << std::endl;
+				std::cerr << "bad rototraslation spec: " << e.what() << std::endl;
 				is.seekg(data.lastReadPos);
 				is.setstate(std::ios_base::failbit);
 			}
@@ -122,6 +122,9 @@ private:
 
 class CNCMoveIterator : public std::istream_iterator<CNCMove> {
 	
+	/* this variable is needed because we have to keep the object pointed
+	 * to by the smart_pointer alive until the iterator will be deleted
+	 */
 	boost::shared_ptr< std::ifstream > stream;
 	
 public:
