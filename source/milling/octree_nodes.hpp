@@ -33,7 +33,8 @@ class OctreeNode {
 	const Eigen::Vector3d traslation;
 	
 public:
-	OctreeNode() : father(), childIdx(-1), traslation(0, 0, 0) { }
+	OctreeNode() : father(), childIdx(255), traslation(0, 0, 0) { }
+	
 	OctreeNode(OctreeNodePtr father, u_char childIdx, const Eigen::Vector3d &traslation) :
 			father(father), childIdx(childIdx), traslation(traslation) {
 		
@@ -79,13 +80,14 @@ private:
 	OctreeNodePtr children[N_CHILDREN];
 	
 public:
-	BranchNode() : OctreeNode() { }
+	BranchNode() : OctreeNode() { initChildren(); }
 	BranchNode(OctreeNodePtr father, u_char childIdx, const Eigen::Vector3d &traslation) : 
-		OctreeNode(father, childIdx, traslation) { }
+		OctreeNode(father, childIdx, traslation) { initChildren(); }
 	
 	virtual ~BranchNode() {
 		for (int i = 0; i < N_CHILDREN; i++) {
-			delete children[i];
+			if (children[i] != NULL)
+				delete children[i];
 		}
 	}
 	
@@ -106,6 +108,12 @@ public:
 		
 		(this->children)[i] = child;
 	}
+	
+private:
+	void initChildren() {
+		for (int i = 0; i < N_CHILDREN; i++)
+			children[i] = NULL;
+	}
 };
 
 template <typename DataT>
@@ -119,6 +127,7 @@ class LeafNode : public OctreeNode {
 	DataT data;
 	
 public:
+	LeafNode() : OctreeNode(), DEPTH(0) { }
 	LeafNode(OctreeNodePtr father, u_char childIdx, const Eigen::Vector3d &traslation,
 			u_int depth) : OctreeNode(father, childIdx, traslation), DEPTH(depth) {
 		
@@ -155,6 +164,14 @@ public:
 		this->next = next;
 	}
 	
+	u_int getDepth() const {
+		return this->DEPTH;
+	}
+	
+	SimpleBox getSimpleBox(Eigen::Vector3d totalExtent) const {
+		u_int rate = (0x01 << DEPTH);
+		return SimpleBox(totalExtent / rate);
+	}
 };
 
 

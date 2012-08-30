@@ -32,10 +32,13 @@ struct IntersectionResult {
 
 class Stock {
 	
-//	const Octree< MeshingInfo > MODEL;
+	const u_int MAX_DEPTH;
+	const Eigen::Vector3d EXTENT;
+	const Eigen::Vector3d STOCK_MODEL_TRASLATION;
+	const Octree< MeshingInfo > MODEL;
 	
 public:
-	Stock(const StockDescription &desc);
+	Stock(const StockDescription &desc, u_int maxDepth);
 	virtual ~Stock();
 	
 	IntersectionResult intersect(CutterPtr cutter, Eigen::Vector3d traslation, Eigen::Matrix3d rotation);

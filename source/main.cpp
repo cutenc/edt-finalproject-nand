@@ -1,6 +1,7 @@
 #include <iostream>
 #include <typeinfo>
 #include <map>
+#include <vector>
 #include <string>
 #include <fstream>
 
@@ -26,6 +27,10 @@ using namespace Eigen;
 
 void printA(ostream &c) { c << "a" << endl; }
 void printB(ostream &c) { c << "b" << endl; }
+
+struct MyData {
+	int value;
+};
 
 int main(int argc, const char **argv) {
 	
@@ -96,21 +101,88 @@ int main(int argc, const char **argv) {
 	/* 
 	 * ******** Octree getIntersectingLeaves TEST ********
 	 */
-	Octree<int> octree(2, Vector3d(2, 2, 2));
 	
-	SimpleBox b1(1, 1, 2);
-	Vector3d traslation(.5, .5, .5);
+	cout << "inizio" << endl;
+	
+	u_int MAX_DEPTH = 2;
+	Vector3d size(2.0, 2.0, 2.0);
+	
+	Octree<MyData> octree(size);
+	
+	cout << "octree creato" << endl;
+	
+	SimpleBox b1(1.0, 1.0, 2.0);
+	Vector3d traslation(1, 1, 1.5);
+//	Vector3d traslation(Vector3d::Zero());
 	Matrix3d rotation;
 	rotation = AngleAxisd(0, Vector3d::UnitX())
 			* AngleAxisd(0, Vector3d::UnitY())
 			* AngleAxisd(0, Vector3d::UnitZ());
 	
-	Octree<int>::LeavesVectorPtr leaves = octree.getIntersectingLeaves(b1, traslation, rotation);
+	cout << "varie box/trasl/rot creati" << endl;
+	
+	Octree<MyData>::LeavesVectorPtr leaves = octree.getIntersectingLeaves(b1, traslation, rotation);
+	
+	cout << "intersecting leaves fatto" << endl;
 	
 	cout << "found leaves: " << leaves->size() << endl;
-	cout << "leaf index: " << ((int)leaves->front()->getChildIdx()) << endl;
+	
+	std::vector< Octree<MyData>::LeafPtr >::iterator leavesIt = leaves->begin();
+	int number = 1;
+	for (; leavesIt != leaves->end(); ++leavesIt) {
+		MyData d; d.value = number++;
+		(**leavesIt).setData(d);
+	}
+	
+	cout << "setting data fatta" << endl;
+	
+	Octree<MyData>::DataDeque data = octree.getStoredData();
+	
+	cout << "get stored data fatta" << endl;
+	
+	cout << "Data: ";
+	std::deque< MyData >::iterator dataIt = data->begin();
+	for (; dataIt != data->end(); ++dataIt) {
+		cout << dataIt->value << ", ";
+	}
+	cout << endl;
+	
+	std::vector< Octree<MyData>::LeafPtr > addedLeaves;
+	for (leavesIt = leaves->begin(); leavesIt != leaves->end(); ++leavesIt) {
+		if ((*leavesIt)->getDepth() >= MAX_DEPTH) {
+			continue;
+		}
+		
+		Octree<MyData>::LeavesVectorPtr newLeaves = octree.pushLevel(*leavesIt);
+		addedLeaves.insert(addedLeaves.end(), newLeaves->begin(), newLeaves->end());
+	}
+	octree.notifyChanges();
 	
 	
+	leaves = octree.getIntersectingLeaves(b1, traslation, rotation);
+		
+	cout << "intersecting leaves 2 fatto" << endl;
+	
+	cout << "found leaves 2: " << leaves->size() << endl;
+	
+	for (leavesIt = leaves->begin(); leavesIt != leaves->end(); ++leavesIt) {
+		MyData d; d.value = number++;
+		(**leavesIt).setData(d);
+	}
+	
+	cout << "setting data 2 fatta" << endl;
+	
+	data = octree.getStoredData();
+	
+	cout << "get stored data 2 fatta" << endl;
+	
+	dataIt = data->begin();
+	cout << "Data 2: ";
+	for (; dataIt != data->end(); ++dataIt) {
+		cout << dataIt->value << ", ";
+	}
+	cout << endl;
+
 	
 	/* ****************
 	 * *** MAIN *******

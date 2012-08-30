@@ -9,6 +9,7 @@
 #define OCTREE_HPP_
 
 #include <queue>
+#include <deque>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
@@ -23,32 +24,75 @@
 template <typename DataT>
 class Octree {
 	
-	typedef LeafNode< DataT >* LeafNodePtr;
-	typedef BranchNode* BranchNodePtr;
+	const static u_char ROOT_CHILD_IDX = 0; 
 	
-	const int MAX_DEPTH;
 	const Eigen::Vector3d EXTENT;
-	const boost::shared_ptr<BranchNode> ROOT;
-	boost::shared_ptr< LeafNode< DataT > > leavesList;
+	boost::shared_ptr<BranchNode> FAKE_ROOT;
+	boost::shared_ptr< LeafNode< DataT > > LEAVES_LIST;
 	
 public:
 	
-	Octree(int maxDepth, Eigen::Vector3d extent) :
-			MAX_DEPTH(maxDepth),
+	typedef LeafNode< DataT >* LeafPtr;
+	typedef BranchNode* BranchPtr;
+	
+	Octree(Eigen::Vector3d extent) :
 			EXTENT(extent), 
-			ROOT(boost::make_shared<BranchNode>()),
-			leavesList(boost::make_shared< LeafNode< DataT > >(ROOT.get(), 0, Eigen::Vector3d::Zero(), -1)) {
+			FAKE_ROOT(boost::make_shared<BranchNode>()),
+			LEAVES_LIST(boost::make_shared< LeafNode< DataT > >()) {
 		
-		GeometryUtils::checkExtent(extent);
-		if (MAX_DEPTH <= 1)
-			throw std::invalid_argument("MAX_DEPTH must be > 1");
+		GeometryUtils::checkExtent(EXTENT);
 		
-		LeafNodePtr prevNode = leavesList.get();
+		// create REAL root
+		LeafPtr realRoot = new LeafNode<DataT>(FAKE_ROOT.get(), Octree::ROOT_CHILD_IDX,
+				Eigen::Vector3d::Zero(), 0);
 		
-		// create root children
-		for (int i = 0; i < BranchNode::N_CHILDREN; i++) {
+		// link it with FAKE_ROOT and LEAVES_LIST
+		FAKE_ROOT->setChild(Octree::ROOT_CHILD_IDX, realRoot);
+		LEAVES_LIST->setNext(realRoot);
+		realRoot->setPrevious(LEAVES_LIST.get());
+		
+		// start with depth 1
+		pushLevel(realRoot);
+		notifyChanges();
+		
+	}
+	
+	virtual ~Octree() { }
+	
+	/**
+	 * Invoke this method every time you make some changes to the
+	 * data structure and want to persist them, that is make them available
+	 * to any subsequent call of ::getStoredData().
+	 */
+	void notifyChanges() {
+		
+		// TODO acquire writeLock
+		
+		// TODO implement NOTIFY changes
+		
+		// TODO release writeLock
+	}
+	
+	typedef boost::shared_ptr< std::vector< LeafPtr > > LeavesVectorPtr;
+	
+	LeavesVectorPtr pushLevel(LeafPtr leaf) {
+		
+		// TODO acquire readLock
+		
+		// first create new branch node...
+		BranchPtr branch = new BranchNode(leaf->getFather(),
+				leaf->getChildIdx(),
+				leaf->getTraslation());
+		
+		// ... then generate new children
+		LeavesVectorPtr newLeaves = boost::make_shared< std::vector< LeafPtr > >();
+		
+		LeafPtr prevNode = leaf->getPrevious();
+		Eigen::Vector3d baseTraslation(leaf->getSimpleBox(EXTENT).getHalfExtent());
+		
+		for (u_char i = 0; i < BranchNode::N_CHILDREN; i++) {
 			// calculate child traslation
-			Eigen::Vector3d traslation(EXTENT / 2.0);
+			Eigen::Vector3d traslation(baseTraslation);
 			
 			switch (i) {
 				case 0:
@@ -78,60 +122,47 @@ public:
 				case 7:
 					traslation[0] *= -1;
 					break;
+					
 				default:
+					throw std::runtime_error("too much children");
 					break;
 			}
 			
-			traslation[0] *= (-1) * ((i & 0x01) | (i & 0x02));
-			traslation[1] *= (-1) * (i & 0x02);
-			traslation[2] *= (-1) * (i & 0x04);
+			Eigen::Vector3d totTraslation = leaf->getTraslation() + traslation;
 			
-			Eigen::Vector3d totTraslation = ROOT->getTraslation() + traslation;
+			LeafPtr child = new LeafNode< DataT >(branch, i,
+					totTraslation, leaf->getDepth() + 1);
 			
-			LeafNodePtr child = new LeafNode< DataT >(ROOT.get(), i, totTraslation, 1);
+			prevNode->setNext(child);
 			child->setPrevious(prevNode);
 			prevNode = child;
 			
-			ROOT->setChild(i, child);
+			branch->setChild(i, child);
+			
+			newLeaves->push_back(child);
 		}
+		
+		// ...adjust last child's next pointer and leaf->getNext prev pointer...
+		newLeaves->back()->setNext(leaf->getNext());
+		if (leaf->getNext() != NULL)
+			leaf->getNext()->setPrevious(newLeaves->back());
+		
+		
+		// ... then link new branch to remaining tree 
+		/* TODO devo ricordarmi che queste modifiche non vanno effettuate finchè
+		 * non viene invocato il metodo notifyChanges => il vecchio BranchNode
+		 * deve rimanere non-cosciente del fatto che la vecchia foglia è stata
+		 * sostituita da un nuovo BranchNode fino a quel momento
+		 * Probabilmente sarà necessario prevedere una lista di "cambiamenti
+		 * da fare"
+		 */
+		BranchPtr bnp = dynamic_cast<BranchPtr>(leaf->getFather());
+		bnp->setChild(branch->getChildIdx(), branch);
+		
+		// TODO release readLock
+		
+		return newLeaves;
 	}
-	
-	virtual ~Octree() { }
-	
-	/**
-	 * Returns all data contained inside octree leafs: if you activate the
-	 * onlyIfChanged flag, data will be returned only if octree state changed
-	 * since last time the method was invoked with the flag on, otherwise
-	 * an empty std::vector is returned.
-	 * 
-	 * @param onlyIfChanged
-	 * @return
-	 */
-	std::vector<DataT> getStoredData(bool onlyIfChanged = false);
-	
-	/**
-	 * Invoke this method every time you make some changes to the
-	 * data structure and want to persist them, that is make them available
-	 * to any subsequent call of ::getStoredData().
-	 */
-	void notifyChanges();
-	
-//	std::vector< LeafNodePtr > pushLevel(LeafNodePtr leaf) {
-//		
-//		BranchNode *branch = new BranchNode(leaf->getFather(), leaf->getChildIdx());
-//		
-//		/* devo ricordarmi che queste modifiche non vanno effettuate finchè
-//		 * non viene invocato il metodo notifyChanges => il vecchio BranchNode
-//		 * deve rimanere non-cosciente del fatto che la vecchia foglia è stata
-//		 * sostituita da un nuovo BranchNode fino a quel momento
-//		 * Probabilmente sarà necessario prevedere una lista di "cambiamenti
-//		 * da fare"
-//		 */
-//		
-//		
-//	}
-	
-	typedef boost::shared_ptr< std::vector< LeafNodePtr > > LeavesVectorPtr;
 	
 	/**
 	 * 
@@ -144,14 +175,16 @@ public:
 			const Eigen::Vector3d &traslation,
 			const Eigen::Matrix3d &rotation) const {
 		
+		// TODO acquire ReadLock
+		
 		typedef boost::shared_ptr< std::queue< OctreeNodePtr > > NodeQueuePtr;
 		
 		NodeQueuePtr currLvlNodes = boost::make_shared< std::queue< OctreeNodePtr > >();
 		for (int i = 0; i < BranchNode::N_CHILDREN; i++) {
-			currLvlNodes->push(ROOT->getChild(i));
+			currLvlNodes->push(getRoot()->getChild(i));
 		}
 		
-		LeavesVectorPtr intersectingLeaves = boost::make_shared< std::vector< LeafNodePtr > >();
+		LeavesVectorPtr intersectingLeaves = boost::make_shared< std::vector< LeafPtr > >();
 		
 		// used for caching current level SimpleBox
 		boost::shared_ptr<SimpleBox> currBox = boost::make_shared< SimpleBox >(EXTENT / 2.0);
@@ -174,12 +207,12 @@ public:
 				
 				switch (currNode->getType()) {
 					case LEAF_NODE: {
-						LeafNodePtr lnp = dynamic_cast<LeafNodePtr>(currNode);
+						LeafPtr lnp = dynamic_cast<LeafPtr>(currNode);
 						intersectingLeaves->push_back(lnp);
 						break;
 					}
 					case BRANCH_NODE: {
-						BranchNodePtr bnp = dynamic_cast<BranchNodePtr>(currNode);
+						BranchPtr bnp = dynamic_cast<BranchPtr>(currNode);
 						// add children to nextLvlNodes
 						for (int i = 0; i < BranchNode::N_CHILDREN; i++) {
 							nextLvlNodes->push(bnp->getChild(i));
@@ -204,8 +237,53 @@ public:
 			
 		} while (!currLvlNodes->empty());
 		
+		// TODO release readLock
+		
 		return intersectingLeaves;
 	}
+	
+	
+	typedef boost::shared_ptr< std::deque<DataT> > DataDeque;
+	
+	/**
+	 * Returns all data contained inside octree leafs: if you activate the
+	 * onlyIfChanged flag, data will be returned only if octree state changed
+	 * since last time the method was invoked with the flag on, otherwise
+	 * an empty std::vector is returned.
+	 * 
+	 * @param onlyIfChanged
+	 * @return
+	 */
+	DataDeque getStoredData(bool onlyIfChanged = false) const {
+		// TODO acquire readLock
+		
+		DataDeque data = boost::make_shared< std::deque< DataT > >();
+		
+		if (onlyIfChanged) {
+			// TODO reset 'changed' flag with an atomic compare-exchange operation
+		}
+		
+		// TODO implement THIS (now is only used to check if leaf queue is consistent
+		LeafPtr currLeaf = getFirstLeaf();
+		do {
+			data->push_back(currLeaf->getData());
+		} while((currLeaf = currLeaf->getNext()) != NULL);
+		
+		// TODO release ReadLock
+		return data;
+	}
+	
+	
+private:
+	
+	BranchPtr getRoot() const {
+		return dynamic_cast<BranchPtr>(this->FAKE_ROOT->getChild(Octree::ROOT_CHILD_IDX));
+	}
+	
+	LeafPtr getFirstLeaf() const {
+		return LEAVES_LIST->getNext();
+	}
+	
 };
 
 #endif /* OCTREE_HPP_ */
