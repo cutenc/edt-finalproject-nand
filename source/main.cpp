@@ -136,14 +136,14 @@ int main(int argc, const char **argv) {
 	
 	cout << "setting data fatta" << endl;
 	
-	Octree<MyData>::DataDeque data = octree.getStoredData();
+	Octree<MyData>::DataDequePtr data = octree.getStoredData();
 	
 	cout << "get stored data fatta" << endl;
 	
 	cout << "Data: ";
-	std::deque< MyData >::iterator dataIt = data->begin();
+	Octree<MyData>::DataDeque::iterator dataIt = data->begin();
 	for (; dataIt != data->end(); ++dataIt) {
-		cout << dataIt->value << ", ";
+		cout << (*dataIt)->value << ", ";
 	}
 	cout << endl;
 	
@@ -179,7 +179,7 @@ int main(int argc, const char **argv) {
 	dataIt = data->begin();
 	cout << "Data 2: ";
 	for (; dataIt != data->end(); ++dataIt) {
-		cout << dataIt->value << ", ";
+		cout << (*dataIt)->value << ", ";
 	}
 	cout << endl;
 

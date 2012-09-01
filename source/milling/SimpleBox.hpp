@@ -28,17 +28,17 @@ class SimpleBox {
 	 * Half dimensions
 	 */
 	const Eigen::Vector3d EXTENT;
+	const double VOLUME;
 	
 public:
-	SimpleBox(const Eigen::Vector3d &extent) : EXTENT(extent / 2.0) {
+	SimpleBox(const Eigen::Vector3d &extent) :
+			EXTENT(extent / 2.0),
+			VOLUME(extent[0] * extent[1] * extent[2]) {
 		
 		GeometryUtils::checkExtent(EXTENT);
-	}
-	
-	SimpleBox(double width, double depth, double height) : 
-		EXTENT(width/2.0, depth/2.0, height/2.0) {
-		
-		GeometryUtils::checkExtent(EXTENT);
+		if (!(VOLUME > -std::numeric_limits<double>::epsilon())) {
+			throw std::invalid_argument("Volume is negative");
+		}
 	}
 	
 	virtual ~SimpleBox() { }
@@ -51,59 +51,24 @@ public:
 		return os;
 	}
 	
-	/**
-	 * 
-	 * @param type
-	 * @param position
-	 * @return
-	 */
 	Eigen::Vector3d getCorner(Corner type,
-			const Eigen::Vector3d &traslation = Eigen::Vector3d::Zero(),
-			const Eigen::Matrix3d &rotation = Eigen::Matrix3d::Identity()) const {
-		
-		Eigen::Vector3d corner = this->EXTENT;
-		
-		switch (type) {
-			case BottomFrontLeft:
-				corner[0] *= -1;
-				corner[1] *= -1;
-				corner[2] *= -1;
-				break;
-			case BottomFrontRight:
-				corner[1] *= -1;
-				corner[2] *= -1;
-				break;
-			case BottomRearLeft:
-				corner[0] *= -1;
-				corner[2] *= -1;
-				break;
-			case BottomRearRight:
-				corner[2] *= -1;
-				break;
-			case UpperFrontLeft:
-				corner[0] *= -1;
-				corner[1] *= -1;
-				break;
-			case UpperFrontRight:
-				corner[1] *= -1;
-				break;
-			case UpperRearLeft:
-				corner[0] *= -1;
-				break;
-			case UpperRearRight:
-				// ok: all positive
-				break;
-				
-			default:
-				throw std::runtime_error("Given corner type does not exist");
-				break;
-		}
-		
-		corner = rotation * corner;
-		
-		corner += traslation;
-		
-		return corner;
+			const Eigen::Vector3d &traslation = Eigen::Vector3d::Zero()) {
+		return getSimpleCorner(type) + traslation;
+	}
+	
+	Eigen::Vector3d getCorner(Corner type,
+			const Eigen::Matrix3d &rotation) {
+		return getRotatedCorner(type, rotation);
+	}
+	
+	Eigen::Vector3d getCorner(Corner type,
+			const Eigen::Vector3d &traslation,
+			const Eigen::Matrix3d &rotation) {
+		return getRotatedCorner(type, rotation) + traslation;
+	}
+	
+	double getVolume() const {
+		return this->VOLUME;
 	}
 	
 	bool isIntersecting(const SimpleBox &otherBox,
@@ -218,6 +183,53 @@ public:
 	}
 	
 private:
+	
+	Eigen::Vector3d getSimpleCorner(Corner type) const {
+		
+		Eigen::Vector3d corner = this->EXTENT;
+		
+		switch (type) {
+			case BottomFrontLeft:
+				corner[0] *= -1;
+				corner[1] *= -1;
+				corner[2] *= -1;
+				break;
+			case BottomFrontRight:
+				corner[1] *= -1;
+				corner[2] *= -1;
+				break;
+			case BottomRearLeft:
+				corner[0] *= -1;
+				corner[2] *= -1;
+				break;
+			case BottomRearRight:
+				corner[2] *= -1;
+				break;
+			case UpperFrontLeft:
+				corner[0] *= -1;
+				corner[1] *= -1;
+				break;
+			case UpperFrontRight:
+				corner[1] *= -1;
+				break;
+			case UpperRearLeft:
+				corner[0] *= -1;
+				break;
+			case UpperRearRight:
+				// ok: all positive
+				break;
+				
+			default:
+				throw std::runtime_error("Given corner type does not exist");
+				break;
+		}
+		
+		return corner;
+	}
+	
+	Eigen::Vector3d getRotatedCorner(Corner type, const Eigen::Matrix3d &rotation) const {
+		return rotation * getSimpleCorner(type);
+	}
 	
 };
 

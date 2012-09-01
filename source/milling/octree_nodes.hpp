@@ -85,7 +85,7 @@ public:
 		OctreeNode(father, childIdx, traslation) { initChildren(); }
 	
 	virtual ~BranchNode() {
-		for (int i = 0; i < N_CHILDREN; i++) {
+		for (u_char i = 0; i < N_CHILDREN; i++) {
 			if (children[i] != NULL)
 				delete children[i];
 		}
@@ -95,23 +95,34 @@ public:
 		return BRANCH_NODE;
 	}
 	
-	OctreeNodePtr getChild(int i) const {
+	OctreeNodePtr getChild(u_char i) const {
 		if (i < 0 || i > 7)
 			throw std::invalid_argument("given index should be in [0, 7]");
 		
 		return children[i];
 	}
 	
-	void setChild(int i, OctreeNodePtr child) {
+	void deleteChild(u_char i) {
 		if (i < 0 || i > 7)
 			throw std::invalid_argument("given index should be in [0, 7]");
+		
+		// TODO implement swapping & dirtying
+		delete children[i];
+		children[i] = NULL;
+	}
+	
+	void setChild(u_char i, OctreeNodePtr child) {
+		if (i < 0 || i > 7)
+			throw std::invalid_argument("given index should be in [0, 7]");
+		
+		// TODO implement swapping & dirtying
 		
 		(this->children)[i] = child;
 	}
 	
 private:
 	void initChildren() {
-		for (int i = 0; i < N_CHILDREN; i++)
+		for (u_char i = 0; i < N_CHILDREN; i++)
 			children[i] = NULL;
 	}
 };
@@ -119,19 +130,25 @@ private:
 template <typename DataT>
 class LeafNode : public OctreeNode {
 	
-	typedef LeafNode<DataT> * LeafPtr;
+public:
+	typedef boost::shared_ptr< DataT > DataPtr;
+	typedef boost::shared_ptr< const DataT > DataConstPtr;
+	typedef LeafNode< DataT > * LeafPtr;
 	
-	LeafPtr prev, next;
+private:
+	
 	const u_int DEPTH;
 	
-	DataT data;
+	LeafPtr prev, next;
+	DataPtr data;
 	
 public:
-	LeafNode() : OctreeNode(), DEPTH(0) { }
+	LeafNode() : OctreeNode(), DEPTH(0) { initVariables(); }
+	
 	LeafNode(OctreeNodePtr father, u_char childIdx, const Eigen::Vector3d &traslation,
 			u_int depth) : OctreeNode(father, childIdx, traslation), DEPTH(depth) {
 		
-		prev = next = NULL;
+		initVariables();
 	}
 	
 	virtual ~LeafNode() { }
@@ -140,11 +157,17 @@ public:
 		return LEAF_NODE;
 	}
 	
-	void setData(const DataT &data) {
-		this->data = data;
+	DataConstPtr getData() const {
+		return this->data;
 	}
 	
-	DataT getData() const {
+	void setData(const DataT &data) {
+		// TODO implementare swapping & dirtying
+		this->data = boost::make_shared< DataT >(data);
+	}
+	
+	DataPtr getDirtyData() {
+		// TODO implementare swapping & dirtying
 		return this->data;
 	}
 	
@@ -161,17 +184,21 @@ public:
 	}
 	
 	void setNext(LeafPtr next) {
+		// NULL next ptr must be allowed (last leaf)
 		this->next = next;
 	}
 	
 	u_int getDepth() const {
 		return this->DEPTH;
 	}
+
+private:
 	
-	SimpleBox getSimpleBox(Eigen::Vector3d totalExtent) const {
-		u_int rate = (0x01 << DEPTH);
-		return SimpleBox(totalExtent / rate);
+	void initVariables() {
+		prev = next = NULL;
+		data = boost::make_shared< DataT >();
 	}
+	
 };
 
 
