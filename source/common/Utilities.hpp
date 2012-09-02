@@ -101,6 +101,7 @@ public:
 	static bool isBetween(int x, int a, int b) {
 		return (x >= a) && (x < b);
 	}
+	
 };
 
 #endif /* UTILITIES_HPP_ */

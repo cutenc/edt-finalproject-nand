@@ -124,7 +124,7 @@ public:
 		// TODO release writeLock
 	}
 	
-	LeavesDequePtr pushLevel(const LeafPtr &leaf) {
+	LeavesDequePtr pushLevel(LeafConstPtr leaf) {
 		
 		// TODO acquire readLock
 		
@@ -146,7 +146,7 @@ public:
 		return newLevel.newLeaves;
 	}
 	
-	void purgeLeaf(const LeafPtr &leaf) {
+	void purgeLeaf(LeafPtr &leaf) {
 		
 		// TODO acquire readLock
 		
@@ -179,6 +179,10 @@ public:
 		}
 		
 		return Voxel(points);
+	}
+	
+	SimpleBoxPtr getSimpleBox(LeafPtr leaf) {
+		return BOX_CACHE.getSimpleBox(leaf->getDepth());
 	}
 	
 	/**
@@ -307,7 +311,7 @@ private:
 		const LeavesDequePtr newLeaves;
 	};
 	
-	PushedLevel createLevel(const LeafPtr &leaf) {
+	PushedLevel createLevel(LeafConstPtr leaf) {
 		
 		// first create new branch node...
 		BranchPtr branch;

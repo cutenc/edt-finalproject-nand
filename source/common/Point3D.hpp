@@ -27,6 +27,18 @@ public:
 		return point;
 	}
 	
+	double getX() const {
+		return point[0];
+	}
+	
+	double getY() const {
+		return point[1];
+	}
+	
+	double getZ() const {
+		return point[2];
+	}
+	
 	friend std::ostream &operator<<(std::ostream &os, const Point3D &p) {
 		os << "(" << p << ")";
 		return os;
