@@ -55,7 +55,12 @@ enum Corner {
 };
 
 class CornerIterator : public std::iterator<std::input_iterator_tag, Corner> {
+
+public:
 	
+	static const u_char N_CORNERS = 8;
+	
+private:
 	static const Corner END_FLAG = static_cast<Corner>(-1);
 
 	Corner curr;
@@ -100,8 +105,6 @@ public:
 	
 	static CornerIterator begin() { return CornerIterator(BottomFrontLeft); }
 	static CornerIterator end() { return CornerIterator(); }
-	
-	static const int N_CORNERS = 8;
 	
 private:
 	bool isEnded() {

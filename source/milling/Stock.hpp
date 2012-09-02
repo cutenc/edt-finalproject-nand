@@ -11,8 +11,9 @@
 #include <Eigen/Geometry>
 
 #include "cutters.hpp"
-#include "MeshingInfo.hpp"
+#include "VoxelInfo.hpp"
 #include "Octree.hpp"
+#include "SimpleBox.hpp"
 #include "configuration/StockDescription.hpp"
 
 struct IntersectionResult {
@@ -35,14 +36,30 @@ class Stock {
 	const u_int MAX_DEPTH;
 	const Eigen::Vector3d EXTENT;
 	const Eigen::Vector3d STOCK_MODEL_TRASLATION;
-	const Octree< MeshingInfo > MODEL;
+	Octree< VoxelInfo > MODEL;
 	
 public:
 	Stock(const StockDescription &desc, u_int maxDepth);
 	virtual ~Stock();
 	
-	IntersectionResult intersect(CutterPtr cutter, Eigen::Vector3d traslation, Eigen::Matrix3d rotation);
+	IntersectionResult intersect(CutterPtr cutter, const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation);
 	
+private:
+	
+	VoxelInfo buildInfos(Octree< VoxelInfo >::LeafConstPtr leaf, 
+			const CutterPtr &cutter, const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation);
+	
+	/**
+	 * 
+	 * @param voxel
+	 * @param oldInfo
+	 * @param updatedInfo that is old VoxelInfo after they have been updated
+	 * with new ones
+	 * @return
+	 */
+	double getApproxWaste(const SimpleBox &voxel, const VoxelInfo &oldInfo, const VoxelInfo &updatedInfo) const;
+	
+	double intersectedVolume(const SimpleBox &voxel, const VoxelInfo &info) const;
 };
 
 

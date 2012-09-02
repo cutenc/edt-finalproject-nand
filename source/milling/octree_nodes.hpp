@@ -96,15 +96,13 @@ public:
 	}
 	
 	OctreeNodePtr getChild(u_char i) const {
-		if (i < 0 || i > 7)
-			throw std::invalid_argument("given index should be in [0, 7]");
+		assert(CommonUtils::isBetween(i, 0, N_CHILDREN));
 		
 		return children[i];
 	}
 	
 	void deleteChild(u_char i) {
-		if (i < 0 || i > 7)
-			throw std::invalid_argument("given index should be in [0, 7]");
+		assert(CommonUtils::isBetween(i, 0, N_CHILDREN));
 		
 		// TODO implement swapping & dirtying
 		delete children[i];
@@ -112,8 +110,7 @@ public:
 	}
 	
 	void setChild(u_char i, OctreeNodePtr child) {
-		if (i < 0 || i > 7)
-			throw std::invalid_argument("given index should be in [0, 7]");
+		assert(CommonUtils::isBetween(i, 0, N_CHILDREN));
 		
 		// TODO implement swapping & dirtying
 		
@@ -134,6 +131,7 @@ public:
 	typedef boost::shared_ptr< DataT > DataPtr;
 	typedef boost::shared_ptr< const DataT > DataConstPtr;
 	typedef LeafNode< DataT > * LeafPtr;
+	typedef const LeafNode< DataT > * LeafConstPtr;
 	
 private:
 	

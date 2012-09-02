@@ -88,4 +88,19 @@ public:
 };
 
 
+class CommonUtils {
+	
+public:
+	
+	/**
+	 * True if x in [a, b[
+	 * @param a
+	 * @param b
+	 * @return
+	 */
+	static bool isBetween(int x, int a, int b) {
+		return (x >= a) && (x < b);
+	}
+};
+
 #endif /* UTILITIES_HPP_ */

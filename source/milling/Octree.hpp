@@ -18,7 +18,7 @@
 #include <Eigen/Geometry>
 
 #include "octree_nodes.hpp"
-
+#include "Voxel.hpp"
 
 
 class SimpleBoxCache {
@@ -32,7 +32,7 @@ private:
 	
 public:
 	SimpleBoxCache(Eigen::Vector3d extent) : EXTENT(extent), CACHE() {
-	GeometryUtils::checkExtent(EXTENT);
+		GeometryUtils::checkExtent(EXTENT);
 	}
 	
 	virtual ~SimpleBoxCache() { }
@@ -65,12 +65,14 @@ class Octree {
 	
 public:
 	typedef typename LeafNode< DataT >::LeafPtr LeafPtr;
+	typedef typename LeafNode< DataT >::LeafConstPtr LeafConstPtr;
 	typedef typename LeafNode< DataT >::DataPtr DataPtr;
 	typedef typename LeafNode< DataT >::DataConstPtr DataConstPtr;
 	typedef BranchNode* BranchPtr;
 	typedef typename SimpleBoxCache::SimpleBoxPtr SimpleBoxPtr;
 	
-	typedef boost::shared_ptr< std::vector< LeafPtr > > LeavesVectorPtr;
+	typedef std::deque< LeafPtr > LeavesDeque;
+	typedef boost::shared_ptr< std::deque< LeafPtr > > LeavesDequePtr;
 	typedef std::deque< DataConstPtr > DataDeque;
 	typedef boost::shared_ptr< DataDeque > DataDequePtr;
 	
@@ -122,7 +124,7 @@ public:
 		// TODO release writeLock
 	}
 	
-	LeavesVectorPtr pushLevel(const LeafPtr &leaf) {
+	LeavesDequePtr pushLevel(const LeafPtr &leaf) {
 		
 		// TODO acquire readLock
 		
@@ -167,8 +169,16 @@ public:
 		// TODO release readLock
 	}
 	
-	SimpleBoxPtr getVoxel(const LeafPtr &leaf) {
-		return BOX_CACHE.getSimpleBox(leaf->getDepth());
+	Voxel getVoxel(LeafConstPtr leaf) {
+		SimpleBoxPtr box = BOX_CACHE.getSimpleBox(leaf->getDepth());
+		std::vector< Eigen::Vector3d > points;
+		
+		CornerIterator cIt = CornerIterator::begin();
+		for (; cIt != CornerIterator::end(); ++cIt) {
+			points.push_back(box->getCorner(*cIt, leaf->getTraslation()));
+		}
+		
+		return Voxel(points);
 	}
 	
 	/**
@@ -178,7 +188,7 @@ public:
 	 * @param rotation to given box basis
 	 * @return
 	 */
-	LeavesVectorPtr getIntersectingLeaves(const SimpleBox &obb,
+	LeavesDequePtr getIntersectingLeaves(const SimpleBox &obb,
 			const Eigen::Vector3d &traslation,
 			const Eigen::Matrix3d &rotation) const {
 		
@@ -191,7 +201,7 @@ public:
 			currLvlNodes->push(getRoot()->getChild(i));
 		}
 		
-		LeavesVectorPtr intersectingLeaves = boost::make_shared< std::vector< LeafPtr > >();
+		LeavesDequePtr intersectingLeaves = boost::make_shared< std::deque< LeafPtr > >();
 		
 		// used for caching current level SimpleBox
 		boost::shared_ptr<SimpleBox> currBox = boost::make_shared< SimpleBox >(EXTENT / 2.0);
@@ -290,11 +300,11 @@ private:
 	
 	
 	struct PushedLevel {
-		PushedLevel(BranchPtr newBranch, LeavesVectorPtr newLeaves) :
+		PushedLevel(BranchPtr newBranch, LeavesDequePtr newLeaves) :
 			newBranch(newBranch), newLeaves(newLeaves) { }
 		
 		const BranchPtr newBranch;
-		const LeavesVectorPtr newLeaves;
+		const LeavesDequePtr newLeaves;
 	};
 	
 	PushedLevel createLevel(const LeafPtr &leaf) {
@@ -310,7 +320,7 @@ private:
 		}
 		
 		// ... then generate new children
-		LeavesVectorPtr newLeaves = boost::make_shared< std::vector< LeafPtr > >();
+		LeavesDequePtr newLeaves = boost::make_shared< std::deque< LeafPtr > >();
 		
 		u_int newDepth = leaf->getDepth() + 1;
 		

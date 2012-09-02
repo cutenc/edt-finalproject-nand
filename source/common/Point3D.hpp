@@ -18,6 +18,7 @@ class Point3D {
 	
 public:
 	Point3D();
+	Point3D(Eigen::Vector3d p);
 	Point3D(double x, double y, double z);
 	
 	virtual ~Point3D();
