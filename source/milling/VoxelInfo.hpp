@@ -8,21 +8,22 @@
 #ifndef MESHINGINFO_HPP_
 #define MESHINGINFO_HPP_
 
+#include <ostream>
 #include <limits>
 #include <algorithm>
 #include <cassert>
 
 #include "Corner.hpp"
+#include "common/Utilities.hpp"
 
 class VoxelInfo {
 	
-	static const double MIN_INSIDENESS; 
 	double insideness[CornerIterator::N_CORNERS];
 	
 public:
 	VoxelInfo() {
 		for (int i = 0; i < CornerIterator::N_CORNERS; ++i) {
-			insideness[i] = MIN_INSIDENESS;
+			insideness[i] = -CommonUtils::INFINITE;
 		}
 	}
 	
@@ -82,6 +83,16 @@ public:
 		return VoxelInfo(*this) += v;
 	}
 	
+	friend std::ostream & operator<<(std::ostream &os, const VoxelInfo &vinfo) {
+		os << "[";
+		for (u_char i = 0; i < CornerIterator::N_CORNERS; ++i) {
+			os << vinfo.isInside(i); 
+		}
+		os << "]";
+		
+		return os;
+	}
+	
 private:
 	
 	bool isInside(u_char i) const {
@@ -103,8 +114,5 @@ private:
 	}
 	
 };
-
-const double VoxelInfo::MIN_INSIDENESS = (std::numeric_limits<double>::has_infinity) ? 
-		-std::numeric_limits<double>::infinity() : -std::numeric_limits<double>::max();
 
 #endif /* MESHINGINFO_HPP_ */

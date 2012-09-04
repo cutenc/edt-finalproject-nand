@@ -32,11 +32,9 @@ public:
 	 * use with caution
 	 * @return
 	 */
-	template<typename T> const T* getAs() throw(std::runtime_error) {
-		const T* tmp = dynamic_cast<const T *>(this);
-		if (!tmp)
-			throw std::runtime_error(std::string("cannot cast to: const") + 
-					typeid(T).name() + "*");
+	template<typename T> const T& getAs() throw(std::runtime_error) {
+		const T& tmp = dynamic_cast<const T &>(*this);
+		
 		return tmp;
 	}
 

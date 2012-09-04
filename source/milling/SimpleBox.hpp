@@ -36,8 +36,8 @@ public:
 			VOLUME(extent[0] * extent[1] * extent[2]) {
 		
 		GeometryUtils::checkExtent(EXTENT);
-		if (!(VOLUME > -std::numeric_limits<double>::epsilon())) {
-			throw std::invalid_argument("Volume is negative");
+		if (VOLUME < std::numeric_limits<double>::epsilon()) {
+			throw std::invalid_argument("Volume is too small or negative");
 		}
 	}
 	

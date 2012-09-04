@@ -11,6 +11,9 @@
 #include <deque>
 #include <stdexcept>
 
+#include <boost/chrono.hpp>
+#include <boost/container/slist.hpp>
+
 #include <Eigen/Geometry>
 
 #include "SimpleBox.hpp"
@@ -23,31 +26,41 @@ Stock::Stock(const StockDescription &desc, u_int maxDepth) :
 	MODEL(EXTENT) {
 	
 	GeometryUtils::checkExtent(EXTENT);
-	if(MAX_DEPTH <= 1)
-		throw std::invalid_argument("max depth should be >1");
+	if(MAX_DEPTH <= 0)
+		throw std::invalid_argument("max depth should be >0");
 }
 
 Stock::~Stock() { }
 
-IntersectionResult Stock::intersect(CutterPtr cutter, const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation) {
+IntersectionResult Stock::intersect(Cutter::CutterPtr cutter, const Eigen::Vector3d &stockCutterTraslation, const Eigen::Matrix3d &rotation) {
+	
+	boost::chrono::thread_clock::time_point startTime = boost::chrono::thread_clock::now();
 	
 	Cutter::BoundingBoxInfo bboxInfo = cutter->getBoundingBox();
 	
 	SimpleBox cutterBox = bboxInfo.boundingBox;
 	
-	Eigen::Vector3d boxCutterTraslation = traslation + bboxInfo.originTraslation.asEigen();
-	Eigen::Vector3d modelCutterTraslation = boxCutterTraslation + STOCK_MODEL_TRASLATION;
+	Eigen::Vector3d originTraslationRot = rotation * bboxInfo.originTraslation.asEigen();
+	Eigen::Vector3d stockCutterBBoxTraslation = stockCutterTraslation + originTraslationRot;
+	Eigen::Vector3d modelCutterBBoxTraslation = stockCutterBBoxTraslation + STOCK_MODEL_TRASLATION;
+	Eigen::Vector3d modelCutterTrasl = stockCutterTraslation + STOCK_MODEL_TRASLATION;
 	
-	_Octree::LeavesDequePtr leaves = MODEL.getIntersectingLeaves(cutterBox, modelCutterTraslation, rotation);
+	_Octree::LeavesDequePtr leaves = MODEL.getIntersectingLeaves(cutterBox, 
+			modelCutterBBoxTraslation, rotation);
+	
+	/* the plan: analyze leaves one by one. In order to do so easily and
+	 * trying to keep array size as small as possible we start from the
+	 * end popping out a leaf on each round and inserting new leaves at the
+	 * end
+	 */
 	
 	IntersectionResult results;
-	
-	_Octree::LeavesDeque::iterator leavesIt;
-	for (leavesIt = leaves->begin(); leavesIt != leaves->end(); ++leavesIt) {
+	while (!leaves->empty()) {
 		
-		_Octree::LeafPtr currLeaf = *leavesIt;
+		results.analyzed_leaves++;
+		_Octree::LeafPtr currLeaf = leaves->back(); leaves->pop_back();
 		
-		VoxelInfo currInfo = buildInfos(currLeaf, cutter, traslation, rotation);
+		VoxelInfo currInfo = buildInfos(currLeaf, cutter, modelCutterTrasl, rotation);
 		
 		if (!currInfo.isIntersecting()) {
 			results.intersection_approx_errors++;
@@ -85,7 +98,7 @@ IntersectionResult Stock::intersect(CutterPtr cutter, const Eigen::Vector3d &tra
 				for (newLeavesIt = newLeaves->begin(); newLeavesIt != newLeaves->end(); ++newLeavesIt) {
 					
 					_Octree::SimpleBoxPtr sbp = MODEL.getSimpleBox(*newLeavesIt);
-					Eigen::Vector3d leafCutterTrasl = modelCutterTraslation - (*newLeavesIt)->getTraslation();
+					Eigen::Vector3d leafCutterTrasl = modelCutterBBoxTraslation - (*newLeavesIt)->getTraslation();
 					
 					if (sbp->isIntersecting(cutterBox, leafCutterTrasl, rotation)) {
 						/* let's add this new leaf to leaves array for 
@@ -110,7 +123,7 @@ IntersectionResult Stock::intersect(CutterPtr cutter, const Eigen::Vector3d &tra
 				 * limits at least once)
 				 */
 				if (currLeaf->getDirtyData()->isContained()) {
-					results.lazy_leaf_purging++;
+					results.lazy_purged_leaves++;
 					
 					MODEL.purgeLeaf(currLeaf);
 				}
@@ -119,15 +132,24 @@ IntersectionResult Stock::intersect(CutterPtr cutter, const Eigen::Vector3d &tra
 		
 	} // foreach (leave in leaves)
 	
-	results.analyzed_leaves = leaves->size();
-	
 	MODEL.notifyChanges();
+	
+	results.elapsedTime = boost::chrono::duration_cast<boost::chrono::milliseconds>(boost::chrono::thread_clock::now() - startTime);
 	
 	return results;
 }
 
+/**
+ * 
+ * @param leaf
+ * @param cutter
+ * @param traslation that is model-cutter traslation because internally
+ * will use points in model basis that should be converted in cutter basis
+ * @param rotation
+ * @return
+ */
 VoxelInfo Stock::buildInfos(_Octree::LeafConstPtr leaf, 
-		const CutterPtr &cutter,
+		const Cutter::CutterPtr &cutter,
 		const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation) {
 	
 	VoxelInfo info;
@@ -137,8 +159,8 @@ VoxelInfo Stock::buildInfos(_Octree::LeafConstPtr leaf,
 		Eigen::Vector3d stockPoint = v.getCorner(*cit);
 		
 		/* now we have to convert stockPoint in cutter basis: given rotation
-		 * and traslation are for the cutter in respect of stock basis, so we
-		 * have to invert them to get stock's roto-traslation in respect of
+		 * and traslation are for the cutter in respect of model basis, so we
+		 * have to invert them to get model's roto-traslation in respect of
 		 * cutter basis.
 		 * NB: due to the fact that rotation is an orthonormal base
 		 * rot^(-1) = rot^T
@@ -194,7 +216,11 @@ bool Stock::canPushLevel(_Octree::LeafPtr leaf) const {
 	return leaf->getDepth() < this->MAX_DEPTH;
 }
 
-
+std::ostream & operator<<(std::ostream &os, const Stock &stock) {
+	os << stock.MODEL;
+	
+	return os;
+}
 
 
 

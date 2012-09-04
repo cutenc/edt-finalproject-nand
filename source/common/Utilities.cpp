@@ -7,6 +7,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
@@ -76,4 +77,16 @@ std::string StringUtils::extractProperty(const std::string &line,
 	
 	return match[1];
 }
+
+std::string StringUtils::repeat(std::string pattern, u_int nTimes) {
+	std::stringstream sstream;
+	for (u_int i = 0; i < nTimes; ++i) {
+		sstream << pattern;
+	}
+	
+	return sstream.str();
+}
+
+const double CommonUtils::INFINITE = (std::numeric_limits<double>::has_infinity) ? 
+		std::numeric_limits<double>::infinity() : std::numeric_limits<double>::max();
 

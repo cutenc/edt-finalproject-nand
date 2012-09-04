@@ -2,6 +2,8 @@
 SET (milling_SRC
 # add here both your sources (cpp) and header (hpp) files
 Corner.hpp
+Cutter.cpp
+Cutter.hpp
 cutters.hpp
 MillingAlgorithm.cpp
 MillingAlgorithm.hpp

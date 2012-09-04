@@ -67,6 +67,7 @@ public:
 	static std::string extractProperty(const std::string &line, const std::string &propName, 
 			const std::string &propValuePattern, bool icase = true) throw(std::runtime_error);
 	
+	static std::string repeat(std::string pattern, u_int nTimes);
 };
 
 
@@ -76,9 +77,9 @@ public:
 	
 	static void checkExtent(const Eigen::Vector3d extent) throw(std::invalid_argument) {
 		double eps = std::numeric_limits<double>::epsilon();
-		if (extent[0] < -eps || extent[1] < -eps || extent[2] < -eps) {
+		if (extent[0] < eps || extent[1] < eps || extent[2] < eps) {
 			std::stringstream ss;
-			ss << "some dimensions are negative: [" << extent[0] <<
+			ss << "some dimensions are too small or negative: [" << extent[0] <<
 					", " << extent[1] << ", " << extent[2] << "]";
 			
 			throw std::invalid_argument(ss.str());
@@ -102,6 +103,7 @@ public:
 		return (x >= a) && (x < b);
 	}
 	
+	static const double INFINITE;
 };
 
 #endif /* UTILITIES_HPP_ */

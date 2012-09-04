@@ -17,10 +17,13 @@
 #include "common/Rototraslation.hpp"
 #include "configuration/Geometry.hpp"
 #include "configuration/StockDescription.hpp"
+#include "configuration/CutterDescription.hpp"
 #include "configuration/ConfigFileParser.hpp"
 #include "configuration/CommandLineParser.hpp"
 #include "milling/SimpleBox.hpp"
 #include "milling/Octree.hpp"
+#include "milling/Stock.hpp"
+#include "milling/cutters.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -188,16 +191,32 @@ int main(int argc, const char **argv) {
 	 * ******** Stock intersect TEST ********
 	 */
 	
-	cout << "inizio" << endl;
+	CommandLineParser clp(argc, argv);
 	
-	u_int MAX_DEPTH = 3;
-	Vector3d size(2.0, 2.0, 2.0);
+	if (clp.isHelpAsked()) {
+		clp.printUsage(cout);
+		return 0;
+	}
 	
-	Stock stock();
+	u_int MAX_DEPTH = clp.getMaxOctreeHeight();
 	
-	cout << "octree creato" << endl;
+	cout << "inizio con MAX_DEPTH=" << MAX_DEPTH << endl;
 	
-	SimpleBox b1(Vector3d(1.0, 1.0, 2.0));
+	RectCuboidPtr rectCuboid = boost::make_shared< RectCuboid >(2.0, 2.0, 2.0);
+	StockDescription stockDesc(rectCuboid);
+	
+	Stock stock(stockDesc, MAX_DEPTH);
+	
+	cout << "stock creato" << endl;
+	
+	GeometryPtr cylinderPtr = boost::make_shared< Cylinder >(1.0 , 2.0);
+	Color cutterColor;
+	CutterDescription cutterDesc(cylinderPtr, cutterColor);
+	
+	Cutter::CutterPtr cutter = Cutter::buildCutter(cutterDesc);
+	
+	cout << "cutter creato" << endl;
+	
 	Vector3d traslation(1, 1, 1.5);
  //	Vector3d traslation(Vector3d::Zero());
 	Matrix3d rotation;
@@ -205,7 +224,19 @@ int main(int argc, const char **argv) {
 			* AngleAxisd(0, Vector3d::UnitY())
 			* AngleAxisd(0, Vector3d::UnitZ());
 	
-	cout << "varie box/trasl/rot creati" << endl;
+	cout << "trasl/rot cutter rispetto a stock creati" << endl;
+	
+	cout << "now performing intersection" << endl;
+	IntersectionResult res = stock.intersect(cutter, traslation, rotation);
+	
+	cout << "Results: " << res << endl;
+	
+	cout << "Resulting stock: " << stock << endl;
+	
+	
+	
+	
+	
 	
 	/* ****************
 	 * *** MAIN *******
@@ -216,7 +247,6 @@ int main(int argc, const char **argv) {
 //		clp.printUsage(cout);
 //		return 0;
 //	}
-//	
 	
 	
 	return 0;

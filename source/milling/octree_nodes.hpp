@@ -17,6 +17,7 @@
 #include <Eigen/Geometry>
 
 #include "common/Point3D.hpp"
+#include "common/Utilities.hpp"
 
 enum OctreeNodeType {
 	BRANCH_NODE,
@@ -68,6 +69,14 @@ public:
 		return this->traslation;
 	}
 	
+	virtual u_int getDepth() const {
+		if (isRoot())
+			return 0;
+		else
+			return 1 + getFather()->getDepth();
+	}
+	
+	virtual std::ostream & toOutStream(std::ostream &os) const =0;
 };
 
 
@@ -115,6 +124,22 @@ public:
 		// TODO implement swapping & dirtying
 		
 		(this->children)[i] = child;
+	}
+	
+	virtual std::ostream & toOutStream(std::ostream &os) const {
+		u_int depth = this->getDepth();
+		std::string tabs = StringUtils::repeat("\t", depth);
+		
+		os << "Branch@" << depth;
+		for (u_char i = 0; i < this->N_CHILDREN; i++) {
+			os << std::endl << tabs << "|->" << (int)i << "-";
+			if (this->children[i] != NULL) {
+				this->children[i]->toOutStream(os);
+			} else {
+				os << "DELETED";
+			}
+		}
+		return os;
 	}
 	
 private:
@@ -186,8 +211,19 @@ public:
 		this->next = next;
 	}
 	
-	u_int getDepth() const {
+	virtual u_int getDepth() const {
 		return this->DEPTH;
+	}
+	
+	virtual std::ostream & toOutStream(std::ostream &os) const {
+		os << "Leaf@" << getDepth() << ":";
+		if (this->data.get() == NULL) {
+			os << "NO_DATA";
+		} else {
+			os << *(this->data);
+		}
+		
+		return os;
 	}
 
 private:

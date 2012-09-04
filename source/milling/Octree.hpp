@@ -8,9 +8,11 @@
 #ifndef OCTREE_HPP_
 #define OCTREE_HPP_
 
+#include <ostream>
 #include <queue>
 #include <deque>
 #include <map>
+#include <cmath>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
@@ -43,7 +45,7 @@ public:
 		SimpleBoxPtr sbp;
 		if(elm == CACHE.end()) {
 			// element not found, build, insert & return
-			double rate = (0x01 << depth);
+			double rate = std::pow(2.0, (double)depth);
 			sbp = boost::make_shared< SimpleBox >(EXTENT / rate);
 			
 			CACHE[depth] = sbp;
@@ -330,7 +332,7 @@ private:
 		
 		LeafPtr prevNode = leaf->getPrevious();
 		Eigen::Vector3d baseTraslation(
-				BOX_CACHE.getSimpleBox(newDepth - 1)->getHalfExtent()
+				BOX_CACHE.getSimpleBox(newDepth)->getHalfExtent()
 		);
 		
 		for (u_char i = 0; i < BranchNode::N_CHILDREN; i++) {
@@ -392,6 +394,14 @@ private:
 	
 		return PushedLevel(branch, newLeaves);
 	}
+	
+	friend std::ostream & operator<<(std::ostream &os, const Octree &tree) {
+		os << "Octree[" << tree.EXTENT.transpose() << "]" << std::endl << "->";
+		tree.ROOT->toOutStream(os);
+		
+		return os;
+	}
+	
 	
 };
 

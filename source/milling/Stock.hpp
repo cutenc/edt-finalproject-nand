@@ -8,9 +8,13 @@
 #ifndef STOCK_HPP_
 #define STOCK_HPP_
 
+#include <ostream>
+
+#include <boost/chrono.hpp>
+
 #include <Eigen/Geometry>
 
-#include "cutters.hpp"
+#include "Cutter.hpp"
 #include "VoxelInfo.hpp"
 #include "Octree.hpp"
 #include "SimpleBox.hpp"
@@ -23,26 +27,53 @@ struct IntersectionResult {
 	 */
 	double waste;
 	
+	u_long analyzed_leaves;
+	u_long purged_leaves;
+	
 	/**
 	 * counts the number of times a leaf has been deleted after more than
 	 * one partial erosions (that is it has never been found totally inside
 	 * the cutter).
 	 */
-	u_int lazy_leaf_purging;
-	u_int analyzed_leaves;
-	u_int purged_leaves;
-	u_int pushed_leaves;
-	u_int intersection_approx_skips;
-	u_int intersection_approx_errors;
+	u_long lazy_purged_leaves;
+	u_long pushed_leaves;
+	u_long intersection_approx_errors;
+	u_long intersection_approx_skips;
+	
+	boost::chrono::milliseconds elapsedTime;
 	
 	IntersectionResult() :
-		waste(0), analyzed_leaves(0), purged_leaves(0),
-		pushed_leaves(0), intersection_approx_errors(0),
-		intersection_approx_skips(0), lazy_leaf_purging(0)
+		waste(0), analyzed_leaves(0), purged_leaves(0), lazy_purged_leaves(0), 
+		pushed_leaves(0), intersection_approx_errors(0), 
+		intersection_approx_skips(0), elapsedTime(0)
 	{ }
 	
 	bool isOutOfStock() const {
 		return this->analyzed_leaves == this->intersection_approx_errors;
+	}
+	
+	boost::chrono::microseconds meanTimePerLeaf() const {
+		if (this->analyzed_leaves == 0)
+			return boost::chrono::microseconds(0);
+		
+		boost::chrono::microseconds us = elapsedTime;
+		return boost::chrono::microseconds(us.count() / this->analyzed_leaves);
+	}
+	
+	friend std::ostream & operator<<(std::ostream &os, const IntersectionResult &res) {
+		os << "\twaste: " << res.waste << std::endl
+				<< "\t#analyzed leaves: " << res.analyzed_leaves << std::endl
+				<< "\t#purged: " << res.purged_leaves << std::endl
+				<< "\t#lazy purged: " << res.lazy_purged_leaves << std::endl
+				<< "\t#pushed: " << res.pushed_leaves << std::endl
+				<< "\t#approx_error: " << res.intersection_approx_errors << std::endl
+				<< "\t#approx_skips: " << res.intersection_approx_skips << std::endl
+				<< "\t#elapsed time: " << res.elapsedTime.count() / 1000.0 << "s" << std::endl
+				<< "\t#mean time per leaf: " << res.meanTimePerLeaf().count() << "us" << std::endl
+				<< "\toutOfStock?: " << res.isOutOfStock()
+		;
+		
+		return os;
 	}
 };
 
@@ -59,12 +90,12 @@ public:
 	Stock(const StockDescription &desc, u_int maxDepth);
 	virtual ~Stock();
 	
-	IntersectionResult intersect(CutterPtr cutter, const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation);
+	IntersectionResult intersect(Cutter::CutterPtr cutter, const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation);
 	
 private:
 	
 	VoxelInfo buildInfos(_Octree::LeafConstPtr leaf, 
-			const CutterPtr &cutter, const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation);
+			const Cutter::CutterPtr &cutter, const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation);
 	
 	/**
 	 * Updates waste on given \c leaf according to given \c newInfo and then
@@ -89,6 +120,8 @@ private:
 	double intersectedVolume(const SimpleBox &box, const VoxelInfo &info) const;
 	
 	bool canPushLevel(_Octree::LeafPtr leaf) const;
+	
+	friend std::ostream & operator<<(std::ostream &os, const Stock &stock);
 };
 
 
