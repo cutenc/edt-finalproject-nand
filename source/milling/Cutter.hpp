@@ -62,6 +62,12 @@ public:
 	};
 	virtual BoundingBoxInfo getBoundingBox() const =0;
 	
+	virtual std::ostream & toOutStream(std::ostream &os) const =0;
+	
+	friend std::ostream & operator<<(std::ostream &os, const Cutter &c) {
+		return c.toOutStream(os);
+	}
+	
 	static CutterPtr buildCutter(const CutterDescription &desc);
 };
 

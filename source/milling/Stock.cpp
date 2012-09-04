@@ -10,6 +10,7 @@
 #include <vector>
 #include <deque>
 #include <stdexcept>
+#include <cmath>
 
 #include <boost/chrono.hpp>
 #include <boost/container/slist.hpp>
@@ -216,8 +217,15 @@ bool Stock::canPushLevel(_Octree::LeafPtr leaf) const {
 	return leaf->getDepth() < this->MAX_DEPTH;
 }
 
+Eigen::Vector3d Stock::getResolution() const {
+	return (this->EXTENT / std::pow(2.0, (double)this->MAX_DEPTH));
+}
+
 std::ostream & operator<<(std::ostream &os, const Stock &stock) {
-	os << stock.MODEL;
+	os << "STOCK(minBlockSize=["
+			<< stock.getResolution().transpose()
+			<< "])"
+			<< std::endl << stock.MODEL;
 	
 	return os;
 }

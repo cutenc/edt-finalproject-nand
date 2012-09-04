@@ -78,6 +78,12 @@ public:
 		return -distance;
 	}
 	
+	virtual std::ostream & toOutStream(std::ostream &os) const {
+		os << "CYLINDER(diameter=" << this->DIAMETER << "; height=" << this->LENGTH << ")";
+		
+		return os;
+	}
+	
 private:
 	
 	inline static double sqr(double x) {

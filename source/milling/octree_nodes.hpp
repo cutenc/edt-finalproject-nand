@@ -77,6 +77,10 @@ public:
 	}
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const =0;
+	
+	friend std::ostream & operator<<(std::ostream & os, const OctreeNode& node) {
+		return node.toOutStream(os);
+	}
 };
 
 
@@ -104,14 +108,22 @@ public:
 		return BRANCH_NODE;
 	}
 	
+	bool hasChild(u_char i) const {
+		assert(CommonUtils::isBetween(i, 0, N_CHILDREN));
+		
+		return children[i] != NULL;
+	}
+	
 	OctreeNodePtr getChild(u_char i) const {
 		assert(CommonUtils::isBetween(i, 0, N_CHILDREN));
+		assert(hasChild(i));
 		
 		return children[i];
 	}
 	
 	void deleteChild(u_char i) {
 		assert(CommonUtils::isBetween(i, 0, N_CHILDREN));
+		assert(hasChild(i));
 		
 		// TODO implement swapping & dirtying
 		delete children[i];
@@ -134,7 +146,7 @@ public:
 		for (u_char i = 0; i < this->N_CHILDREN; i++) {
 			os << std::endl << tabs << "|->" << (int)i << "-";
 			if (this->children[i] != NULL) {
-				this->children[i]->toOutStream(os);
+				os << *(this->children[i]);
 			} else {
 				os << "DELETED";
 			}

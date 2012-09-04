@@ -67,7 +67,7 @@ public:
 	static std::string extractProperty(const std::string &line, const std::string &propName, 
 			const std::string &propValuePattern, bool icase = true) throw(std::runtime_error);
 	
-	static std::string repeat(std::string pattern, u_int nTimes);
+	static std::string repeat(const std::string &pattern, u_int nTimes);
 };
 
 
@@ -75,6 +75,7 @@ class GeometryUtils {
 	
 public:
 	
+	inline
 	static void checkExtent(const Eigen::Vector3d extent) throw(std::invalid_argument) {
 		double eps = std::numeric_limits<double>::epsilon();
 		if (extent[0] < eps || extent[1] < eps || extent[2] < eps) {
@@ -99,6 +100,7 @@ public:
 	 * @param b
 	 * @return
 	 */
+	inline
 	static bool isBetween(int x, int a, int b) {
 		return (x >= a) && (x < b);
 	}

@@ -33,7 +33,7 @@ public:
 	}
 	
 	friend std::ostream &operator<<(std::ostream &os, const EulerAngles &ea) {
-		os << "(" << ea.ALPHA << "," << ea.BETA << "," << ea.GAMMA << ")";
+		os << ea.ALPHA << " " << ea.BETA << " " << ea.GAMMA;
 		return os;
 	}
 	

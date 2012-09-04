@@ -11,6 +11,7 @@
 #include <ostream>
 
 #include <boost/chrono.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include <Eigen/Geometry>
 
@@ -79,6 +80,12 @@ struct IntersectionResult {
 
 class Stock {
 	
+public:
+	
+	typedef boost::shared_ptr< Stock > StockPtr;
+	
+private:
+	
 	typedef Octree< VoxelInfo > _Octree;
 	
 	const u_int MAX_DEPTH;
@@ -91,6 +98,8 @@ public:
 	virtual ~Stock();
 	
 	IntersectionResult intersect(Cutter::CutterPtr cutter, const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation);
+	
+	Eigen::Vector3d getResolution() const;
 	
 private:
 	

@@ -196,28 +196,29 @@ public:
 	 */
 	LeavesDequePtr getIntersectingLeaves(const SimpleBox &obb,
 			const Eigen::Vector3d &traslation,
-			const Eigen::Matrix3d &rotation) const {
+			const Eigen::Matrix3d &rotation) {
 		
 		// TODO acquire ReadLock
 		
-		typedef boost::shared_ptr< std::queue< OctreeNodePtr > > NodeQueuePtr;
+		typedef boost::shared_ptr< std::deque< OctreeNodePtr > > NodeQueuePtr;
 		
-		NodeQueuePtr currLvlNodes = boost::make_shared< std::queue< OctreeNodePtr > >();
+		NodeQueuePtr currLvlNodes = boost::make_shared< std::deque< OctreeNodePtr > >();
 		for (int i = 0; i < BranchNode::N_CHILDREN; i++) {
-			currLvlNodes->push(getRoot()->getChild(i));
+			if (getRoot()->hasChild(i))
+				currLvlNodes->push_back(getRoot()->getChild(i));
 		}
 		
 		LeavesDequePtr intersectingLeaves = boost::make_shared< std::deque< LeafPtr > >();
 		
-		// used for caching current level SimpleBox
-		boost::shared_ptr<SimpleBox> currBox = boost::make_shared< SimpleBox >(EXTENT / 2.0);
 		u_int currDepth = 1;
+		// used for caching current level SimpleBox
+		SimpleBoxPtr currBox = BOX_CACHE.getSimpleBox(currDepth);
 		
-		NodeQueuePtr nextLvlNodes = boost::make_shared< std::queue< OctreeNodePtr > >();
+		NodeQueuePtr nextLvlNodes = boost::make_shared< std::deque< OctreeNodePtr > >();
 		
 		do {
-			OctreeNodePtr currNode = currLvlNodes->front();
-			currLvlNodes->pop();
+			OctreeNodePtr currNode = currLvlNodes->back();
+			currLvlNodes->pop_back();
 			
 			Eigen::Vector3d currTraslation = traslation - currNode->getTraslation();
 			
@@ -238,7 +239,8 @@ public:
 						BranchPtr bnp = dynamic_cast<BranchPtr>(currNode);
 						// add children to nextLvlNodes
 						for (int i = 0; i < BranchNode::N_CHILDREN; i++) {
-							nextLvlNodes->push(bnp->getChild(i));
+							if (bnp->hasChild(i))
+								nextLvlNodes->push_back(bnp->getChild(i));
 						}
 						break;
 					}
@@ -252,10 +254,10 @@ public:
 			if (currLvlNodes->empty()) {
 				// finished checking current depth, switch to next level
 				currLvlNodes = nextLvlNodes;
-				nextLvlNodes = boost::make_shared< std::queue< OctreeNodePtr > >();
+				nextLvlNodes = boost::make_shared< std::deque< OctreeNodePtr > >();
 				
 				currDepth++;
-				currBox = boost::make_shared< SimpleBox >(currBox->getHalfExtent());
+				currBox = BOX_CACHE.getSimpleBox(currDepth);
 			}
 			
 		} while (!currLvlNodes->empty());
@@ -396,8 +398,8 @@ private:
 	}
 	
 	friend std::ostream & operator<<(std::ostream &os, const Octree &tree) {
-		os << "Octree[" << tree.EXTENT.transpose() << "]" << std::endl << "->";
-		tree.ROOT->toOutStream(os);
+		os << "Octree(extent=[" << tree.EXTENT.transpose() << "])" << "->"
+				<< *tree.ROOT;
 		
 		return os;
 	}

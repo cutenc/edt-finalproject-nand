@@ -40,7 +40,7 @@ public:
 	}
 	
 	friend std::ostream &operator<<(std::ostream &os, const Point3D &p) {
-		os << "(" << p << ")";
+		os << p.point.transpose();
 		return os;
 	}
 };

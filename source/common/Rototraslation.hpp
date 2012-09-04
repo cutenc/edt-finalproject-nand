@@ -20,7 +20,7 @@ public:
 	virtual ~Rototraslation();
 	
 	friend std::ostream &operator<<(std::ostream &os, const Rototraslation &r) {
-		os << "[T:" << r.TRASLATION << "R:" << r.ROTATION << "]";
+		os << "ROTRAS(t=[" << r.TRASLATION << "]; r=[" << r.ROTATION << "])";
 		return os;
 	}
 	

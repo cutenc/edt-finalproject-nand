@@ -1,0 +1,16 @@
+[PRODUCT]
+X = 2
+Y = 2
+Z = 2
+[TOOL]
+Type = cylinder
+Height = 2
+Diameter = 1
+[POINTS]
+# Valori separati da punto e virgola per posizione (nel mondo) di prodotto
+# e dell’utensile, espressi con sei valori, tre per le traslazioni e tre
+# per le rotazioni (angoli di eulero).
+# <----- TRASL STOCK ----> <--- ROT STOCK ---> <---- TRASL CUTTER ----> <-- ROT CUTTER -->
+# 0.000; 0.000; 0.000;    0.000; 0.000; 0.000;    0.000; 0.000; 0.000;    0.000; 0.000; 0.000
+0.000; 0.000; 0.000;    0.000; 0.000; 0.000;    1.5; 1; 1;    0.000; -1.570796326794896; 0.000
+0.000; 0.000; 0.000;    0.000; 0.000; 0.000;    1.5; 1; 1;    0.000; 1.570796326794896; 0.000

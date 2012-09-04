@@ -32,6 +32,12 @@ public:
 	
 	Rototraslation STOCK, CUTTER;
 	
+	friend std::ostream & operator<<(std::ostream &os, const CNCMove &move) {
+		os << "STOCK(" << move.STOCK << "); CUTTER(" << move.CUTTER << ")";
+		
+		return os;
+	}
+	
 private:
 	static Point3D buildTraslation(std::vector< std::string >::iterator it) {
 		

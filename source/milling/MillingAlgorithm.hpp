@@ -8,18 +8,28 @@
 #ifndef MILLINGALGORITHM_HPP_
 #define MILLINGALGORITHM_HPP_
 
+#include <ostream>
+
 #include "configuration/ConfigFileParser.hpp"
-#include "cutters.hpp"
+#include "Cutter.hpp"
 #include "Stock.hpp"
 
 struct MillingResult {
 	
 public:
-	MillingResult(IntersectionResult res, bool water) :
-			intersection(res), water(water) { }
+	MillingResult(u_int stepNumber, IntersectionResult res, bool water) :
+			stepNumber(stepNumber), intersection(res), water(water) { }
 	
+	u_int stepNumber;
 	IntersectionResult intersection;
 	bool water;
+	
+	friend std::ostream & operator<<(std::ostream &os, const MillingResult &mr) {
+		os << "#" << mr.stepNumber << " [" << ((mr.water) ? "X" : " ") << "] water" << std::endl;
+		os << mr.intersection;
+		
+		return os;
+	}
 };
 
 class MillingAlgorithm {
@@ -27,7 +37,11 @@ class MillingAlgorithm {
 	const u_int MAX_OCTREE_DEPTH;
 	CNCMoveIterator MOVE_IT, MOVE_END;
 	
+	double waterFluxWasteCount;
 	u_int stepNumber;
+	
+	Cutter::CutterPtr cutter;
+	Stock::StockPtr stock;
 	
 public:
 	MillingAlgorithm(const ConfigFileParser &cfp, u_int maxOctreeDepth);
@@ -37,10 +51,13 @@ public:
 	
 	bool hasFinished();
 	u_int getStepNumber();
+	Eigen::Vector3d getResolution() const;
+	
+	friend std::ostream & operator<<(std::ostream &os, const MillingAlgorithm &ma);
 	
 private:
 	
-	IntersectionResult doIntersection(CNCMove move);
+	IntersectionResult doIntersection(const CNCMove &move);
 	
 };
 

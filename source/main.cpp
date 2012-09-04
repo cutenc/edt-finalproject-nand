@@ -20,6 +20,7 @@
 #include "configuration/CutterDescription.hpp"
 #include "configuration/ConfigFileParser.hpp"
 #include "configuration/CommandLineParser.hpp"
+#include "milling/MillingAlgorithm.hpp"
 #include "milling/SimpleBox.hpp"
 #include "milling/Octree.hpp"
 #include "milling/Stock.hpp"
@@ -190,7 +191,52 @@ int main(int argc, const char **argv) {
 	/* 
 	 * ******** Stock intersect TEST ********
 	 */
+//	CommandLineParser clp(argc, argv);
+//	
+//	if (clp.isHelpAsked()) {
+//		clp.printUsage(cout);
+//		return 0;
+//	}
+//	
+//	u_int MAX_DEPTH = clp.getMaxOctreeHeight();
+//	
+//	cout << "inizio con MAX_DEPTH=" << MAX_DEPTH << endl;
+//	
+//	RectCuboidPtr rectCuboid = boost::make_shared< RectCuboid >(2.0, 2.0, 2.0);
+//	StockDescription stockDesc(rectCuboid);
+//	
+//	Stock stock(stockDesc, MAX_DEPTH);
+//	
+//	cout << "stock creato" << endl;
+//	
+//	GeometryPtr cylinderPtr = boost::make_shared< Cylinder >(1.0 , 2.0);
+//	Color cutterColor;
+//	CutterDescription cutterDesc(cylinderPtr, cutterColor);
+//	
+//	Cutter::CutterPtr cutter = Cutter::buildCutter(cutterDesc);
+//	
+//	cout << "cutter creato" << endl;
+//	
+//	Vector3d traslation(1, 1, 1.5);
+// //	Vector3d traslation(Vector3d::Zero());
+//	Matrix3d rotation;
+//	rotation = AngleAxisd(0, Vector3d::UnitX())
+//			* AngleAxisd(0, Vector3d::UnitY())
+//			* AngleAxisd(0, Vector3d::UnitZ());
+//	
+//	cout << "trasl/rot cutter rispetto a stock creati" << endl;
+//	
+//	cout << "now performing intersection" << endl;
+//	IntersectionResult res = stock.intersect(cutter, traslation, rotation);
+//	
+//	cout << "Results: " << res << endl;
+//	
+//	cout << "Resulting stock: " << stock << endl;
 	
+	
+	/* 
+	 * ******** Milling algorithm TEST ********
+	 */
 	CommandLineParser clp(argc, argv);
 	
 	if (clp.isHelpAsked()) {
@@ -198,45 +244,17 @@ int main(int argc, const char **argv) {
 		return 0;
 	}
 	
-	u_int MAX_DEPTH = clp.getMaxOctreeHeight();
+	u_int max_depth = clp.getMaxOctreeHeight();
+	std::string configFile = clp.getConfigFile();
 	
-	cout << "inizio con MAX_DEPTH=" << MAX_DEPTH << endl;
+	ConfigFileParser cfp(configFile);
+	MillingAlgorithm millingAlg(cfp, max_depth);
 	
-	RectCuboidPtr rectCuboid = boost::make_shared< RectCuboid >(2.0, 2.0, 2.0);
-	StockDescription stockDesc(rectCuboid);
-	
-	Stock stock(stockDesc, MAX_DEPTH);
-	
-	cout << "stock creato" << endl;
-	
-	GeometryPtr cylinderPtr = boost::make_shared< Cylinder >(1.0 , 2.0);
-	Color cutterColor;
-	CutterDescription cutterDesc(cylinderPtr, cutterColor);
-	
-	Cutter::CutterPtr cutter = Cutter::buildCutter(cutterDesc);
-	
-	cout << "cutter creato" << endl;
-	
-	Vector3d traslation(1, 1, 1.5);
- //	Vector3d traslation(Vector3d::Zero());
-	Matrix3d rotation;
-	rotation = AngleAxisd(0, Vector3d::UnitX())
-			* AngleAxisd(0, Vector3d::UnitY())
-			* AngleAxisd(0, Vector3d::UnitZ());
-	
-	cout << "trasl/rot cutter rispetto a stock creati" << endl;
-	
-	cout << "now performing intersection" << endl;
-	IntersectionResult res = stock.intersect(cutter, traslation, rotation);
-	
-	cout << "Results: " << res << endl;
-	
-	cout << "Resulting stock: " << stock << endl;
-	
-	
-	
-	
-	
+	cout << millingAlg << std::endl;
+	while(!millingAlg.hasFinished()) {
+		MillingResult res = millingAlg.step();
+		cout << res << std::endl;
+	}
 	
 	/* ****************
 	 * *** MAIN *******
