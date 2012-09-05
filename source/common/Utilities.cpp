@@ -29,23 +29,22 @@ void FileUtils::openFile(const std::string &filename, std::ifstream &ifs) {
 	
 }
 
-readData FileUtils::readNextValidLine(std::istream& ifs) throw(std::runtime_error) {
+FileUtils::ReadData FileUtils::readNextValidLine(std::istream& ifs) throw(std::runtime_error) {
 	std::string str;
 	std::streampos lastReadPos;
 	
-	do {
-		if (!ifs.good())
-			throw std::runtime_error("unexpected EOF");
+	lastReadPos = ifs.tellg();
+	
+	while(std::getline(ifs, str)) {
+		if (!isSkippableLine(str)) {
+			return FileUtils::ReadData(str, lastReadPos);
+		} else {
+			lastReadPos = ifs.tellg();
+		}
 		
-		lastReadPos = ifs.tellg();
-		std::getline(ifs, str);
-	} while (isSkippableLine(str));
+	}
 	
-	readData data;
-	data.validLine = str;
-	data.lastReadPos = lastReadPos;
-	
-	return data;
+	throw std::runtime_error("EOF reached");
 }
 
 bool FileUtils::isSkippableLine(std::string &line) {

@@ -11,63 +11,67 @@
 #include <iterator>
 #include <stdexcept>
 
-/**
- *            Z     Y
- *            |    / 
- *        H---------G
- *       /|   |  / /|
- *      E---------F |
- *      | |   |/  | |
- *      | |   O---|-|---> X
- *      | D-------|-C
- *      |/        |/
- *      A---------B
- * 
- * Origin is placed in the box centroid.
- * Enum values are contiguous so it is legal to iterate through them or use as
- * array indexes
- */
-enum Corner {
+class Corner {
 	
-	/** A */
-	BottomFrontLeft = 0,
-	
-	/** B */
-	BottomFrontRight,
-	
-	/** C */
-	BottomRearRight,
-	
-	/** D */
-	BottomRearLeft,
-	
-	/** E */
-	UpperFrontLeft,
-	
-	/** F */
-	UpperFrontRight,
-	
-	/** G */
-	UpperRearRight,
-	
-	/** H */
-	UpperRearLeft
-};
-
-class CornerIterator : public std::iterator<std::input_iterator_tag, Corner> {
-
 public:
 	
 	static const u_char N_CORNERS = 8;
 	
-private:
-	static const Corner END_FLAG = static_cast<Corner>(-1);
+	/**
+	 *            Z     Y
+	 *            |    / 
+	 *        H---------G
+	 *       /|   |  / /|
+	 *      E---------F |
+	 *      | |   |/  | |
+	 *      | |   O---|-|---> X
+	 *      | D-------|-C
+	 *      |/        |/
+	 *      A---------B
+	 * 
+	 * Origin is placed in the box centroid.
+	 * Enum values are contiguous so it is legal to iterate through them or use as
+	 * array indexes
+	 */
+	enum CornerType {
+		
+		/** A */
+		BottomFrontLeft = 0,
+		
+		/** B */
+		BottomFrontRight,
+		
+		/** C */
+		BottomRearRight,
+		
+		/** D */
+		BottomRearLeft,
+		
+		/** E */
+		UpperFrontLeft,
+		
+		/** F */
+		UpperFrontRight,
+		
+		/** G */
+		UpperRearRight,
+		
+		/** H */
+		UpperRearLeft
+	};
+	
+};
 
-	Corner curr;
+class CornerIterator : public std::iterator<std::input_iterator_tag, Corner> {
+
+private:
+	static const Corner::CornerType END_FLAG = static_cast<Corner::CornerType>(-1);
+
+	Corner::CornerType curr;
 	
 public:
 	CornerIterator() : curr(END_FLAG) { }
-	CornerIterator(Corner c) : curr(c) { }
+	CornerIterator(Corner::CornerType c) : curr(c) { }
 	CornerIterator(const CornerIterator &oi) : curr(oi.curr) { }
 	
 	virtual ~CornerIterator() { }
@@ -77,11 +81,11 @@ public:
 			throw std::runtime_error("iterator ended: cannot ++");
 		}
 		
-		if (this->curr == UpperRearLeft) {
+		if (this->curr == Corner::UpperRearLeft) {
 			this->curr = CornerIterator::END_FLAG;
 		} else {
 			int tmp = this->curr;
-			this->curr = static_cast<Corner>(++tmp);
+			this->curr = static_cast<Corner::CornerType>(++tmp);
 		}
 		
 		return *this;
@@ -95,7 +99,7 @@ public:
 		return this->curr != oi.curr;
 	}
 	
-	Corner operator*() {
+	Corner::CornerType operator*() {
 		if (isEnded()) {
 			throw std::runtime_error("iterator ended: cannot dereference it");
 		}
@@ -103,7 +107,7 @@ public:
 		return this->curr;
 	}
 	
-	static CornerIterator begin() { return CornerIterator(BottomFrontLeft); }
+	static CornerIterator begin() { return CornerIterator(Corner::BottomFrontLeft); }
 	static CornerIterator end() { return CornerIterator(); }
 	
 private:

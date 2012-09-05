@@ -51,17 +51,35 @@ public:
 		return os;
 	}
 	
-	Eigen::Vector3d getCorner(Corner type,
+	/**
+	 * 
+	 * @param type
+	 * @param traslation the traslation that have to be applied to returned
+	 * points (for example if given box is placed somewhere in space different
+	 * from the origin)
+	 * @return
+	 */
+	Eigen::Vector3d getCorner(Corner::CornerType type,
 			const Eigen::Vector3d &traslation = Eigen::Vector3d::Zero()) {
 		return getSimpleCorner(type) + traslation;
 	}
 	
-	Eigen::Vector3d getCorner(Corner type,
+	Eigen::Vector3d getCorner(Corner::CornerType type,
 			const Eigen::Matrix3d &rotation) {
 		return getRotatedCorner(type, rotation);
 	}
 	
-	Eigen::Vector3d getCorner(Corner type,
+	/**
+	 * 
+	 * @param type
+	 * @param traslation the tralsation that have to be applied to returned
+	 * points: note that SimpleBox origin is ideally placed in its centroid.
+	 * @param rotation the rotation that have to be applied to returned points
+	 * (conversion from box basis - that is normals to its three dimensions - to 
+	 * another one): note that Corner::CornerType is intended prior to rotation
+	 * @return
+	 */
+	Eigen::Vector3d getCorner(Corner::CornerType type,
 			const Eigen::Vector3d &traslation,
 			const Eigen::Matrix3d &rotation) {
 		return getRotatedCorner(type, rotation) + traslation;
@@ -184,38 +202,38 @@ public:
 	
 private:
 	
-	Eigen::Vector3d getSimpleCorner(Corner type) const {
+	Eigen::Vector3d getSimpleCorner(Corner::CornerType type) const {
 		
 		Eigen::Vector3d corner = this->EXTENT;
 		
 		switch (type) {
-			case BottomFrontLeft:
+			case Corner::BottomFrontLeft:
 				corner[0] *= -1;
 				corner[1] *= -1;
 				corner[2] *= -1;
 				break;
-			case BottomFrontRight:
+			case Corner::BottomFrontRight:
 				corner[1] *= -1;
 				corner[2] *= -1;
 				break;
-			case BottomRearLeft:
+			case Corner::BottomRearLeft:
 				corner[0] *= -1;
 				corner[2] *= -1;
 				break;
-			case BottomRearRight:
+			case Corner::BottomRearRight:
 				corner[2] *= -1;
 				break;
-			case UpperFrontLeft:
+			case Corner::UpperFrontLeft:
 				corner[0] *= -1;
 				corner[1] *= -1;
 				break;
-			case UpperFrontRight:
+			case Corner::UpperFrontRight:
 				corner[1] *= -1;
 				break;
-			case UpperRearLeft:
+			case Corner::UpperRearLeft:
 				corner[0] *= -1;
 				break;
-			case UpperRearRight:
+			case Corner::UpperRearRight:
 				// ok: all positive
 				break;
 				
@@ -227,7 +245,7 @@ private:
 		return corner;
 	}
 	
-	Eigen::Vector3d getRotatedCorner(Corner type, const Eigen::Matrix3d &rotation) const {
+	Eigen::Vector3d getRotatedCorner(Corner::CornerType type, const Eigen::Matrix3d &rotation) const {
 		return rotation * getSimpleCorner(type);
 	}
 	

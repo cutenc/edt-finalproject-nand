@@ -19,12 +19,12 @@
 
 class Voxel {
 	
-	Eigen::Vector3d POINTS[CornerIterator::N_CORNERS];
+	Eigen::Vector3d POINTS[Corner::N_CORNERS];
 	
 public:
 	
 	Voxel(const std::vector< Eigen::Vector3d > &points) {
-		if (points.size() != CornerIterator::N_CORNERS)
+		if (points.size() != Corner::N_CORNERS)
 			throw std::invalid_argument("wrong number of points");
 		
 		int i = 0;
@@ -36,14 +36,14 @@ public:
 	
 	virtual ~Voxel() { }
 	
-	Eigen::Vector3d getCorner(Corner c) {
+	Eigen::Vector3d getCorner(Corner::CornerType c) {
 		return getCorner(static_cast<u_char>(c));
 	}
 	
 private:
 	
 	Eigen::Vector3d getCorner(u_char i) {
-		assert(CommonUtils::isBetween(i, 0, CornerIterator::N_CORNERS));
+		assert(CommonUtils::isBetween(i, 0, Corner::N_CORNERS));
 		
 		return POINTS[i];
 	}

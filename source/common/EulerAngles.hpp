@@ -23,11 +23,10 @@ public:
 	
 	Eigen::Matrix3d asEigen() {
 		Eigen::Matrix3d mat;
-		double pi = boost::math::constants::pi<double>();
 		
-		mat = Eigen::AngleAxisd(ALPHA * pi, Eigen::Vector3d::UnitX())
-				* Eigen::AngleAxisd(BETA * pi, Eigen::Vector3d::UnitY())
-				* Eigen::AngleAxisd(GAMMA * pi, Eigen::Vector3d::UnitZ());
+		mat = Eigen::AngleAxisd(GAMMA, Eigen::Vector3d::UnitZ())
+			* Eigen::AngleAxisd(BETA, Eigen::Vector3d::UnitY())
+			* Eigen::AngleAxisd(ALPHA, Eigen::Vector3d::UnitX());
 		
 		return mat;
 	}

@@ -204,13 +204,13 @@ double Stock::intersectedVolume(const SimpleBox &box, const VoxelInfo &info) con
 	if (nInsideCorners == 0)
 		return 0;
 	
-	if (nInsideCorners == CornerIterator::N_CORNERS)
+	if (nInsideCorners == Corner::N_CORNERS)
 		return box.getVolume();
 	
 	// some corners are inside and some are outside
 	
 	// TODO maybe we should implement something more accurate
-	return box.getVolume() * nInsideCorners / (double) CornerIterator::N_CORNERS;
+	return box.getVolume() * nInsideCorners / (double) Corner::N_CORNERS;
 }
 
 bool Stock::canPushLevel(_Octree::LeafPtr leaf) const {
@@ -222,7 +222,7 @@ Eigen::Vector3d Stock::getResolution() const {
 }
 
 std::ostream & operator<<(std::ostream &os, const Stock &stock) {
-	os << "STOCK(minBlockSize=["
+	os << "STOCK(maxDepth=" << stock.MAX_DEPTH <<";minBlockSize=["
 			<< stock.getResolution().transpose()
 			<< "])"
 			<< std::endl << stock.MODEL;

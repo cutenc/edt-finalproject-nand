@@ -18,11 +18,11 @@
 
 class VoxelInfo {
 	
-	double insideness[CornerIterator::N_CORNERS];
+	double insideness[Corner::N_CORNERS];
 	
 public:
 	VoxelInfo() {
-		for (int i = 0; i < CornerIterator::N_CORNERS; ++i) {
+		for (int i = 0; i < Corner::N_CORNERS; ++i) {
 			insideness[i] = -CommonUtils::INFINITE;
 		}
 	}
@@ -30,7 +30,7 @@ public:
 	virtual ~VoxelInfo() { }
 	
 	bool isIntersecting() const {
-		for (u_char i = 0; i < CornerIterator::N_CORNERS; ++i) {
+		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
 			if (isInside(i)) {
 				return true;
 			}
@@ -39,7 +39,7 @@ public:
 	}
 	
 	bool isContained() const {
-		for (u_char i = 0; i < CornerIterator::N_CORNERS; ++i) {
+		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
 			if (!isInside(i)) {
 				return false;
 			}
@@ -48,13 +48,13 @@ public:
 		return true;
 	}
 	
-	bool isInside(Corner c) const {
+	bool isInside(Corner::CornerType c) const {
 		return isInside(static_cast<u_char>(c));
 	}
 	
 	u_char getInsideCornersNumber() const {
 		u_char count = 0;
-		for (u_char i = 0; i < CornerIterator::N_CORNERS; ++i) {
+		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
 			if (isInside(i)) {
 				count++;
 			}
@@ -63,16 +63,16 @@ public:
 		return count;
 	}
 	
-	double getInsideness(Corner c) const {
+	double getInsideness(Corner::CornerType c) const {
 		return getInsideness(static_cast<u_char>(c));
 	}
 	
-	void updateInsideness(Corner c, double insideness) {
+	void updateInsideness(Corner::CornerType c, double insideness) {
 		return updateInsideness(static_cast<u_char>(c), insideness);
 	}
 	
 	VoxelInfo & operator+=(const VoxelInfo &v) {
-		for (int i = 0; i < CornerIterator::N_CORNERS; ++i) {
+		for (int i = 0; i < Corner::N_CORNERS; ++i) {
 			this->updateInsideness(i, v.getInsideness(i));
 		}
 		
@@ -85,7 +85,7 @@ public:
 	
 	friend std::ostream & operator<<(std::ostream &os, const VoxelInfo &vinfo) {
 		os << "[";
-		for (u_char i = 0; i < CornerIterator::N_CORNERS; ++i) {
+		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
 			os << vinfo.isInside(i); 
 		}
 		os << "]";
@@ -96,19 +96,19 @@ public:
 private:
 	
 	bool isInside(u_char i) const {
-		assert(CommonUtils::isBetween(i, 0, CornerIterator::N_CORNERS));
+		assert(CommonUtils::isBetween(i, 0, Corner::N_CORNERS));
 		
 		return insideness[i] >= 0;
 	}
 	
 	double getInsideness(u_char i) const {
-		assert(CommonUtils::isBetween(i, 0, CornerIterator::N_CORNERS));
+		assert(CommonUtils::isBetween(i, 0, Corner::N_CORNERS));
 		
 		return insideness[i];
 	}
 	
 	void updateInsideness(u_char i, double newInsideness) {
-		assert(CommonUtils::isBetween(i, 0, CornerIterator::N_CORNERS));
+		assert(CommonUtils::isBetween(i, 0, Corner::N_CORNERS));
 		
 		insideness[i] = std::max< double >(insideness[i], newInsideness);
 	}

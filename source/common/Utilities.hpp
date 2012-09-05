@@ -15,14 +15,18 @@
 
 #include <Eigen/Geometry>
 
-typedef struct _readData {
-	std::string validLine;
-	std::streampos lastReadPos;
-} readData;
-
 class FileUtils {
 	
 public:
+	
+	struct ReadData {
+		std::string validLine;
+		std::streampos lastReadPos;
+		
+		ReadData() { }
+		ReadData(const std::string &line, std::streampos lastReadPos) :
+				validLine(line), lastReadPos(lastReadPos) { }
+	};
 	
 	static void openFile(const std::string &filename, std::ifstream &ifs);
 	
@@ -42,7 +46,7 @@ public:
 	 * @throw std::runtime_error if there's no other valid lines in the given
 	 * stream.
 	 */
-	static readData readNextValidLine(std::istream &) throw(std::runtime_error);
+	static ReadData readNextValidLine(std::istream &) throw(std::runtime_error);
 	
 };
 

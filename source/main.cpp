@@ -41,7 +41,7 @@ int main(int argc, const char **argv) {
 	/* 
 	 * ******** ConfigFileParser TEST ********
 	 */
-//	ConfigFileParser confManager("positions.txt");
+//	ConfigFileParser confManager("testPositions.txt");
 //	cout << "file read" << endl;
 //	CutterDescriptionPtr cutter = confManager.getCutterDescription();
 //	cout << "Cutter: " << cutter->getGeometry()->getType() << endl;
@@ -101,6 +101,47 @@ int main(int argc, const char **argv) {
 //		cout << "corn#" << *it << " b1: " << b1.getCorner(*it).transpose()
 //				<< "; b2: " << b2.getCorner(*it, traslation, rot).transpose() << endl;
 //	}
+	
+	/* 
+	 * ******** SimpleBox TEST 2 ********
+	 */
+//	SimpleBox b1(Eigen::Vector3d(2.0, 2.0, 2.0));
+//	
+//	cout << "corners of " << b1 << "_ORG:" << endl;
+//	for (CornerIterator it = CornerIterator::begin(); it != CornerIterator::end(); ++it) {
+//		cout << "corn#" << *it << ": " << b1.getCorner(*it).transpose() << endl;
+//	}
+//	
+//	Vector3d traslation(0, 0, 0);
+//	
+//	Matrix3d rot;
+// //	rot = AngleAxisd(0, Vector3d::UnitX())
+// //			* AngleAxisd(-0.5 * M_PI, Vector3d::UnitY())
+// //			* AngleAxisd(0.5 * M_PI, Vector3d::UnitZ());
+//	rot = AngleAxisd(0.5 * M_PI, Vector3d::UnitZ())
+//			* AngleAxisd(-0.5 * M_PI, Vector3d::UnitY())
+//			* AngleAxisd(0, Vector3d::UnitX());
+//			
+//	cout << "rotation: " << endl << rot << endl;
+//	cout << "traslation: " << traslation.transpose() << endl;
+//	
+//	cout << "corners of " << b1 << ":" << endl;
+//	for (CornerIterator it = CornerIterator::begin(); it != CornerIterator::end(); ++it) {
+//		cout << "corn#" << *it << ": " << b1.getCorner(*it, traslation, rot).transpose() << endl;
+//	}
+//	
+//	rot = AngleAxisd(0, Vector3d::UnitX())
+//			* AngleAxisd(0 * M_PI, Vector3d::UnitY())
+//			* AngleAxisd(0.5 * M_PI, Vector3d::UnitZ());
+//	
+//	cout << "rotation: " << endl << rot << endl;
+//	cout << "traslation: " << traslation.transpose() << endl;
+//	
+//	cout << "corners of " << b1 << ":" << endl;
+//	for (CornerIterator it = CornerIterator::begin(); it != CornerIterator::end(); ++it) {
+//		cout << "corn#" << *it << ": " << b1.getCorner(*it, traslation, rot).transpose() << endl;
+//	}
+	
 	
 	/* 
 	 * ******** Octree getIntersectingLeaves TEST ********
@@ -254,7 +295,10 @@ int main(int argc, const char **argv) {
 	while(!millingAlg.hasFinished()) {
 		MillingResult res = millingAlg.step();
 		cout << res << std::endl;
+		cout << millingAlg << std::endl;
 	}
+	
+	
 	
 	/* ****************
 	 * *** MAIN *******

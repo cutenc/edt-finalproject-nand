@@ -69,7 +69,7 @@ private:
 	}
 
 	friend std::istream &operator>>(std::istream &is, CNCMove &move) {
-		readData data;
+		FileUtils::ReadData data;
 		try {
 			data = FileUtils::readNextValidLine(is);
 		} catch (const std::runtime_error &e) {

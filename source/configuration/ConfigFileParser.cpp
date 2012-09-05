@@ -154,7 +154,7 @@ void ConfigFileParser::sectionParser_tool(std::ifstream& ifs) {
 	
 	// 3- find an _optional_ color specification
 	Color color;
-	readData data = FileUtils::readNextValidLine(ifs);
+	FileUtils::ReadData data = FileUtils::readNextValidLine(ifs);
 	try {
 		std::string colorStr = StringUtils::extractProperty(data.validLine, "color", "0x[\\da-f]{6}", true);
 		
