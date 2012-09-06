@@ -49,10 +49,6 @@ struct IntersectionResult {
 		intersection_approx_skips(0), elapsedTime(0)
 	{ }
 	
-	bool isOutOfStock() const {
-		return this->analyzed_leaves == this->intersection_approx_errors;
-	}
-	
 	boost::chrono::microseconds meanTimePerLeaf() const {
 		if (this->analyzed_leaves == 0)
 			return boost::chrono::microseconds(0);
@@ -70,8 +66,7 @@ struct IntersectionResult {
 				<< "\t#approx_error: " << res.intersection_approx_errors << std::endl
 				<< "\t#approx_skips: " << res.intersection_approx_skips << std::endl
 				<< "\t#elapsed time: " << res.elapsedTime.count() / 1000.0 << "s" << std::endl
-				<< "\t#mean time per leaf: " << res.meanTimePerLeaf().count() << "us" << std::endl
-				<< "\toutOfStock?: " << res.isOutOfStock()
+				<< "\t#mean time per leaf: " << res.meanTimePerLeaf().count() << "us"
 		;
 		
 		return os;

@@ -23,7 +23,7 @@ public:
 	
 	virtual ~Point3D();
 	
-	Eigen::Vector3d asEigen() {
+	Eigen::Vector3d asEigen() const {
 		return point;
 	}
 	

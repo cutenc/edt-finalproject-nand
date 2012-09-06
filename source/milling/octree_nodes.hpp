@@ -26,6 +26,7 @@ enum OctreeNodeType {
 
 class OctreeNode;
 typedef OctreeNode * OctreeNodePtr;
+typedef const OctreeNode * OctreeNodeConstPtr;
 
 class OctreeNode {
 	

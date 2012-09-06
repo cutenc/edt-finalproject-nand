@@ -171,13 +171,13 @@ public:
 		// TODO release readLock
 	}
 	
-	Voxel getVoxel(LeafConstPtr leaf) {
-		SimpleBoxPtr box = BOX_CACHE.getSimpleBox(leaf->getDepth());
+	Voxel getVoxel(OctreeNodeConstPtr node) {
+		SimpleBoxPtr box = BOX_CACHE.getSimpleBox(node->getDepth());
 		std::vector< Eigen::Vector3d > points;
 		
 		CornerIterator cIt = CornerIterator::begin();
 		for (; cIt != CornerIterator::end(); ++cIt) {
-			points.push_back(box->getCorner(*cIt, leaf->getTraslation()));
+			points.push_back(box->getCorner(*cIt, node->getTraslation()));
 		}
 		
 		return Voxel(points);

@@ -73,16 +73,19 @@ IntersectionResult MillingAlgorithm::doIntersection(const CNCMove &move) {
 	
 	Point3D stockTrasl_world = move.STOCK.TRASLATION,
 			cutterTrasl_world = move.CUTTER.TRASLATION;
-	
-	Eigen::Vector3d cutterTrasl_stock = cutterTrasl_world.asEigen() -
-			stockTrasl_world.asEigen();
-	
+
 	/* nomenclature: FooRot_Bar => rotate Foo coordinates into Bar ones,
-	 * that is translate Foo points into Bar points, that is it's a matrix
-	 * having on the columns Foo's basis' components expressed as Bar basis.
-	 */
+		 * that is translate Foo points into Bar points, that is it's a matrix
+		 * having on the columns Foo's basis' components expressed as Bar basis.
+		 */
 	EulerAngles stockRot_world = move.STOCK.ROTATION,
 			cutterRot_world = move.CUTTER.ROTATION;
+	
+	Eigen::Vector3d cutterTrasl_stock_world = cutterTrasl_world.asEigen() -
+			stockTrasl_world.asEigen();
+	
+	// now this traslation have to be rotate according to STOCK rotation
+	Eigen::Vector3d cutterTrasl_stock = stockRot_world.asEigen().transpose() * cutterTrasl_stock_world;
 	
 	/* when returned as eigen both these rotations are matrices that
 	 * converts point from stock/cutter coords to world ones: i.e. they

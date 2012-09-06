@@ -21,12 +21,16 @@ public:
 	
 	virtual ~EulerAngles();
 	
-	Eigen::Matrix3d asEigen() {
+	Eigen::Matrix3d asEigen() const {
 		Eigen::Matrix3d mat;
 		
 		mat = Eigen::AngleAxisd(GAMMA, Eigen::Vector3d::UnitZ())
-			* Eigen::AngleAxisd(BETA, Eigen::Vector3d::UnitY())
-			* Eigen::AngleAxisd(ALPHA, Eigen::Vector3d::UnitX());
+				* Eigen::AngleAxisd(BETA, Eigen::Vector3d::UnitY())
+				* Eigen::AngleAxisd(ALPHA, Eigen::Vector3d::UnitX());
+		
+//		mat = Eigen::AngleAxisd(ALPHA, Eigen::Vector3d::UnitX())
+//				* Eigen::AngleAxisd(BETA, Eigen::Vector3d::UnitY())
+//				* Eigen::AngleAxisd(GAMMA, Eigen::Vector3d::UnitZ());
 		
 		return mat;
 	}

@@ -10,6 +10,8 @@
 
 #include <iostream>
 
+#include <Eigen/Geometry>
+
 #include "Point3D.hpp"
 #include "EulerAngles.hpp"
 
@@ -24,6 +26,15 @@ public:
 		return os;
 	}
 	
+	Eigen::Affine3d asEigen() const {
+		Eigen::Affine3d t(Eigen::Translation3d(TRASLATION.asEigen()));
+		t *= (Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitZ()));
+		t *= (Eigen::AngleAxisd(-0.5 * M_PI, Eigen::Vector3d::UnitY()));
+		t *= (Eigen::AngleAxisd(0 * M_PI, Eigen::Vector3d::UnitX()));
+		
+		return t;
+	}
+
 	Point3D TRASLATION;
 	EulerAngles ROTATION;
 };

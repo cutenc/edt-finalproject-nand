@@ -143,6 +143,41 @@ int main(int argc, const char **argv) {
 //	}
 	
 	
+	/*
+	 * ROTOTRASLATION TEST
+	 */
+//	EulerAngles rotX(0.5 * M_PI, 0, 0);
+//	EulerAngles rotY(0, 0.5 * M_PI, 0);
+//	EulerAngles rotZ(0, 0, 0.5 * M_PI);
+//	EulerAngles rot(0, -0.5 * M_PI, 0.5 * M_PI);
+//	Point3D trasl(0, 0, 0);
+//	
+////	Rototraslation rototrasl(trasl, rotX);
+//	
+//	cout << "trasl: " << trasl.asEigen().transpose() << endl;
+//	cout << "rot: " << rotX.asEigen() << endl; 
+//	
+//	Affine3d t(Translation3d(trasl.asEigen()));
+//	t *= (AngleAxisd(0.5 * M_PI, Vector3d::UnitZ()));
+//	t *= (AngleAxisd(-0.5 * M_PI, Vector3d::UnitY()));
+//	t *= (AngleAxisd(0 * M_PI, Vector3d::UnitX()));
+//	
+//	cout << "PI: " << M_PI << "; 0.5*M_PI" << 0.5*M_PI << "; -0.5*PI" << -0.5 * M_PI << endl;
+//	
+//	SimpleBox box(Vector3d(2, 2, 2));
+//	cout << "corners of " << box << ":" << endl;
+//	for (CornerIterator it = CornerIterator::begin(); it != CornerIterator::end(); ++it) {
+//		cout << "corn" << *it << ": std: (" << box.getCorner(*it).transpose() << ");\t"
+//				<< "rotX: (" << box.getCorner(*it, trasl.asEigen(), rotX.asEigen()).transpose() << "); "
+//				<< "rotY: (" << box.getCorner(*it, trasl.asEigen(), rotY.asEigen()).transpose() << "); "
+//				<< "rotZ: (" << box.getCorner(*it, trasl.asEigen(), rotZ.asEigen()).transpose() << "); "
+//				<< "rot: (" << box.getCorner(*it, trasl.asEigen(), rot.asEigen()).transpose() << "); "
+//				<< "transform: (" << (t * box.getCorner(*it)).transpose() << ");\t"
+//				<< endl;
+//	}
+	
+	
+	
 	/* 
 	 * ******** Octree getIntersectingLeaves TEST ********
 	 */
@@ -295,7 +330,7 @@ int main(int argc, const char **argv) {
 	while(!millingAlg.hasFinished()) {
 		MillingResult res = millingAlg.step();
 		cout << res << std::endl;
-		cout << millingAlg << std::endl;
+//		cout << millingAlg << std::endl;
 	}
 	
 	
