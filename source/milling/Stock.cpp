@@ -47,12 +47,13 @@ IntersectionResult Stock::intersect(Cutter::CutterPtr cutter, const Eigen::Vecto
 	Eigen::Vector3d modelCutterTrasl = stockCutterTraslation + STOCK_MODEL_TRASLATION;
 	
 	_Octree::LeavesDequePtr leaves = MODEL.getIntersectingLeaves(cutterBox, 
-			modelCutterBBoxTraslation, rotation);
+			modelCutterBBoxTraslation, rotation, true);
 	
 	/* the plan: analyze leaves one by one. In order to do so easily and
 	 * trying to keep array size as small as possible we start from the
 	 * end popping out a leaf on each round and inserting new leaves at the
-	 * end
+	 * end ( O(1) time for deque: this should be true even for insertion / 
+	 * removal from the beginning but i don't trust STL :P )
 	 */
 	
 	IntersectionResult results;
@@ -61,14 +62,17 @@ IntersectionResult Stock::intersect(Cutter::CutterPtr cutter, const Eigen::Vecto
 		results.analyzed_leaves++;
 		_Octree::LeafPtr currLeaf = leaves->back(); leaves->pop_back();
 		
-		VoxelInfo currInfo = buildInfos(currLeaf, cutter, modelCutterTrasl, rotation);
+		/* by know we only know that currLeaf bounding box is intersecting
+		 * our model (if the test has set to be faster but inaccurate it may
+		 * even be not touching) but we have no clue about the fact that real
+		 * cutter is intersecting or not.
+		 * In order to do so we have to try to push model depth as deep as
+		 * allowed in order to check if some voxels are fully contained or, at
+		 * least, some of their corners are inside/outside cutter blade
+		 */
 		
-		if (!currInfo.isIntersecting()) {
-			results.intersection_approx_errors++;
-			
-			// i don't even update data (waste of time)
-			continue;
-		}
+		
+		VoxelInfo currInfo = buildInfos(currLeaf, cutter, modelCutterTrasl, rotation);
 		
 		if (currInfo.isContained()) {
 			
@@ -82,7 +86,7 @@ IntersectionResult Stock::intersect(Cutter::CutterPtr cutter, const Eigen::Vecto
 			
 		} else {
 			
-			// currLeaf is half inside and half outside
+			// currLeaf is probably half inside and half outside
 			
 			if (canPushLevel(currLeaf)) {
 				
@@ -101,7 +105,7 @@ IntersectionResult Stock::intersect(Cutter::CutterPtr cutter, const Eigen::Vecto
 					_Octree::SimpleBoxPtr sbp = MODEL.getSimpleBox(*newLeavesIt);
 					Eigen::Vector3d leafCutterTrasl = modelCutterBBoxTraslation - (*newLeavesIt)->getTraslation();
 					
-					if (sbp->isIntersecting(cutterBox, leafCutterTrasl, rotation)) {
+					if (sbp->isIntersecting(cutterBox, leafCutterTrasl, rotation, false)) {
 						/* let's add this new leaf to leaves array for 
 						 * further investigation
 						 */
@@ -117,6 +121,20 @@ IntersectionResult Stock::intersect(Cutter::CutterPtr cutter, const Eigen::Vecto
 				/* leaf is intersecting but i cannot push more levels
 				 * so let's update saved data incrementing waste count
 				 */
+				
+				if (!currInfo.isIntersecting()) {
+					/* we reach this point by two conditions: cutter is really
+					 * intersecting but we don't have enough voxel resolution
+					 * or we stuck upon a bounding-box approximation error;
+					 * so let's increment proper counter and...
+					 */
+					
+					results.intersection_approx_errors++;
+					
+					// ...i don't even update data (waste of time)
+					continue;
+				}
+				
 				results.waste += updateWaste(currLeaf, currInfo);
 				
 				/* it may happen that after a bunch of partial erosions given

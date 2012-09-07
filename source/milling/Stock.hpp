@@ -38,7 +38,17 @@ struct IntersectionResult {
 	 */
 	u_long lazy_purged_leaves;
 	u_long pushed_leaves;
+	
+	/**
+	 * counts number of leaves that bounding-box intersection test states are 
+	 * intersecting but, at the end, distance misuration
+	 * finds no corner inside cutter blade. In other words it counts the
+	 * number of leaves that has been analyzed but the corners of which were
+	 * always outside cutter blade (it may happen even for a too shallow
+	 * depth limit)  
+	 */
 	u_long intersection_approx_errors;
+	
 	u_long intersection_approx_skips;
 	
 	boost::chrono::milliseconds elapsedTime;

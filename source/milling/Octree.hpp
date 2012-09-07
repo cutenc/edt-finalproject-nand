@@ -196,7 +196,8 @@ public:
 	 */
 	LeavesDequePtr getIntersectingLeaves(const SimpleBox &obb,
 			const Eigen::Vector3d &traslation,
-			const Eigen::Matrix3d &rotation) {
+			const Eigen::Matrix3d &rotation,
+			bool accurate) {
 		
 		// TODO acquire ReadLock
 		
@@ -223,7 +224,7 @@ public:
 			Eigen::Vector3d currTraslation = traslation - currNode->getTraslation();
 			
 			// checks for intersection
-			if (currBox->isIntersecting(obb, currTraslation, rotation)) {
+			if (currBox->isIntersecting(obb, currTraslation, rotation, accurate)) {
 				
 				/* currNode is intersecting given box so now we have to
 				 * try to expand it or save it as an intersecting leaf
