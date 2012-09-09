@@ -23,8 +23,12 @@ public:
 	
 	virtual ~Point3D();
 	
-	Eigen::Vector3d asEigen() const {
+	Eigen::Vector3d asVector() const {
 		return point;
+	}
+	
+	Eigen::Translation3d asTranslation() const {
+		return Eigen::Translation3d(this->point);
 	}
 	
 	double getX() const {

@@ -25,12 +25,8 @@
 
 class SimpleBoxCache {
 	
-public:
-	typedef boost::shared_ptr< SimpleBox > SimpleBoxPtr;
-	
-private:
 	const Eigen::Vector3d EXTENT;
-	std::map<u_int, SimpleBoxPtr> CACHE;
+	std::map<u_int, SimpleBox::Ptr> CACHE;
 	
 public:
 	SimpleBoxCache(Eigen::Vector3d extent) : EXTENT(extent), CACHE() {
@@ -39,10 +35,10 @@ public:
 	
 	virtual ~SimpleBoxCache() { }
 	
-	SimpleBoxPtr getSimpleBox(u_int depth) {
-		std::map<u_int, SimpleBoxPtr>::const_iterator elm = CACHE.find(depth);
+	SimpleBox::Ptr getSimpleBox(u_int depth) {
+		std::map<u_int, SimpleBox::Ptr>::const_iterator elm = CACHE.find(depth);
 		
-		SimpleBoxPtr sbp;
+		SimpleBox::Ptr sbp;
 		if(elm == CACHE.end()) {
 			// element not found, build, insert & return
 			double rate = std::pow(2.0, (double)depth);
@@ -71,7 +67,7 @@ public:
 	typedef typename LeafNode< DataT >::DataPtr DataPtr;
 	typedef typename LeafNode< DataT >::DataConstPtr DataConstPtr;
 	typedef BranchNode* BranchPtr;
-	typedef typename SimpleBoxCache::SimpleBoxPtr SimpleBoxPtr;
+	typedef typename SimpleBox::Ptr SimpleBoxPtr;
 	
 	typedef std::deque< LeafPtr > LeavesDeque;
 	typedef boost::shared_ptr< std::deque< LeafPtr > > LeavesDequePtr;
@@ -81,9 +77,9 @@ public:
 private:
 	
 	const Eigen::Vector3d EXTENT;
+	SimpleBoxCache BOX_CACHE;
 	BranchPtr ROOT;
 	boost::shared_ptr< LeafNode< DataT > > LEAVES_LIST;
-	SimpleBoxCache BOX_CACHE;
 	
 public:
 	
@@ -97,7 +93,8 @@ public:
 		/* create a FAKE root, link it with the leaves list and then "push"
 		 * it to get a branch (REAL root) and it's first children level
 		 */
-		boost::shared_ptr< LeafNode< DataT > > fakeRoot = boost::make_shared< LeafNode<DataT> >();
+		boost::shared_ptr< LeafNode< DataT > > fakeRoot = 
+				boost::make_shared< LeafNode<DataT> >(EXTENT);
 		LEAVES_LIST->setNext(fakeRoot.get());
 		fakeRoot->setPrevious(LEAVES_LIST.get());
 		
@@ -171,21 +168,6 @@ public:
 		// TODO release readLock
 	}
 	
-	Voxel getVoxel(OctreeNodeConstPtr node) {
-		SimpleBoxPtr box = BOX_CACHE.getSimpleBox(node->getDepth());
-		std::vector< Eigen::Vector3d > points;
-		
-		CornerIterator cIt = CornerIterator::begin();
-		for (; cIt != CornerIterator::end(); ++cIt) {
-			points.push_back(box->getCorner(*cIt, node->getTraslation()));
-		}
-		
-		return Voxel(points);
-	}
-	
-	SimpleBoxPtr getSimpleBox(LeafPtr leaf) {
-		return BOX_CACHE.getSimpleBox(leaf->getDepth());
-	}
 	
 	/**
 	 * 
@@ -197,7 +179,7 @@ public:
 	LeavesDequePtr getIntersectingLeaves(const SimpleBox &obb,
 			const Eigen::Vector3d &traslation,
 			const Eigen::Matrix3d &rotation,
-			bool accurate) {
+			bool accurate) const {
 		
 		// TODO acquire ReadLock
 		
@@ -212,8 +194,6 @@ public:
 		LeavesDequePtr intersectingLeaves = boost::make_shared< std::deque< LeafPtr > >();
 		
 		u_int currDepth = 1;
-		// used for caching current level SimpleBox
-		SimpleBoxPtr currBox = BOX_CACHE.getSimpleBox(currDepth);
 		
 		NodeQueuePtr nextLvlNodes = boost::make_shared< std::deque< OctreeNodePtr > >();
 		
@@ -221,7 +201,7 @@ public:
 			OctreeNodePtr currNode = currLvlNodes->back();
 			currLvlNodes->pop_back();
 			
-			Eigen::Vector3d currTraslation = traslation - currNode->getTraslation();
+			ShiftedBox::ConstPtr currBox = currNode->getBox();
 			
 			// checks for intersection
 			if (currBox->isIntersecting(obb, currTraslation, rotation, accurate)) {

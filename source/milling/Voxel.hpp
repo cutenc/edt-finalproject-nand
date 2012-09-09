@@ -12,6 +12,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/array.hpp>
+
 #include <Eigen/Geometry>
 
 #include "Corner.hpp"
@@ -19,7 +21,15 @@
 
 class Voxel {
 	
-	Eigen::Vector3d POINTS[Corner::N_CORNERS];
+public:
+	
+	typedef boost::array< const Eigen::Vector3d, Corner::N_CORNERS > CornerArray;
+	typedef boost::array< Corner::CornerType, Corner::N_CORNERS > CornerTypeArray;
+	
+private:
+	
+	static const CornerTypeArray DEFAULT_ORDER;
+	CornerArray POINTS;
 	
 public:
 	
@@ -36,17 +46,35 @@ public:
 	
 	virtual ~Voxel() { }
 	
-	Eigen::Vector3d getCorner(Corner::CornerType c) {
+	Eigen::Vector3d getCorner(Corner::CornerType c) const {
 		return getCorner(static_cast<u_char>(c));
+	}
+	
+	CornerArray getCorners(const CornerTypeArray &order) const {
+		assert(order.size() == Corner::N_CORNERS);
+		
+		CornerArray tmp;
+		
+		u_int i = 0;
+		CornerTypeArray::const_iterator tit;
+		for (tit = order.begin(); tit != order.end(); ++tit) {
+			tmp[i++] = getCorner(*tit);
+		}
+		
+		return tmp;
+	}
+	
+	CornerArray getCorners() const {
+		return getCorners(Voxel::DEFAULT_ORDER);
 	}
 	
 private:
 	
-	Eigen::Vector3d getCorner(u_char i) {
-		assert(CommonUtils::isBetween(i, 0, Corner::N_CORNERS));
-		
+	Eigen::Vector3d getCorner(u_char i) const {
 		return POINTS[i];
 	}
+	
+	static CornerTypeArray buildDefaultOrder();
 	
 };
 

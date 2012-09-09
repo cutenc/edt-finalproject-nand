@@ -15,6 +15,8 @@
 #include <sstream>
 #include <ostream>
 
+#include <boost/shared_ptr.hpp>
+
 #include <Eigen/Geometry>
 
 #include "Corner.hpp"
@@ -23,6 +25,12 @@
 
 
 class SimpleBox {
+	
+public:
+	
+	typedef boost::shared_ptr< SimpleBox > Ptr;
+	typedef boost::shared_ptr< const SimpleBox > ConstPtr;
+	
 	
 	/**
 	 * Half dimensions
@@ -89,130 +97,6 @@ public:
 		return this->VOLUME;
 	}
 	
-	/**
-	 * 
-	 * @param otherBox
-	 * @param traslation
-	 * @param rotation
-	 * @param accurate tells wether check should be very accurate or not:
-	 * if this flag is set to false some NON colliding cases will be threated
-	 * as collinding ones but method execution will be ~3/7 times faster.
-	 * @return
-	 */
-	bool isIntersecting(const SimpleBox &otherBox,
-			const Eigen::Vector3d &traslation,
-			const Eigen::Matrix3d &rotation = Eigen::Matrix3d::Identity(),
-			bool accurate = false) const {
-		
-		// thanks to http://www.gamasutra.com/view/feature/131790/simple_intersection_tests_for_games.php
-		
-		/*ALGORITHM: Use the separating axis test for all 15 potential
-		separating axes. If a separating axis could not be found, the two
-		boxes overlap. */
-		
-		double ra, rb, t;
-		const Eigen::Vector3d &a = this->EXTENT, &b = otherBox.EXTENT;
-		
-		//A's basis vectors
-		for(int i = 0; i < 3; i++ ) {
-			ra = a[i];
-			rb = b[0] * std::abs<double>((double)rotation(i, 0)) 
-					+ b[1] * std::abs<double>((double)rotation(i, 1)) 
-					+ b[2] * std::abs<double>((double)rotation(i, 2)) ;
-			t = std::abs<double>((double) traslation[i]);
-			if( t > ra + rb )
-				return false;
-		}
-
-		//B's basis vectors
-		for(int i = 0; i<3 ; i++ ) {
-			ra = a[0] * std::abs<double>((double)rotation(0, i))
-					+ a[1] * std::abs<double>((double)rotation(1, i))
-					+ a[2] * std::abs<double>((double)rotation(2, i)); 
-			rb = b[i];
-			t = std::abs<double>((double)(
-					traslation[0] * rotation(0, i)
-					+ traslation[1] * rotation(1, i)
-					+ traslation[2] * rotation(2, i)
-			));
-			if( t > ra + rb )
-				return false;
-		}
-		
-		if (accurate) {
-			//9 cross products
-	
-			//L = A0 x B0
-			ra = a[1]*std::abs<double>((double)rotation(2, 0)) + a[2]*std::abs<double>((double)rotation(1, 0));
-			rb = b[1]*std::abs<double>((double)rotation(0, 2)) + b[2]*std::abs<double>((double)rotation(0, 1));
-			t = std::abs<double>((double)(traslation[2]*rotation(1, 0) - traslation[1]*rotation(2, 0)));
-			if( t > ra + rb )
-				return false;
-	
-			//L = A0 x B1
-			ra = a[1]*std::abs<double>((double)rotation(2, 1)) + a[2]*std::abs<double>((double)rotation(1, 1));
-			rb = b[0]*std::abs<double>((double)rotation(0, 2)) + b[2]*std::abs<double>((double)rotation(0, 0));
-			t = std::abs<double>((double)(traslation[2]*rotation(1, 1) - traslation[1]*rotation(2, 1)));
-			if( t > ra + rb )
-				return false;
-	
-			//L = A0 x B2
-			ra = a[1]*std::abs<double>((double)rotation(2, 2)) + a[2]*std::abs<double>((double)rotation(1, 2));
-			rb = b[0]*std::abs<double>((double)rotation(0, 1)) + b[1]*std::abs<double>((double)rotation(0, 0));
-			t = std::abs<double>((double)(traslation[2]*rotation(1, 2) - traslation[1]*rotation(2, 2)));
-			if( t > ra + rb )
-				return false;
-	
-			//L = A1 x B0
-			ra = a[0]*std::abs<double>((double)rotation(2, 0)) + a[2]*std::abs<double>((double)rotation(0, 0));
-			rb = b[1]*std::abs<double>((double)rotation(1, 2)) + b[2]*std::abs<double>((double)rotation(1, 1));
-			t = std::abs<double>((double)(traslation[0]*rotation(2, 0) - traslation[2]*rotation(0, 0)));
-			if( t > ra + rb )
-				return false;
-	
-			//L = A1 x B1
-			ra = a[0]*std::abs<double>((double)rotation(2, 1)) + a[2]*std::abs<double>((double)rotation(0, 1));
-			rb = b[0]*std::abs<double>((double)rotation(1, 2)) + b[2]*std::abs<double>((double)rotation(1, 0));
-			t = std::abs<double>((double)(traslation[0]*rotation(2, 1) - traslation[2]*rotation(0, 1)));
-			if( t > ra + rb )
-				return false;
-	
-			//L = A1 x B2
-			ra = a[0]*std::abs<double>((double)rotation(2, 2)) + a[2]*std::abs<double>((double)rotation(0, 2));
-			rb = b[0]*std::abs<double>((double)rotation(1, 1)) + b[1]*std::abs<double>((double)rotation(1, 0));
-			t = std::abs<double>((double)(traslation[0]*rotation(2, 2) - traslation[2]*rotation(0, 2)));
-			if( t > ra + rb )
-				return false;
-	
-			//L = A2 x B0
-			ra = a[0]*std::abs<double>((double)rotation(1, 0)) + a[1]*std::abs<double>((double)rotation(0, 0));
-			rb = b[1]*std::abs<double>((double)rotation(2, 2)) + b[2]*std::abs<double>((double)rotation(2, 1));
-			t = std::abs<double>((double)(traslation[1]*rotation(0, 0) - traslation[0]*rotation(1, 0)));
-			if( t > ra + rb )
-				return false;
-	
-			//L = A2 x B1
-			ra = a[0]*std::abs<double>((double)rotation(1, 1)) + a[1]*std::abs<double>((double)rotation(0, 1));
-			rb = b[0] *std::abs<double>((double)rotation(2, 2)) + b[2]*std::abs<double>((double)rotation(2, 0));
-			t = std::abs<double>((double)(traslation[1]*rotation(0, 1) - traslation[0]*rotation(1, 1)));
-			if( t > ra + rb )
-				return false;
-	
-			//L = A2 x B2
-			ra = a[0]*std::abs<double>((double)rotation(1, 2)) + a[1]*std::abs<double>((double)rotation(0, 2));
-			rb = b[0]*std::abs<double>((double)rotation(2, 1)) + b[1]*std::abs<double>((double)rotation(2, 0));
-			t = std::abs<double>((double)(traslation[1]*rotation(0, 2) - traslation[0]*rotation(1, 2)));
-			if( t > ra + rb )
-				return false;
-			
-		}
-
-		/*no separating axis found,
-		the two boxes overlap */
-
-		return true;
-
-	}
 	
 private:
 	

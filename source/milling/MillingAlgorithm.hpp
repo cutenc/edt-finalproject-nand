@@ -13,24 +13,7 @@
 #include "configuration/ConfigFileParser.hpp"
 #include "Cutter.hpp"
 #include "Stock.hpp"
-
-struct MillingResult {
-	
-public:
-	MillingResult(u_int stepNumber, IntersectionResult res, bool water) :
-			stepNumber(stepNumber), intersection(res), water(water) { }
-	
-	u_int stepNumber;
-	IntersectionResult intersection;
-	bool water;
-	
-	friend std::ostream & operator<<(std::ostream &os, const MillingResult &mr) {
-		os << "#" << mr.stepNumber << " [" << ((mr.water) ? "X" : " ") << "] water" << std::endl;
-		os << mr.intersection;
-		
-		return os;
-	}
-};
+#include "MillingResult.hpp"
 
 class MillingAlgorithm {
 	
@@ -50,8 +33,16 @@ public:
 	MillingResult step();
 	
 	bool hasFinished();
+	
 	u_int getStepNumber();
+	
+	/**
+	 * Returns dimensions of the smallest voxel in which STOCK will be divided.
+	 * @return
+	 */
 	Eigen::Vector3d getResolution() const;
+	
+	MeshingInfo buildCurrentMeshingInfo();
 	
 	friend std::ostream & operator<<(std::ostream &os, const MillingAlgorithm &ma);
 	

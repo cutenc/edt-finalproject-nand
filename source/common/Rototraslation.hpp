@@ -26,13 +26,11 @@ public:
 		return os;
 	}
 	
-	Eigen::Affine3d asEigen() const {
-		Eigen::Affine3d t(Eigen::Translation3d(TRASLATION.asEigen()));
-		t *= (Eigen::AngleAxisd(0.5 * M_PI, Eigen::Vector3d::UnitZ()));
-		t *= (Eigen::AngleAxisd(-0.5 * M_PI, Eigen::Vector3d::UnitY()));
-		t *= (Eigen::AngleAxisd(0 * M_PI, Eigen::Vector3d::UnitX()));
+	Eigen::Isometry3d asEigen() const {
+		Eigen::Isometry3d rototras(TRASLATION.asTranslation());
+		rototras *= ROTATION.asEigen();
 		
-		return t;
+		return rototras;
 	}
 
 	Point3D TRASLATION;

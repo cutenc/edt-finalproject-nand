@@ -47,18 +47,17 @@ public:
 	virtual double getDistance(const Point3D &point) const =0;
 	
 	struct BoundingBoxInfo {
-		BoundingBoxInfo(const Point3D &originTraslation, const SimpleBox &boundingBox) :
-			originTraslation(originTraslation), boundingBox(boundingBox)
+		BoundingBoxInfo(const Eigen::Vector3d &extents, const Eigen::Isometry3d &rototrasl) :
+			extents(extents), rototraslation(rototrasl)
 		{ }
 		
 		/**
-		 * Gives the traslation vector between Cutter origin (used as reference
-		 * in each CNCMove) and SimpleBox centroid, ni Cutter basis
+		 * Gives the rototraslation between Cutter origin (used as reference
+		 * in each CNCMove) and SimpleBox centroid, in Cutter basis
 		 */
-		Point3D originTraslation;
+		Eigen::Isometry3d rototraslation;
 		
-		
-		SimpleBox boundingBox;
+		Eigen::Vector3d extents;
 	};
 	virtual BoundingBoxInfo getBoundingBox() const =0;
 	

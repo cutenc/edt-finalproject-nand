@@ -33,17 +33,18 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -ggdb")
 
 SET(BOOST_MIN_VERSION "1.46.0")
 
-FIND_PACKAGE(Boost COMPONENTS regex program_options chrono system REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS regex program_options chrono system sygnals REQUIRED)
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
 ADD_DEFINITIONS(${BoostT_DEFINITIONS})
 SET (MY_LIBS ${MY_LIBS} ${Boost_LIBRARIES})
 
-
 # EIGEN
 INCLUDE_DIRECTORIES("/usr/include/eigen3")
 
+# MATH LIBRARY
+SET (MY_LIBS ${MY_LIBS} m)
 
 # output MY_LIBS definition
 MESSAGE(STATUS "*** MY_LIBS: ${MY_LIBS}")

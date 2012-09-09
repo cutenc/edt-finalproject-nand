@@ -13,6 +13,7 @@
 #include <stdexcept>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/array.hpp>
 
 #include <Eigen/Geometry>
 
@@ -32,13 +33,13 @@ class OctreeNode {
 	
 	const OctreeNodePtr father;
 	const u_char childIdx;
-	const Eigen::Vector3d traslation;
+	const ShiftedBox::ConstPtr sbox;
 	
 public:
-	OctreeNode() : father(), childIdx(255), traslation(0, 0, 0) { }
+	OctreeNode(SimpleBox::ConstPtr box) : father(), childIdx(255), sbox(box) { }
 	
-	OctreeNode(OctreeNodePtr father, u_char childIdx, const Eigen::Vector3d &traslation) :
-			father(father), childIdx(childIdx), traslation(traslation) {
+	OctreeNode(OctreeNodePtr father, u_char childIdx, ShiftedBox::ConstPtr sbox) :
+			father(father), childIdx(childIdx), sbox(sbox) {
 		
 		if (father == NULL)
 			throw std::invalid_argument("Given father cannot be null");
@@ -66,8 +67,8 @@ public:
 		return this->childIdx;
 	}
 	
-	Eigen::Vector3d getTraslation() const {
-		return this->traslation;
+	ShiftedBox::ConstPtr getBox() const {
+		return this->sbox;
 	}
 	
 	virtual u_int getDepth() const {
@@ -91,12 +92,12 @@ public:
 	static const u_char N_CHILDREN = 8;
 	
 private:
-	OctreeNodePtr children[N_CHILDREN];
+	boost::array< OctreeNodePtr, N_CHILDREN > children;
 	
 public:
-	BranchNode() : OctreeNode() { initChildren(); }
-	BranchNode(OctreeNodePtr father, u_char childIdx, const Eigen::Vector3d &traslation) : 
-		OctreeNode(father, childIdx, traslation) { initChildren(); }
+	BranchNode(SimpleBox::ConstPtr box) : OctreeNode(box) { initChildren(); }
+	BranchNode(OctreeNodePtr father, u_char childIdx, ShiftedBox::ConstPtr sbox) : 
+		OctreeNode(father, childIdx, sbox) { initChildren(); }
 	
 	virtual ~BranchNode() {
 		for (u_char i = 0; i < N_CHILDREN; i++) {
@@ -110,20 +111,16 @@ public:
 	}
 	
 	bool hasChild(u_char i) const {
-		assert(CommonUtils::isBetween(i, 0, N_CHILDREN));
-		
 		return children[i] != NULL;
 	}
 	
 	OctreeNodePtr getChild(u_char i) const {
-		assert(CommonUtils::isBetween(i, 0, N_CHILDREN));
 		assert(hasChild(i));
 		
 		return children[i];
 	}
 	
 	void deleteChild(u_char i) {
-		assert(CommonUtils::isBetween(i, 0, N_CHILDREN));
 		assert(hasChild(i));
 		
 		// TODO implement swapping & dirtying
@@ -132,7 +129,6 @@ public:
 	}
 	
 	void setChild(u_char i, OctreeNodePtr child) {
-		assert(CommonUtils::isBetween(i, 0, N_CHILDREN));
 		
 		// TODO implement swapping & dirtying
 		
@@ -179,10 +175,10 @@ private:
 	DataPtr data;
 	
 public:
-	LeafNode() : OctreeNode(), DEPTH(0) { initVariables(); }
+	LeafNode(SimpleBox::ConstPtr box) : OctreeNode(box), DEPTH(0) { initVariables(); }
 	
-	LeafNode(OctreeNodePtr father, u_char childIdx, const Eigen::Vector3d &traslation,
-			u_int depth) : OctreeNode(father, childIdx, traslation), DEPTH(depth) {
+	LeafNode(OctreeNodePtr father, u_char childIdx, ShiftedBox::ConstPtr sbox,
+			u_int depth) : OctreeNode(father, childIdx, sbox), DEPTH(depth) {
 		
 		initVariables();
 	}
