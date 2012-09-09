@@ -23,13 +23,14 @@ class Voxel {
 	
 public:
 	
-	typedef boost::array< const Eigen::Vector3d, Corner::N_CORNERS > CornerArray;
+	typedef boost::array< Eigen::Vector3d, Corner::N_CORNERS > CornerArray;
+	typedef boost::array< const Eigen::Vector3d, Corner::N_CORNERS > CornerConstArray;
 	typedef boost::array< Corner::CornerType, Corner::N_CORNERS > CornerTypeArray;
 	
 private:
 	
 	static const CornerTypeArray DEFAULT_ORDER;
-	CornerArray POINTS;
+	CornerConstArray POINTS;
 	
 public:
 	
@@ -46,7 +47,7 @@ public:
 	
 	virtual ~Voxel() { }
 	
-	Eigen::Vector3d getCorner(Corner::CornerType c) const {
+	const Eigen::Vector3d & getCorner(Corner::CornerType c) const {
 		return getCorner(static_cast<u_char>(c));
 	}
 	
@@ -70,7 +71,7 @@ public:
 	
 private:
 	
-	Eigen::Vector3d getCorner(u_char i) const {
+	const Eigen::Vector3d &getCorner(u_char i) const {
 		return POINTS[i];
 	}
 	
