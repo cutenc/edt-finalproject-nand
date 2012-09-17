@@ -20,7 +20,7 @@ SET(CMAKE_VERBOSE_MAKEFILE ON)
 SET(CMAKE_BUILD_TYPE Debug)
 
 # Compiler Options
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -ggdb")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -ggdb -O0")
 
 
 ##############

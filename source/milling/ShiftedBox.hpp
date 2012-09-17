@@ -109,7 +109,7 @@ public:
 		const Eigen::Vector3d &a = this->simpleBox->getHalfExtent(),
 				&b = otherBox.getHalfExtent();
 		
-		const Eigen::Matrix3d &rotation = rototras.rotation();
+		const Eigen::Matrix3d &rotation = rototras.linear();
 		const Eigen::Vector3d traslation = rototras.translation() - 
 				this->shift.translation();
 		
