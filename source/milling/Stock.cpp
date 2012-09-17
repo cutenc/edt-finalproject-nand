@@ -23,7 +23,7 @@
 Stock::Stock(const StockDescription &desc, u_int maxDepth) :
 	MAX_DEPTH(maxDepth),
 	EXTENT(desc.getGeometry()->X, desc.getGeometry()->Y, desc.getGeometry()->Z),
-	STOCK_MODEL_TRASLATION(EXTENT / -2.0),
+	STOCK_MODEL_TRASLATION(EXTENT / 2.0),
 	MODEL(EXTENT) {
 	
 	GeometryUtils::checkExtent(EXTENT);
@@ -33,21 +33,39 @@ Stock::Stock(const StockDescription &desc, u_int maxDepth) :
 
 Stock::~Stock() { }
 
-IntersectionResult Stock::intersect(Cutter::CutterPtr cutter, const Eigen::Vector3d &stockCutterTraslation, const Eigen::Matrix3d &rotation) {
+IntersectionResult Stock::intersect(const Cutter::CutterPtr &cutter,
+		const Eigen::Isometry3d &rototras) {
 	
 	boost::chrono::thread_clock::time_point startTime = boost::chrono::thread_clock::now();
 	
 	Cutter::BoundingBoxInfo bboxInfo = cutter->getBoundingBox();
 	
-	SimpleBox cutterBox = bboxInfo.boundingBox;
+	SimpleBox cutterBox(bboxInfo.extents);
 	
-	Eigen::Vector3d originTraslationRot = rotation * bboxInfo.originTraslation.asEigen();
-	Eigen::Vector3d stockCutterBBoxTraslation = stockCutterTraslation + originTraslationRot;
-	Eigen::Vector3d modelCutterBBoxTraslation = stockCutterBBoxTraslation + STOCK_MODEL_TRASLATION;
-	Eigen::Vector3d modelCutterTrasl = stockCutterTraslation + STOCK_MODEL_TRASLATION;
+	/* in order to find bbox isometry i can think about converting a bbox point
+	 * to a stock point: first the point should be converted bbox=>cutter basis
+	 * with bboxInfo.rototraslation than another conversion is needed, that is,
+	 * cutter=>stock basis using rototras. So the multiplication order should
+	 * be the following (remember that the point is multiplied on the right):
+	 * 
+	 * Eigen::Isometry3d bboxIsom_stock = rototras * bboxInfo.rototraslation;
+	 * 
+	 * Now we have bboxIsom in respect to stock basis but we also need it
+	 * in respect of MODEL basis: from stock to model there is only a
+	 * translation (no rotation at all) and it is "additive" (in fact we have
+	 * to perform a subtraction) to given rototras so...
+	 * 
+	 * Eigen::Isometry3d bboxIsom_model = STOCK_MODEL_TRASLATION.inverse() * bboxIsom_stock;
+	 * 
+	 * all summed up:
+	 */
 	
-	_Octree::LeavesDequePtr leaves = MODEL.getIntersectingLeaves(cutterBox, 
-			modelCutterBBoxTraslation, rotation, true);
+	Eigen::Isometry3d bboxIsom_model = 
+			STOCK_MODEL_TRASLATION.inverse() * rototras * bboxInfo.rototraslation;
+	
+	Eigen::Isometry3d cutterIsom_model = STOCK_MODEL_TRASLATION.inverse() * rototras;
+	
+	_Octree::LeavesDequePtr leaves = MODEL.getIntersectingLeaves(cutterBox, bboxIsom_model, true);
 	
 	/* the plan: analyze leaves one by one. In order to do so easily and
 	 * trying to keep array size as small as possible we start from the
@@ -62,17 +80,16 @@ IntersectionResult Stock::intersect(Cutter::CutterPtr cutter, const Eigen::Vecto
 		results.analyzed_leaves++;
 		_Octree::LeafPtr currLeaf = leaves->back(); leaves->pop_back();
 		
-		/* by know we only know that currLeaf bounding box is intersecting
+		/* by now we only know that currLeaf bounding box is intersecting
 		 * our model (if the test has set to be faster but inaccurate it may
-		 * even be not touching) but we have no clue about the fact that real
+		 * even not touching) but we have no clue about the fact that real
 		 * cutter is intersecting or not.
 		 * In order to do so we have to try to push model depth as deep as
 		 * allowed in order to check if some voxels are fully contained or, at
 		 * least, some of their corners are inside/outside cutter blade
 		 */
 		
-		
-		VoxelInfo currInfo = buildInfos(currLeaf, cutter, modelCutterTrasl, rotation);
+		VoxelInfo currInfo = buildInfos(currLeaf, cutter, cutterIsom_model);
 		
 		if (currInfo.isContained()) {
 			
@@ -93,19 +110,18 @@ IntersectionResult Stock::intersect(Cutter::CutterPtr cutter, const Eigen::Vecto
 				results.pushed_leaves++;
 				
 				// we can push another level so let's do it
-				_Octree::LeavesDequePtr newLeaves = MODEL.pushLevel(currLeaf);
+				_Octree::LeavesArrayPtr newLeaves = MODEL.pushLevel(currLeaf);
 				
 				/* now we have to check wether returned leaves intersect
 				 * or not using approximated test (that should be
 				 * faster than checking for every corner's distance)
 				 */
-				_Octree::LeavesDeque::const_iterator newLeavesIt;
+				_Octree::LeavesArray::const_iterator newLeavesIt;
 				for (newLeavesIt = newLeaves->begin(); newLeavesIt != newLeaves->end(); ++newLeavesIt) {
 					
-					_Octree::SimpleBoxPtr sbp = MODEL.getSimpleBox(*newLeavesIt);
-					Eigen::Vector3d leafCutterTrasl = modelCutterBBoxTraslation - (*newLeavesIt)->getTraslation();
+					ShiftedBox::ConstPtr sbp = (*newLeavesIt)->getBox();
 					
-					if (sbp->isIntersecting(cutterBox, leafCutterTrasl, rotation, false)) {
+					if (sbp->isIntersecting(cutterBox, cutterIsom_model, false)) {
 						/* let's add this new leaf to leaves array for 
 						 * further investigation
 						 */
@@ -158,37 +174,23 @@ IntersectionResult Stock::intersect(Cutter::CutterPtr cutter, const Eigen::Vecto
 	return results;
 }
 
-/**
- * 
- * @param leaf
- * @param cutter
- * @param traslation that is model-cutter traslation because internally
- * will use points in model basis that should be converted in cutter basis
- * @param rotation
- * @return
- */
-VoxelInfo Stock::buildInfos(_Octree::LeafConstPtr leaf, 
+VoxelInfo Stock::buildInfos(const _Octree::LeafConstPtr &leaf, 
 		const Cutter::CutterPtr &cutter,
-		const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation) {
+		const Eigen::Isometry3d &rototras) {
 	
 	VoxelInfo info;
 	
-	Voxel v = MODEL.getVoxel(leaf);
+	/* we have to convert stockPoint in cutter basis: given isometry
+	 * is for the cutter in respect of model basis, so we
+	 * have to invert it to get model's roto-traslation in respect of
+	 * cutter basis, that is, the isometry that converts model points in
+	 * cutter points.
+	 */
+	Voxel::ConstPtr v = leaf->getBox()->getVoxel(rototras.inverse());
 	for (CornerIterator cit = CornerIterator::begin(); cit != CornerIterator::end(); ++cit) {
-		Eigen::Vector3d stockPoint = v.getCorner(*cit);
+		const Eigen::Vector3d &point = v->getCorner(*cit);
 		
-		/* now we have to convert stockPoint in cutter basis: given rotation
-		 * and traslation are for the cutter in respect of model basis, so we
-		 * have to invert them to get model's roto-traslation in respect of
-		 * cutter basis.
-		 * NB: due to the fact that rotation is an orthonormal base
-		 * rot^(-1) = rot^T
-		 * that is the inverse equals the transposed
-		 */
-		
-		Eigen::Vector3d cutterPoint = rotation.transpose() * (stockPoint - traslation);
-		
-		double distance =  cutter->getDistance(Point3D(cutterPoint));
+		double distance =  cutter->getDistance(Point3D(point));
 		
 		info.updateInsideness(*cit, distance);
 	}
@@ -196,7 +198,7 @@ VoxelInfo Stock::buildInfos(_Octree::LeafConstPtr leaf,
 	return info;
 }
 
-double Stock::updateWaste(_Octree::LeafPtr leaf, const VoxelInfo &newInfo) {
+double Stock::updateWaste(const _Octree::LeafPtr &leaf, const VoxelInfo &newInfo) {
 	
 	// save old informations for incremental waste calculation
 	VoxelInfo oldInfo = *(leaf->getData());
@@ -205,7 +207,7 @@ double Stock::updateWaste(_Octree::LeafPtr leaf, const VoxelInfo &newInfo) {
 	(*leaf->getDirtyData()) += newInfo;
 	
 	// return an approximation of new waste
-	_Octree::SimpleBoxPtr sbp = MODEL.getSimpleBox(leaf);
+	_Octree::SimpleBoxPtr sbp = leaf->getBox()->getSimpleBox();
 	return getApproxWaste(*sbp, oldInfo, *leaf->getDirtyData());
 	
 }
@@ -231,7 +233,7 @@ double Stock::intersectedVolume(const SimpleBox &box, const VoxelInfo &info) con
 	return box.getVolume() * nInsideCorners / (double) Corner::N_CORNERS;
 }
 
-bool Stock::canPushLevel(_Octree::LeafPtr leaf) const {
+bool Stock::canPushLevel(const _Octree::LeafPtr &leaf) const {
 	return leaf->getDepth() < this->MAX_DEPTH;
 }
 
@@ -249,4 +251,10 @@ std::ostream & operator<<(std::ostream &os, const Stock &stock) {
 }
 
 
+Mesh Stock::getMeshing() {
+	
+	// TODO implement meshing method
+	return Mesh();
+	
+}
 

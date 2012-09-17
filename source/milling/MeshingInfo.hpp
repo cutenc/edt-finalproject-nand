@@ -9,13 +9,20 @@
 #define MESHINGINFO_HPP_
 
 #include <utility>
+#include <deque>
+
+#include <boost/shared_ptr.hpp>
 
 #include "configuration/CNCMoveIterator.hpp"
+#include "ShiftedBox.hpp"
+#include "VoxelInfo.hpp"
 
 class MeshingInfo {
 	
 public:
-	typedef std::pair< ShiftedBox, VoxelInfo > VoxelData;
+	typedef std::pair< ShiftedBox, VoxelInfo > VoxelPair;
+	typedef std::deque< VoxelPair > VoxelData;
+	typedef boost::shared_ptr< VoxelData > VoxelDataPtr;
 	
 public:
 	MeshingInfo();
@@ -27,7 +34,7 @@ public:
 	 * 
 	 * @return
 	 */
-	std::deque< VoxelData > getInfos() const;
+	VoxelData getInfos() const;
 	CNCMove getLastMove() const;
 	
 };

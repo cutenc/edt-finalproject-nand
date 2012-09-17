@@ -14,6 +14,7 @@
 #include "Cutter.hpp"
 #include "Stock.hpp"
 #include "MillingResult.hpp"
+#include "MeshingInfo.hpp"
 
 class MillingAlgorithm {
 	

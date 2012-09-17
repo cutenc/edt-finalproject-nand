@@ -19,6 +19,7 @@
 
 #include "common/Point3D.hpp"
 #include "common/Utilities.hpp"
+#include "ShiftedBox.hpp"
 
 enum OctreeNodeType {
 	BRANCH_NODE,
@@ -36,9 +37,9 @@ class OctreeNode {
 	const ShiftedBox::ConstPtr sbox;
 	
 public:
-	OctreeNode(SimpleBox::ConstPtr box) : father(), childIdx(255), sbox(box) { }
+	OctreeNode(const ShiftedBox::ConstPtr &box) : father(), childIdx(255), sbox(box) { }
 	
-	OctreeNode(OctreeNodePtr father, u_char childIdx, ShiftedBox::ConstPtr sbox) :
+	OctreeNode(const OctreeNodePtr &father, u_char childIdx, const ShiftedBox::ConstPtr &sbox) :
 			father(father), childIdx(childIdx), sbox(sbox) {
 		
 		if (father == NULL)
@@ -67,7 +68,7 @@ public:
 		return this->childIdx;
 	}
 	
-	ShiftedBox::ConstPtr getBox() const {
+	const ShiftedBox::ConstPtr & getBox() const {
 		return this->sbox;
 	}
 	
@@ -95,8 +96,8 @@ private:
 	boost::array< OctreeNodePtr, N_CHILDREN > children;
 	
 public:
-	BranchNode(SimpleBox::ConstPtr box) : OctreeNode(box) { initChildren(); }
-	BranchNode(OctreeNodePtr father, u_char childIdx, ShiftedBox::ConstPtr sbox) : 
+	BranchNode(const ShiftedBox::ConstPtr &box) : OctreeNode(box) { initChildren(); }
+	BranchNode(OctreeNodePtr father, u_char childIdx, const ShiftedBox::ConstPtr &sbox) : 
 		OctreeNode(father, childIdx, sbox) { initChildren(); }
 	
 	virtual ~BranchNode() {
@@ -175,9 +176,9 @@ private:
 	DataPtr data;
 	
 public:
-	LeafNode(SimpleBox::ConstPtr box) : OctreeNode(box), DEPTH(0) { initVariables(); }
+	LeafNode(const ShiftedBox::ConstPtr &box) : OctreeNode(box), DEPTH(0) { initVariables(); }
 	
-	LeafNode(OctreeNodePtr father, u_char childIdx, ShiftedBox::ConstPtr sbox,
+	LeafNode(const OctreeNodePtr &father, u_char childIdx, const ShiftedBox::ConstPtr &sbox,
 			u_int depth) : OctreeNode(father, childIdx, sbox), DEPTH(depth) {
 		
 		initVariables();
@@ -207,7 +208,7 @@ public:
 		return this->prev;
 	}
 	
-	void setPrevious(LeafPtr prev) {
+	void setPrevious(const LeafPtr &prev) {
 		this->prev = prev;
 	}
 	
@@ -215,7 +216,7 @@ public:
 		return this->next;
 	}
 	
-	void setNext(LeafPtr next) {
+	void setNext(const LeafPtr &next) {
 		// NULL next ptr must be allowed (last leaf)
 		this->next = next;
 	}

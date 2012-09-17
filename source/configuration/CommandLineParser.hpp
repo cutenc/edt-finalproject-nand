@@ -26,6 +26,7 @@ class CommandLineParser {
 	std::string filename;
 	int octreeHeight;
 	bool helpAsked;
+	u_char verbosity;
 	
 public:
 	CommandLineParser(int argc, const char **argv);
@@ -34,6 +35,7 @@ public:
 	std::string getConfigFile() const;
 	int getMaxOctreeHeight() const;
 	bool isHelpAsked() const;
+	u_char verbosityLevel() const;
 	void printUsage(std::ostream &os) const;
 	
 private:
@@ -51,6 +53,7 @@ private:
 				("help,h", "produces this help message")
 				("config,c", bpo::value< std::string >(&filename)->default_value(CMDLN_CONFFILE_NAME), "position of the configuration file")
 				("max-height,o", bpo::value< int >(&octreeHeight)->default_value(CMDLN_MAX_OCTREE_HEIGHT), "max octree height: this also defines minimum voxel size")
+				("verbose,v", "the output will be verbose")
 		;
 		
 		return description;

@@ -12,12 +12,13 @@
 
 #include "common/Color.hpp"
 #include "common/Point3D.hpp"
+#include "common/Model3D.hpp"
 #include "configuration/CutterDescription.hpp"
 #include "SimpleBox.hpp"
 
 class Cutter;
 
-class Cutter {
+class Cutter : public Model3D {
 	
 public:
 	
@@ -52,12 +53,15 @@ public:
 		{ }
 		
 		/**
+		 * Extents of the bounding box (full extents not half ones)
+		 */
+		Eigen::Vector3d extents;
+		
+		/**
 		 * Gives the rototraslation between Cutter origin (used as reference
 		 * in each CNCMove) and SimpleBox centroid, in Cutter basis
 		 */
 		Eigen::Isometry3d rototraslation;
-		
-		Eigen::Vector3d extents;
 	};
 	virtual BoundingBoxInfo getBoundingBox() const =0;
 	
@@ -68,6 +72,7 @@ public:
 	}
 	
 	static CutterPtr buildCutter(const CutterDescription &desc);
+	
 };
 
 #endif /* CUTTER_HPP_ */

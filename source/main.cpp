@@ -4,12 +4,14 @@
 #include <vector>
 #include <string>
 #include <fstream>
+#include <limits>
 
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/assign.hpp>
+#include <boost/math/constants/constants.hpp>
 
 #include <Eigen/Geometry>
 
@@ -22,6 +24,7 @@
 #include "configuration/CommandLineParser.hpp"
 #include "milling/MillingAlgorithm.hpp"
 #include "milling/SimpleBox.hpp"
+#include "milling/ShiftedBox.hpp"
 #include "milling/Octree.hpp"
 #include "milling/Stock.hpp"
 #include "milling/cutters.hpp"
@@ -37,6 +40,9 @@ struct MyData {
 };
 
 int main(int argc, const char **argv) {
+	
+	cout << "epsilon: " << numeric_limits<double>::epsilon() << endl;
+	double BOOST_PI = boost::math::constants::pi< double >();
 	
 	/* 
 	 * ******** ConfigFileParser TEST ********
@@ -79,69 +85,115 @@ int main(int argc, const char **argv) {
 	/* 
 	 * ******** SimpleBox TEST ********
 	 */
-//	SimpleBox b1(2, 4, 1), b2(2, 4, 1);
-//	
-////	Vector3d traslation(3.00000000001, 0, 0);
-//	Vector3d traslation(1, 3, 1+2*numeric_limits<double>::epsilon());
-//	
-//	Matrix3d rot;
-//	rot = AngleAxisd(0, Vector3d::UnitX())
-//			* AngleAxisd(0, Vector3d::UnitY())
-//			* AngleAxisd(0.25 * M_PI, Vector3d::UnitZ());
-//	
-//	cout << "rotation: " << endl << rot << endl;
-//	cout << "traslation: " << traslation.transpose() << endl;
-//	
-//	bool collision = b1.isIntersecting(b2, traslation, rot);
-//	
-//	cout << "b1 and b2 are " << ((collision) ? "" : "NOT ") << "colliding" << endl;
-//	
-//	cout << "corners of " << b1 << ":" << endl;
-//	for (CornerIterator it = CornerIterator::begin(); it != CornerIterator::end(); ++it) {
-//		cout << "corn#" << *it << " b1: " << b1.getCorner(*it).transpose()
-//				<< "; b2: " << b2.getCorner(*it, traslation, rot).transpose() << endl;
-//	}
-	
-	/* 
-	 * ******** SimpleBox TEST 2 ********
-	 */
-//	SimpleBox b1(Eigen::Vector3d(2.0, 2.0, 2.0));
-//	
-//	cout << "corners of " << b1 << "_ORG:" << endl;
-//	for (CornerIterator it = CornerIterator::begin(); it != CornerIterator::end(); ++it) {
-//		cout << "corn#" << *it << ": " << b1.getCorner(*it).transpose() << endl;
-//	}
-//	
-//	Vector3d traslation(0, 0, 0);
-//	
-//	Matrix3d rot;
-// //	rot = AngleAxisd(0, Vector3d::UnitX())
-// //			* AngleAxisd(-0.5 * M_PI, Vector3d::UnitY())
-// //			* AngleAxisd(0.5 * M_PI, Vector3d::UnitZ());
-//	rot = AngleAxisd(0.5 * M_PI, Vector3d::UnitZ())
+//	SimpleBox b1(Vector3d(2, 2, 2));
+//	Translation3d trans(-1, 2, 0);
+//	Matrix3d rot; rot = AngleAxisd(0.5 * M_PI, Vector3d::UnitZ())
 //			* AngleAxisd(-0.5 * M_PI, Vector3d::UnitY())
 //			* AngleAxisd(0, Vector3d::UnitX());
-//			
-//	cout << "rotation: " << endl << rot << endl;
-//	cout << "traslation: " << traslation.transpose() << endl;
 //	
-//	cout << "corners of " << b1 << ":" << endl;
-//	for (CornerIterator it = CornerIterator::begin(); it != CornerIterator::end(); ++it) {
-//		cout << "corn#" << *it << ": " << b1.getCorner(*it, traslation, rot).transpose() << endl;
+//	CornerIterator cit;
+//	
+//	cout << "Simple box ostream: " << b1 << endl;
+//	
+//	cout << "All corners:" << endl;
+//	for(cit = CornerIterator::begin(); cit != CornerIterator::end(); ++cit) {
+//		cout << "#" << *cit << ": " << b1.getCorner(*cit).transpose() << endl;
 //	}
 //	
-//	rot = AngleAxisd(0, Vector3d::UnitX())
-//			* AngleAxisd(0 * M_PI, Vector3d::UnitY())
-//			* AngleAxisd(0.5 * M_PI, Vector3d::UnitZ());
-//	
-//	cout << "rotation: " << endl << rot << endl;
-//	cout << "traslation: " << traslation.transpose() << endl;
-//	
-//	cout << "corners of " << b1 << ":" << endl;
-//	for (CornerIterator it = CornerIterator::begin(); it != CornerIterator::end(); ++it) {
-//		cout << "corn#" << *it << ": " << b1.getCorner(*it, traslation, rot).transpose() << endl;
+//	Isometry3d isomTrans(trans);
+//	cout << "All corners translated of " << trans.translation().transpose() << endl;
+//	for (cit = CornerIterator::begin(); cit != CornerIterator::end(); ++cit) {
+//		cout << "#" << *cit << ": " << b1.getCorner(*cit, isomTrans).transpose() << endl;
 //	}
+//	cout << "... now given as matrix:" << endl;
+//	cout << *b1.getCorners(isomTrans) << endl;
+//	
+//	Isometry3d isomRot(rot);
+//	cout << "All corners rotated of " << endl << rot << endl;
+//	for (cit = CornerIterator::begin(); cit != CornerIterator::end(); ++cit) {
+//		cout << "#" << *cit << ": " << b1.getCorner(*cit, isomRot).transpose() << endl;
+//	}
+//	cout << "... now given as matrix:" << endl;
+//	cout << *b1.getCorners(isomRot) << endl;
+//	
+//	Isometry3d isomRotTrans = isomRot * isomTrans;
+//	cout << "All corners rot*trans of " << endl << isomRotTrans.matrix() << endl;
+//	for (cit = CornerIterator::begin(); cit != CornerIterator::end(); ++cit) {
+//		cout << "#" << *cit << ": " << b1.getCorner(*cit, isomRotTrans).transpose() << endl;
+//	}
+//	cout << "... now given as matrix:" << endl;
+//	cout << *b1.getCorners(isomRotTrans) << endl;
+//	
+//	Isometry3d isomTransRot = isomTrans * isomRot;
+//	cout << "All corners trans*rot of " << endl << isomTransRot.matrix() << endl;
+//	for (cit = CornerIterator::begin(); cit != CornerIterator::end(); ++cit) {
+//		cout << "#" << *cit << ": " << b1.getCorner(*cit, isomTransRot).transpose() << endl;
+//	}
+//	cout << "... now given as matrix:" << endl;
+//	cout << *b1.getCorners(isomTransRot) << endl;
 	
+	
+	/* 
+	 * ******** ShiftedBox & Voxel TEST ********
+	 */
+////	SimpleBox::Ptr box = boost::make_shared< SimpleBox >(Vector3d(2, 2, 2));
+////	Translation3d boxShift(1, 1, 1);
+////	
+////	ShiftedBox sbox(box, boxShift);
+////	
+////	cout << "shiftbox outstream: " << sbox << endl;
+////	
+////	Translation3d anotherShift(-1, -1, -1);
+////	ShiftedBox anotherSbox = sbox.getShifted(anotherShift);
+////	cout << "anotherSbox outstream: " << anotherSbox << endl;
+////	
+////	cout << "Sbox voxel: " << endl << sbox.getVoxel() << endl;
+////	cout << "anotherSbox voxel: " << endl << anotherSbox.getVoxel() << endl;
+//	
+//	// SUBTEST: INTERSECTION
+//	Vector3d extentsSBox(2, 4, 2), extentsIntBox(1, 2, 2);
+//	
+//	SimpleBox::Ptr tmpBox = boost::make_shared< SimpleBox >(extentsSBox);
+//	
+//	// some test shift box translations, uncomment required one
+////	Translation3d sboxTranslation(Translation3d::Identity());
+//	Translation3d sboxTranslation(1, 2, 0);
+//	
+//	ShiftedBox sboxInt(tmpBox, sboxTranslation);
+//	
+//	SimpleBox::Ptr intBox = boost::make_shared< SimpleBox >(extentsIntBox);
+//	
+//	// some test translations, uncomment required one
+////	Translation3d intBoxOrgTras(Translation3d::Identity());
+////	Translation3d intBoxOrgTras(0, 0, 3);
+////	Translation3d intBoxOrgTras(1, 2, 0);
+////	Translation3d intBoxOrgTras(1, -2, 0);
+//	Translation3d intBoxOrgTras(2, 3, 0);
+//	
+//	Matrix3d intBoxRot;
+//	// some test rotations, uncomment the required one
+////	intBoxRot = AngleAxisd::Identity();
+////	intBoxRot = AngleAxisd(0.5 * BOOST_PI, Vector3d::UnitZ());
+//	intBoxRot = AngleAxisd(-0.25 * BOOST_PI, Vector3d::UnitZ());
+//
+//	Isometry3d tmpTrans(intBoxOrgTras), tmpRot(intBoxRot);
+//	cout << "tmpTrans: " << endl << tmpTrans.matrix() << endl;
+//	cout << "tmpRot: " << endl << tmpRot.matrix() << endl;
+//	
+//	Isometry3d rotoTrans; rotoTrans = tmpTrans * tmpRot;
+//	
+//	cout << "sboxInt: " << sboxInt << endl;
+//	cout << "intersecting box: " << *intBox << endl;
+//	cout << "intBox translation: " << intBoxOrgTras.translation().transpose() << endl;
+//	cout << "rotoTrans trans: " << rotoTrans.translation().transpose() << endl; 
+//	cout << "intBox rotation: " << endl << intBoxRot << endl;
+//	cout << "rotoTrans rot: " << endl << rotoTrans.rotation() << endl;
+//	cout << "rotoTrans matrix: " << endl << rotoTrans.matrix() << endl;
+//	
+//	cout << "point in intBox basis (0, 0, 0) => " << (rotoTrans * Vector3d(0, 0, 0)).transpose() << endl;
+//	cout << "point in intBox basis (1, 2, 0) => " << (rotoTrans * Vector3d(1, 2, 0)).transpose() << endl;
+//	
+//	cout << "is intersecting? " << sboxInt.isIntersecting(intBox, rotoTrans, true) << endl;
 	
 	/*
 	 * ROTOTRASLATION TEST
@@ -150,32 +202,27 @@ int main(int argc, const char **argv) {
 //	EulerAngles rotY(0, 0.5 * M_PI, 0);
 //	EulerAngles rotZ(0, 0, 0.5 * M_PI);
 //	EulerAngles rot(0, -0.5 * M_PI, 0.5 * M_PI);
-//	Point3D trasl(0, 0, 0);
+//	Point3D trasl(1, -2, 3);
 //	
-////	Rototraslation rototrasl(trasl, rotX);
+//	Rototraslation traslRotX(trasl, rotX);
+//	cout << "traslRotX: " << endl << traslRotX.asEigen().matrix() << endl;
+//	cout << "(1, 2, 3) in rotrasl basis become in world basis: " <<
+//			(traslRotX.asEigen() * Vector3d(1, 2, 3)).transpose() << endl;
 //	
-//	cout << "trasl: " << trasl.asEigen().transpose() << endl;
-//	cout << "rot: " << rotX.asEigen() << endl; 
+//	Rototraslation traslRotY(trasl, rotY);
+//	cout << "traslRotY: " << endl << traslRotY.asEigen().matrix() << endl;
+//	cout << "(1, 2, 3) in rotrasl basis become in world basis: " <<
+//			(traslRotY.asEigen() * Vector3d(1, 2, 3)).transpose() << endl;
 //	
-//	Affine3d t(Translation3d(trasl.asEigen()));
-//	t *= (AngleAxisd(0.5 * M_PI, Vector3d::UnitZ()));
-//	t *= (AngleAxisd(-0.5 * M_PI, Vector3d::UnitY()));
-//	t *= (AngleAxisd(0 * M_PI, Vector3d::UnitX()));
+//	Rototraslation traslRotZ(trasl, rotZ);
+//	cout << "traslRotZ: " << endl << traslRotZ.asEigen().matrix() << endl;
+//	cout << "(1, 2, 3) in rotrasl basis become in world basis: " <<
+//			(traslRotZ.asEigen() * Vector3d(1, 2, 3)).transpose() << endl;
 //	
-//	cout << "PI: " << M_PI << "; 0.5*M_PI" << 0.5*M_PI << "; -0.5*PI" << -0.5 * M_PI << endl;
-//	
-//	SimpleBox box(Vector3d(2, 2, 2));
-//	cout << "corners of " << box << ":" << endl;
-//	for (CornerIterator it = CornerIterator::begin(); it != CornerIterator::end(); ++it) {
-//		cout << "corn" << *it << ": std: (" << box.getCorner(*it).transpose() << ");\t"
-//				<< "rotX: (" << box.getCorner(*it, trasl.asEigen(), rotX.asEigen()).transpose() << "); "
-//				<< "rotY: (" << box.getCorner(*it, trasl.asEigen(), rotY.asEigen()).transpose() << "); "
-//				<< "rotZ: (" << box.getCorner(*it, trasl.asEigen(), rotZ.asEigen()).transpose() << "); "
-//				<< "rot: (" << box.getCorner(*it, trasl.asEigen(), rot.asEigen()).transpose() << "); "
-//				<< "transform: (" << (t * box.getCorner(*it)).transpose() << ");\t"
-//				<< endl;
-//	}
-	
+//	Rototraslation traslRot(trasl, rot);
+//	cout << "traslRot: " << endl << traslRot.asEigen().matrix() << endl;
+//	cout << "(1, 2, 3) in rotrasl basis become in world basis: " <<
+//			(traslRot.asEigen() * Vector3d(1, 2, 3)).transpose() << endl;
 	
 	
 	/* 
@@ -330,7 +377,8 @@ int main(int argc, const char **argv) {
 	while(!millingAlg.hasFinished()) {
 		MillingResult res = millingAlg.step();
 		cout << res << std::endl;
-//		cout << millingAlg << std::endl;
+		if (clp.verbosityLevel() > 0)
+			cout << millingAlg << std::endl;
 	}
 	
 	

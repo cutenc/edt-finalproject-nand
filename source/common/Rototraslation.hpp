@@ -27,8 +27,15 @@ public:
 	}
 	
 	Eigen::Isometry3d asEigen() const {
-		Eigen::Isometry3d rototras(TRASLATION.asTranslation());
-		rototras *= ROTATION.asEigen();
+		
+		/* I have to go this way in order do bypass an eigen error handling
+		 * rotation matrix: doing something like
+		 * Isometry3d = Translation3d * Matrix3d results in a wrong Isometry
+		 * matrix (both rotation and translation)
+		 */
+		Eigen::Isometry3d tmpTrans(TRASLATION.asTranslation());
+		Eigen::Isometry3d tmpRot(ROTATION.asEigen());
+		Eigen::Isometry3d rototras = tmpTrans * tmpRot;
 		
 		return rototras;
 	}

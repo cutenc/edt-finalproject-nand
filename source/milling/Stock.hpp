@@ -15,11 +15,12 @@
 
 #include <Eigen/Geometry>
 
+#include "common/Model3D.hpp"
+#include "configuration/StockDescription.hpp"
 #include "Cutter.hpp"
 #include "VoxelInfo.hpp"
 #include "Octree.hpp"
 #include "SimpleBox.hpp"
-#include "configuration/StockDescription.hpp"
 
 struct IntersectionResult {
 	/**
@@ -83,7 +84,7 @@ struct IntersectionResult {
 	}
 };
 
-class Stock {
+class Stock : public Model3D {
 	
 public:
 	
@@ -95,21 +96,37 @@ private:
 	
 	const u_int MAX_DEPTH;
 	const Eigen::Vector3d EXTENT;
-	const Eigen::Vector3d STOCK_MODEL_TRASLATION;
+	const Eigen::Translation3d STOCK_MODEL_TRASLATION;
 	_Octree MODEL;
 	
 public:
 	Stock(const StockDescription &desc, u_int maxDepth);
 	virtual ~Stock();
 	
-	IntersectionResult intersect(Cutter::CutterPtr cutter, const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation);
+	/**
+	 * 
+	 * @param cutter
+	 * @param rototrasl rototraslation of the cutter in terms of this
+	 * stock basis
+	 * @return
+	 */
+	IntersectionResult intersect(const Cutter::CutterPtr &cutter, const Eigen::Isometry3d &rototrasl);
 	
 	Eigen::Vector3d getResolution() const;
 	
+	virtual Mesh getMeshing();
+	
 private:
 	
-	VoxelInfo buildInfos(_Octree::LeafConstPtr leaf, 
-			const Cutter::CutterPtr &cutter, const Eigen::Vector3d &traslation, const Eigen::Matrix3d &rotation);
+	/**
+	 * 
+	 * @param leaf
+	 * @param cutter
+	 * @param rototras cutter (not the bounding box) rototraslation in terms of model basis
+	 * @return
+	 */
+	VoxelInfo buildInfos(const _Octree::LeafConstPtr &leaf, 
+			const Cutter::CutterPtr &cutter, const Eigen::Isometry3d &isometry);
 	
 	/**
 	 * Updates waste on given \c leaf according to given \c newInfo and then
@@ -119,7 +136,7 @@ private:
 	 * @param newInfo
 	 * @return
 	 */
-	double updateWaste(_Octree::LeafPtr leaf, const VoxelInfo &newInfo);
+	double updateWaste(const _Octree::LeafPtr &leaf, const VoxelInfo &newInfo);
 	
 	/**
 	 * 
@@ -133,7 +150,7 @@ private:
 	
 	double intersectedVolume(const SimpleBox &box, const VoxelInfo &info) const;
 	
-	bool canPushLevel(_Octree::LeafPtr leaf) const;
+	bool canPushLevel(const _Octree::LeafPtr &leaf) const;
 	
 	friend std::ostream & operator<<(std::ostream &os, const Stock &stock);
 };

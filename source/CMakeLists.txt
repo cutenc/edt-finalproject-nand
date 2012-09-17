@@ -33,7 +33,7 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -ggdb")
 
 SET(BOOST_MIN_VERSION "1.46.0")
 
-FIND_PACKAGE(Boost COMPONENTS regex program_options chrono system sygnals REQUIRED)
+FIND_PACKAGE(Boost COMPONENTS regex program_options chrono system signals REQUIRED)
 
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})

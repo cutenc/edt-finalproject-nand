@@ -16,6 +16,7 @@
 #include <ostream>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 #include <Eigen/Geometry>
 
@@ -31,17 +32,25 @@ public:
 	typedef boost::shared_ptr< SimpleBox > Ptr;
 	typedef boost::shared_ptr< const SimpleBox > ConstPtr;
 	
+	typedef Eigen::Matrix<double, 3, Corner::N_CORNERS> CornerMatrix;
+	typedef boost::shared_ptr< CornerMatrix > CornerMatrixPtr;
+	typedef boost::shared_ptr< const CornerMatrix > CornerMatrixConstPtr;
 	
+	typedef Eigen::aligned_allocator< CornerMatrix > CornerMatrixAllocator;
+	
+private:
 	/**
 	 * Half dimensions
 	 */
 	const Eigen::Vector3d EXTENT;
 	const double VOLUME;
+	const CornerMatrixConstPtr CORNERS;
 	
 public:
 	SimpleBox(const Eigen::Vector3d &extent) :
 			EXTENT(extent / 2.0),
-			VOLUME(extent[0] * extent[1] * extent[2]) {
+			VOLUME(extent[0] * extent[1] * extent[2]),
+			CORNERS(SimpleBox::buildCornerMatrix(EXTENT)) {
 		
 		GeometryUtils::checkExtent(EXTENT);
 		if (VOLUME < std::numeric_limits<double>::epsilon()) {
@@ -51,7 +60,7 @@ public:
 	
 	virtual ~SimpleBox() { }
 	
-	Eigen::Vector3d getHalfExtent() const { return this->EXTENT; }
+	const Eigen::Vector3d &getHalfExtent() const { return this->EXTENT; }
 	Eigen::Vector3d getExtent() const { return this->EXTENT * 2.0; }
 	
 	friend std::ostream& operator<<(std::ostream &os, const SimpleBox &sb) {
@@ -59,38 +68,19 @@ public:
 		return os;
 	}
 	
-	/**
-	 * 
-	 * @param type
-	 * @param traslation the traslation that have to be applied to returned
-	 * points (for example if given box is placed somewhere in space different
-	 * from the origin)
-	 * @return
-	 */
-	Eigen::Vector3d getCorner(Corner::CornerType type,
-			const Eigen::Vector3d &traslation = Eigen::Vector3d::Zero()) {
-		return getSimpleCorner(type) + traslation;
+	Eigen::Vector3d getCorner(Corner::CornerType type, 
+			const Eigen::Isometry3d &isometry = Eigen::Isometry3d::Identity()) {
+		return isometry * getSimpleCorner(type);
 	}
 	
-	Eigen::Vector3d getCorner(Corner::CornerType type,
-			const Eigen::Matrix3d &rotation) {
-		return getRotatedCorner(type, rotation);
-	}
-	
-	/**
-	 * 
-	 * @param type
-	 * @param traslation the tralsation that have to be applied to returned
-	 * points: note that SimpleBox origin is ideally placed in its centroid.
-	 * @param rotation the rotation that have to be applied to returned points
-	 * (conversion from box basis - that is normals to its three dimensions - to 
-	 * another one): note that Corner::CornerType is intended prior to rotation
-	 * @return
-	 */
-	Eigen::Vector3d getCorner(Corner::CornerType type,
-			const Eigen::Vector3d &traslation,
-			const Eigen::Matrix3d &rotation) {
-		return getRotatedCorner(type, rotation) + traslation;
+	CornerMatrixPtr getCorners(const Eigen::Isometry3d &isometry = Eigen::Isometry3d::Identity()) const {
+		
+		CornerMatrixPtr corners = boost::allocate_shared< CornerMatrix,
+				CornerMatrixAllocator >( CornerMatrixAllocator() );
+		
+		corners->noalias() = isometry * (*this->CORNERS);
+		
+		return corners;
 	}
 	
 	double getVolume() const {
@@ -98,11 +88,37 @@ public:
 	}
 	
 	
-private:
+protected:
 	
 	Eigen::Vector3d getSimpleCorner(Corner::CornerType type) const {
+		u_char nCorner = static_cast<u_char>(type);
 		
-		Eigen::Vector3d corner = this->EXTENT;
+		return CORNERS->col(nCorner);
+	}
+	
+	
+private:
+	
+	static CornerMatrixPtr buildCornerMatrix(const Eigen::Vector3d &halfSizes) {
+		
+		CornerMatrixPtr corners = boost::allocate_shared< CornerMatrix, 
+				CornerMatrixAllocator >(CornerMatrixAllocator());
+		
+		CornerIterator cit = CornerIterator::begin();
+		for (; cit != CornerIterator::end(); ++cit) {
+			Eigen::Vector3d corner = SimpleBox::getSimpleCorner(*cit, halfSizes);
+			u_char nCorner = static_cast<u_char>(*cit);
+			
+			corners->col(nCorner) = corner;
+		}
+		
+		return corners;
+	}
+	
+	static Eigen::Vector3d getSimpleCorner(Corner::CornerType type, 
+			const Eigen::Vector3d &halfSizes) {
+			
+		Eigen::Vector3d corner = halfSizes;
 		
 		switch (type) {
 			case Corner::BottomFrontLeft:
@@ -141,10 +157,6 @@ private:
 		}
 		
 		return corner;
-	}
-	
-	Eigen::Vector3d getRotatedCorner(Corner::CornerType type, const Eigen::Matrix3d &rotation) const {
-		return rotation * getSimpleCorner(type);
 	}
 	
 };

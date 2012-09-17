@@ -20,3 +20,5 @@ Voxel::CornerTypeArray Voxel::buildDefaultOrder() {
 }
 
 const Voxel::CornerTypeArray Voxel::DEFAULT_ORDER = Voxel::buildDefaultOrder();
+
+

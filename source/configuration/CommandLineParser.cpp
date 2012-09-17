@@ -23,11 +23,11 @@ CommandLineParser::CommandLineParser(int argc, const char** argv) :
 	bpo::notify(vm);
 	
 	this->helpAsked = vm.count("help");
+	this->verbosity = vm.count("verbose");
 }
 
 CommandLineParser::~CommandLineParser() {
 }
-
 
 
 std::string CommandLineParser::getConfigFile() const {
@@ -40,6 +40,10 @@ int CommandLineParser::getMaxOctreeHeight() const {
 
 bool CommandLineParser::isHelpAsked() const {
 	return this->helpAsked;
+}
+
+u_char CommandLineParser::verbosityLevel() const {
+	return this->verbosity;
 }
 
 void CommandLineParser::printUsage(std::ostream& os) const {

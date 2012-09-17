@@ -5,8 +5,8 @@
  *      Author: socket
  */
 
-#ifndef MESHINGINFO_HPP_
-#define MESHINGINFO_HPP_
+#ifndef VOXELINFO_HPP_
+#define VOXELINFO_HPP_
 
 #include <ostream>
 #include <limits>
@@ -29,6 +29,7 @@ public:
 	
 	virtual ~VoxelInfo() { }
 	
+	inline
 	bool isIntersecting() const {
 		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
 			if (isInside(i)) {
@@ -38,6 +39,7 @@ public:
 		return false;
 	}
 	
+	inline
 	bool isContained() const {
 		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
 			if (!isInside(i)) {
@@ -48,6 +50,7 @@ public:
 		return true;
 	}
 	
+	inline
 	bool isInside(Corner::CornerType c) const {
 		return isInside(static_cast<u_char>(c));
 	}
@@ -95,6 +98,7 @@ public:
 	
 private:
 	
+	inline
 	bool isInside(u_char i) const {
 		assert(CommonUtils::isBetween(i, 0, Corner::N_CORNERS));
 		
@@ -115,4 +119,4 @@ private:
 	
 };
 
-#endif /* MESHINGINFO_HPP_ */
+#endif /* VOXELINFO_HPP_ */

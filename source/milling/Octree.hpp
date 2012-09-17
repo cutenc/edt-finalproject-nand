@@ -16,6 +16,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+#include <boost/array.hpp>
 
 #include <Eigen/Geometry>
 
@@ -26,7 +27,7 @@
 class SimpleBoxCache {
 	
 	const Eigen::Vector3d EXTENT;
-	std::map<u_int, SimpleBox::Ptr> CACHE;
+	std::map<u_int, SimpleBox::ConstPtr> CACHE;
 	
 public:
 	SimpleBoxCache(Eigen::Vector3d extent) : EXTENT(extent), CACHE() {
@@ -35,10 +36,10 @@ public:
 	
 	virtual ~SimpleBoxCache() { }
 	
-	SimpleBox::Ptr getSimpleBox(u_int depth) {
-		std::map<u_int, SimpleBox::Ptr>::const_iterator elm = CACHE.find(depth);
+	SimpleBox::ConstPtr getSimpleBox(u_int depth) {
+		std::map<u_int, SimpleBox::ConstPtr>::const_iterator elm = CACHE.find(depth);
 		
-		SimpleBox::Ptr sbp;
+		SimpleBox::ConstPtr sbp;
 		if(elm == CACHE.end()) {
 			// element not found, build, insert & return
 			double rate = std::pow(2.0, (double)depth);
@@ -50,6 +51,12 @@ public:
 		}
 		
 		return sbp;
+	}
+	
+	ShiftedBox::ConstPtr getShiftedBox(u_int depth,
+			const Eigen::Translation3d &shift = Eigen::Translation3d::Identity()) {
+		
+		return boost::make_shared< ShiftedBox >(getSimpleBox(depth), shift);
 	}
 };
 
@@ -67,10 +74,14 @@ public:
 	typedef typename LeafNode< DataT >::DataPtr DataPtr;
 	typedef typename LeafNode< DataT >::DataConstPtr DataConstPtr;
 	typedef BranchNode* BranchPtr;
-	typedef typename SimpleBox::Ptr SimpleBoxPtr;
+	typedef typename SimpleBox::ConstPtr SimpleBoxPtr;
 	
 	typedef std::deque< LeafPtr > LeavesDeque;
 	typedef boost::shared_ptr< std::deque< LeafPtr > > LeavesDequePtr;
+	
+	typedef boost::array< LeafPtr, BranchNode::N_CHILDREN > LeavesArray;
+	typedef boost::shared_ptr< LeavesArray > LeavesArrayPtr;
+	
 	typedef std::deque< DataConstPtr > DataDeque;
 	typedef boost::shared_ptr< DataDeque > DataDequePtr;
 	
@@ -78,15 +89,20 @@ private:
 	
 	const Eigen::Vector3d EXTENT;
 	SimpleBoxCache BOX_CACHE;
+	const boost::shared_ptr< LeafNode< DataT > > LEAVES_LIST;
 	BranchPtr ROOT;
-	boost::shared_ptr< LeafNode< DataT > > LEAVES_LIST;
 	
 public:
 	
 	Octree(Eigen::Vector3d extent) :
-			EXTENT(extent), 
-			LEAVES_LIST(boost::make_shared< LeafNode< DataT > >()),
-			BOX_CACHE(extent) {
+			EXTENT(extent),
+			BOX_CACHE(extent),
+			LEAVES_LIST(
+					boost::make_shared< LeafNode< DataT > >(
+							BOX_CACHE.getShiftedBox(0)
+							)
+						)
+	{
 		
 		GeometryUtils::checkExtent(EXTENT);
 		
@@ -94,7 +110,7 @@ public:
 		 * it to get a branch (REAL root) and it's first children level
 		 */
 		boost::shared_ptr< LeafNode< DataT > > fakeRoot = 
-				boost::make_shared< LeafNode<DataT> >(EXTENT);
+				boost::make_shared< LeafNode<DataT> >(BOX_CACHE.getShiftedBox(0));
 		LEAVES_LIST->setNext(fakeRoot.get());
 		fakeRoot->setPrevious(LEAVES_LIST.get());
 		
@@ -123,7 +139,7 @@ public:
 		// TODO release writeLock
 	}
 	
-	LeavesDequePtr pushLevel(LeafConstPtr leaf) {
+	LeavesArrayPtr pushLevel(LeafConstPtr leaf) {
 		
 		// TODO acquire readLock
 		
@@ -172,14 +188,11 @@ public:
 	/**
 	 * 
 	 * @param obb
-	 * @param traslation from this box center to given box center
-	 * @param rotation to given box basis
+	 * @param isom isometry transformation from this box (the MODEL) to given one
 	 * @return
 	 */
 	LeavesDequePtr getIntersectingLeaves(const SimpleBox &obb,
-			const Eigen::Vector3d &traslation,
-			const Eigen::Matrix3d &rotation,
-			bool accurate) const {
+			const Eigen::Isometry3d &isom, bool accurate) const {
 		
 		// TODO acquire ReadLock
 		
@@ -193,8 +206,6 @@ public:
 		
 		LeavesDequePtr intersectingLeaves = boost::make_shared< std::deque< LeafPtr > >();
 		
-		u_int currDepth = 1;
-		
 		NodeQueuePtr nextLvlNodes = boost::make_shared< std::deque< OctreeNodePtr > >();
 		
 		do {
@@ -204,7 +215,7 @@ public:
 			ShiftedBox::ConstPtr currBox = currNode->getBox();
 			
 			// checks for intersection
-			if (currBox->isIntersecting(obb, currTraslation, rotation, accurate)) {
+			if (currBox->isIntersecting(obb, isom, accurate)) {
 				
 				/* currNode is intersecting given box so now we have to
 				 * try to expand it or save it as an intersecting leaf
@@ -236,9 +247,6 @@ public:
 				// finished checking current depth, switch to next level
 				currLvlNodes = nextLvlNodes;
 				nextLvlNodes = boost::make_shared< std::deque< OctreeNodePtr > >();
-				
-				currDepth++;
-				currBox = BOX_CACHE.getSimpleBox(currDepth);
 			}
 			
 		} while (!currLvlNodes->empty());
@@ -253,7 +261,7 @@ public:
 	 * Returns all data contained inside octree leafs: if you activate the
 	 * onlyIfChanged flag, data will be returned only if octree state changed
 	 * since last time the method was invoked with the flag on, otherwise
-	 * an empty std::vector is returned.
+	 * an empty collection is returned.
 	 * 
 	 * @param onlyIfChanged
 	 * @return
@@ -287,36 +295,33 @@ private:
 		return LEAVES_LIST->getNext();
 	}
 	
-	
 	struct PushedLevel {
-		PushedLevel(BranchPtr newBranch, LeavesDequePtr newLeaves) :
-			newBranch(newBranch), newLeaves(newLeaves) { }
+		PushedLevel() : newLeaves(boost::make_shared< LeavesArray >()) { }
 		
-		const BranchPtr newBranch;
-		const LeavesDequePtr newLeaves;
+		BranchPtr newBranch;
+		LeavesArrayPtr newLeaves;
 	};
 	
 	PushedLevel createLevel(LeafConstPtr leaf) {
+		PushedLevel toRet;
 		
-		// first create new branch node...
-		BranchPtr branch;
+		// first create new branch node that will replace given leaf
 		if (leaf->isRoot()) {
-			branch = new BranchNode();
+			toRet.newBranch = new BranchNode(leaf->getBox());
 		} else {
-			branch = new BranchNode(leaf->getFather(),
+			toRet.newBranch = new BranchNode(leaf->getFather(),
 				leaf->getChildIdx(),
-				leaf->getTraslation());
+				leaf->getBox());
 		}
 		
-		// ... then generate new children
-		LeavesDequePtr newLeaves = boost::make_shared< std::deque< LeafPtr > >();
-		
+		// create some variables needed in the following leaves-generation loop
 		u_int newDepth = leaf->getDepth() + 1;
-		
 		LeafPtr prevNode = leaf->getPrevious();
-		Eigen::Vector3d baseTraslation(
-				BOX_CACHE.getSimpleBox(newDepth)->getHalfExtent()
-		);
+		
+		SimpleBox::ConstPtr thisLvlBox = BOX_CACHE.getSimpleBox(newDepth);
+		ShiftedBox baseSBox = leaf->getBox()->getResized(thisLvlBox);
+		// base translation needed to build all the others
+		Eigen::Vector3d baseTraslation(thisLvlBox->getHalfExtent());
 		
 		for (u_char i = 0; i < BranchNode::N_CHILDREN; i++) {
 			// calculate child traslation
@@ -356,26 +361,31 @@ private:
 					break;
 			}
 			
-			Eigen::Vector3d totTraslation = leaf->getTraslation() + traslation;
+			// create shifted box for the child
+			ShiftedBox newBox = baseSBox.getShifted(Eigen::Translation3d(traslation));
 			
-			LeafPtr child = new LeafNode< DataT >(branch, i,
-					totTraslation, newDepth);
+			LeafPtr child = new LeafNode< DataT >(
+					toRet.newBranch,
+					i,
+					boost::make_shared< ShiftedBox >(newBox),
+					newDepth);
 			
+			// set previous & next pointers
 			prevNode->setNext(child);
 			child->setPrevious(prevNode);
 			prevNode = child;
 			
-			branch->setChild(i, child);
+			toRet.newBranch->setChild(i, child);
 			
-			newLeaves->push_back(child);
+			toRet.newLeaves->at(i) = child;
 		}
 		
 		// ...adjust last child's next pointer and leaf->getNext prev pointer
-		newLeaves->back()->setNext(leaf->getNext());
+		toRet.newLeaves->back()->setNext(leaf->getNext());
 		if (leaf->getNext() != NULL)
-			leaf->getNext()->setPrevious(newLeaves->back());
+			leaf->getNext()->setPrevious(toRet.newLeaves->back());
 	
-		return PushedLevel(branch, newLeaves);
+		return toRet;
 	}
 	
 	friend std::ostream & operator<<(std::ostream &os, const Octree &tree) {

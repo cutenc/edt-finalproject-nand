@@ -8,11 +8,13 @@
 #ifndef SHIFTEDBOX_HPP_
 #define SHIFTEDBOX_HPP_
 
+#include <ostream>
+
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 #include <Eigen/Geometry>
 
-#include "Octree.hpp"
 #include "Voxel.hpp"
 
 class ShiftedBox {
@@ -29,12 +31,59 @@ private:
 	
 public:
 	ShiftedBox(const SimpleBox::ConstPtr &box,
-			const Eigen::Translation3d &tras = 
-					Eigen::Translation3d(Eigen::Vector3d::Zero())) :
+			const Eigen::Translation3d &tras = Eigen::Translation3d::Identity()) :
 			simpleBox(box), shift(tras)
 	{ }
 	
 	virtual ~ShiftedBox() { }
+	
+	/**
+	 * 
+	 * @param tras
+	 * @return another box shifted from current one according to given
+	 * translation
+	 */
+	ShiftedBox getShifted(const Eigen::Translation3d &tras) const {
+		Eigen::Translation3d newTrans(this->shift.translation() + tras.translation());
+		return ShiftedBox(this->simpleBox, newTrans);
+	}
+	
+	ShiftedBox getResized(const SimpleBox::ConstPtr &newSize) const {
+		return ShiftedBox(newSize, this->shift);
+	}
+	
+
+	Voxel::Ptr getVoxel(const Eigen::Isometry3d &rototras = Eigen::Isometry3d::Identity()) const {
+		SimpleBox::CornerMatrixPtr corners = getCornerMatrix(rototras);
+		return boost::make_shared< Voxel >(corners);
+	}
+	
+	/**
+	 * 
+	 * @param rototras isometric transformation expressed in this ShiftedBox
+	 * basis: pay attention that total isometry will be
+	 * \code
+	 * rototras * this->shift
+	 * \endcode
+	 * that is, it will convert corners from current basis, according to
+	 * given isometry.
+	 * @return
+	 */
+	SimpleBox::CornerMatrixPtr getCornerMatrix(const Eigen::Isometry3d &rototras = Eigen::Isometry3d::Identity()) const {
+		/* total isometry equals given one plus this box translation
+		 */
+		Eigen::Isometry3d totIsometry; totIsometry = rototras * this->shift;
+		
+		return this->simpleBox->getCorners(totIsometry);
+	}
+	
+	const Eigen::Translation3d & getShift() const {
+		return this->shift;
+	}
+	
+	const SimpleBox::ConstPtr & getSimpleBox() const {
+		return this->simpleBox;
+	}
 	
 	/**
 	 * 
@@ -46,9 +95,9 @@ public:
 	 * as collinding ones but method execution will be ~3/7 times faster.
 	 * @return
 	 */
-	bool isIntersecting(SimpleBox::ConstPtr otherBox,
+	bool isIntersecting(const SimpleBox &otherBox,
 			const Eigen::Isometry3d &rototras,
-			bool accurate) {
+			bool accurate) const {
 		
 		// thanks to http://www.gamasutra.com/view/feature/131790/simple_intersection_tests_for_games.php
 				
@@ -57,12 +106,12 @@ public:
 		boxes overlap. */
 		
 		double ra, rb, t;
-		const Eigen::Vector3d &a = this->simpleBox->EXTENT,
-				&b = otherBox;
+		const Eigen::Vector3d &a = this->simpleBox->getHalfExtent(),
+				&b = otherBox.getHalfExtent();
 		
-		// TODO check this out
 		const Eigen::Matrix3d &rotation = rototras.rotation();
-		const Eigen::Vector3d &traslation = rototras.translation() * this->shift.inverse();
+		const Eigen::Vector3d traslation = rototras.translation() - 
+				this->shift.translation();
 		
 		//A's basis vectors
 		for(int i = 0; i < 3; i++ ) {
@@ -164,22 +213,11 @@ public:
 		return true;
 	}
 	
-	/**
-	 * 
-	 * @param tras
-	 * @return another box shifted from current one according to given
-	 * translation
-	 */
-	ShiftedBox getShifted(const Eigen::Translation3d &tras) const {
-		Eigen::Translation3d newTrans = this->shift * tras;
-		return ShiftedBox(this->simpleBox, newTrans);
-	}
-	
-	Voxel getVoxel(const Eigen::Isometry3d &rototras = Eigen::Isometry3d::Identity()) const {
+	friend std::ostream & operator<<(std::ostream &os, const ShiftedBox &sbox) {
+		os << "SBOX[" << *sbox.simpleBox << "@(" 
+				<< sbox.shift.translation().transpose() << ")]";
 		
-		// TODO check the following line and complete method
-		Eigen::Isometry3d totIsometry = rototras * this->shift;
-		
+		return os;
 	}
 	
 };

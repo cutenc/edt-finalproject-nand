@@ -71,33 +71,20 @@ IntersectionResult MillingAlgorithm::doIntersection(const CNCMove &move) {
 	 * in stock basis
 	 */
 	
-	Point3D stockTrasl_world = move.STOCK.TRASLATION,
-			cutterTrasl_world = move.CUTTER.TRASLATION;
-
-	/* nomenclature: FooRot_Bar => rotate Foo coordinates into Bar ones,
-		 * that is translate Foo points into Bar points, that is it's a matrix
-		 * having on the columns Foo's basis' components expressed as Bar basis.
-		 */
-	EulerAngles stockRot_world = move.STOCK.ROTATION,
-			cutterRot_world = move.CUTTER.ROTATION;
-	
-	Eigen::Vector3d cutterTrasl_stock_world = cutterTrasl_world.asEigen() -
-			stockTrasl_world.asEigen();
-	
-	// now this traslation have to be rotate according to STOCK rotation
-	Eigen::Vector3d cutterTrasl_stock = stockRot_world.asEigen().transpose() * cutterTrasl_stock_world;
-	
-	/* when returned as eigen both these rotations are matrices that
+	/* when returned as eigen both these isometry are matrices that
 	 * converts point from stock/cutter coords to world ones: i.e. they
 	 * convert from stock/cutter basis to world basis; we have to create 
-	 * a rotation matrix that converts from cutter coords to stock coords.
-	 * NB: because all rotation matrix are orthonormal we know that
-	 * M^(-1) = M^T (inverse equals transposed)
+	 * an isometry that converts from cutter coords to stock coords.
+	 * 
+	 * P_world = StockIsom_world * P_stock
+	 * P'_world = CutterIsom_world * P'_cutter
+	 * P''_stock = inverse(StockIsom_world) * P''_world
+	 * 
+	 * P3_stock = inverse(StockIsom_world) * CutterIsom_world * P3_cutter
 	 */
-	Eigen::Matrix3d cutterRot_stock = stockRot_world.asEigen().transpose() * 
-			cutterRot_world.asEigen();
+	Eigen::Isometry3d cutterIsom_stock = move.STOCK.asEigen().inverse() * move.CUTTER.asEigen();
 	
-	return stock->intersect(cutter, cutterTrasl_stock, cutterRot_stock);
+	return stock->intersect(cutter, cutterIsom_stock);
 }
 
 std::ostream& operator <<(std::ostream& os, const MillingAlgorithm& ma) {

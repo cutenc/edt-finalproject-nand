@@ -8,6 +8,7 @@
 #ifndef VOXEL_HPP_
 #define VOXEL_HPP_
 
+#include <ostream>
 #include <vector>
 #include <cassert>
 #include <stdexcept>
@@ -17,11 +18,15 @@
 #include <Eigen/Geometry>
 
 #include "Corner.hpp"
+#include "SimpleBox.hpp"
 #include "common/Utilities.hpp"
 
 class Voxel {
 	
 public:
+	
+	typedef boost::shared_ptr< Voxel > Ptr;
+	typedef boost::shared_ptr< const Voxel > ConstPtr;
 	
 	typedef boost::array< Eigen::Vector3d, Corner::N_CORNERS > CornerArray;
 	typedef boost::array< const Eigen::Vector3d, Corner::N_CORNERS > CornerConstArray;
@@ -30,18 +35,18 @@ public:
 private:
 	
 	static const CornerTypeArray DEFAULT_ORDER;
-	CornerConstArray POINTS;
+	CornerArray POINTS;
 	
 public:
 	
-	Voxel(const std::vector< Eigen::Vector3d > &points) {
-		if (points.size() != Corner::N_CORNERS)
-			throw std::invalid_argument("wrong number of points");
+	Voxel(const SimpleBox::CornerMatrixConstPtr &points) {
+		if (points->cols() != Corner::N_CORNERS) {
+			throw std::invalid_argument("Wrong number of corners");
+		}
 		
-		int i = 0;
-		std::vector< Eigen::Vector3d >::const_iterator pIt = points.begin();
-		for (; pIt != points.end(); ++pIt) {
-			POINTS[i++] = *pIt;
+		for (int i = 0; i < Corner::N_CORNERS; ++i) {
+			const Eigen::Vector3d &point = points->col(i);
+			POINTS[i] = point;
 		}
 	}
 	
@@ -51,7 +56,7 @@ public:
 		return getCorner(static_cast<u_char>(c));
 	}
 	
-	CornerArray getCorners(const CornerTypeArray &order) const {
+	CornerArray getCorners(const CornerTypeArray &order = Voxel::DEFAULT_ORDER) const {
 		assert(order.size() == Corner::N_CORNERS);
 		
 		CornerArray tmp;
@@ -65,9 +70,24 @@ public:
 		return tmp;
 	}
 	
-	CornerArray getCorners() const {
-		return getCorners(Voxel::DEFAULT_ORDER);
+	friend std::ostream & operator<<(std::ostream &os, const Voxel &voxel) {
+		// I want to print all corner as a column matrix (it occupy less space)
+		for (u_char i = 0; i < 3; ++i) {
+			if (i != 0)
+				os << std::endl;
+			
+			for (u_char j = 0; j < voxel.POINTS.size(); ++j) {
+				if (j != 0)
+					os << "\t";
+				
+				os << voxel.POINTS[j](i);
+			}
+			
+		}
+		
+		return os;
 	}
+	
 	
 private:
 	

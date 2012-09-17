@@ -24,6 +24,16 @@
 #include "SimpleBox.hpp"
 
 class SphereCutter : public Cutter {
+
+public:
+	
+	
+	virtual Mesh getMeshing() {
+		
+		// TODO implement meshing method
+		return Mesh();
+		
+	}
 	
 };
 
@@ -52,10 +62,11 @@ public:
 	}
 	
 	virtual BoundingBoxInfo getBoundingBox() const {
-		SimpleBox bbox(Eigen::Vector3d(DIAMETER, DIAMETER, LENGTH));
-		Eigen::Vector3d originTraslation(0, 0, HALF_LENGTH);
 		
-		return BoundingBoxInfo(Point3D(originTraslation), bbox);
+		Eigen::Vector3d extents(DIAMETER, DIAMETER, LENGTH);
+		Eigen::Translation3d originTraslation(0, 0, HALF_LENGTH);
+		
+		return BoundingBoxInfo(extents, Eigen::Isometry3d(originTraslation));
 	}
 	
 	virtual double getDistance(const Point3D &point) const {
@@ -84,6 +95,14 @@ public:
 		return os;
 	}
 	
+	
+	virtual Mesh getMeshing() {
+		
+		// TODO implement meshing method
+		return Mesh();
+		
+	}
+	
 private:
 	
 	inline static double sqr(double x) {
@@ -93,6 +112,16 @@ private:
 };
 
 class CustomCutter : public Cutter {
+
+public:
+	
+	
+	virtual Mesh getMeshing() {
+		
+		// TODO implement meshing method
+		return Mesh();
+		
+	}
 	
 };
 
