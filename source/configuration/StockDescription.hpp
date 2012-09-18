@@ -13,6 +13,12 @@
 #include "Geometry.hpp"
 
 class StockDescription {
+	
+public:
+	
+	typedef boost::shared_ptr<StockDescription> Ptr;
+	typedef boost::shared_ptr<const StockDescription> ConstPtr;
+	
 public:
 	StockDescription(const RectCuboidPtr &desc);
 	virtual ~StockDescription();
@@ -22,7 +28,5 @@ public:
 private:
 	const RectCuboidPtr DESCRIPTION;
 };
-
-typedef boost::shared_ptr<StockDescription> StockDescriptionPtr;
 
 #endif /* STOCKDESCRIPTOR_HPP_ */

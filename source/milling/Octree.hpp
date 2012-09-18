@@ -139,7 +139,21 @@ public:
 		// TODO release writeLock
 	}
 	
-	LeavesArrayPtr pushLevel(LeafConstPtr leaf) {
+	
+	struct PushedLevel {
+		PushedLevel() : newLeaves(boost::make_shared< LeavesArray >()) { }
+		
+		BranchPtr newBranch;
+		LeavesArrayPtr newLeaves;
+	};
+	
+	/**
+	 * Calling this method will invalidate given leaf pointer (the leaf
+	 * will be deleted)
+	 * @param leaf
+	 * @return
+	 */
+	PushedLevel pushLevel(LeafPtr &leaf) {
 		
 		// TODO acquire readLock
 		
@@ -154,11 +168,14 @@ public:
 		 * da fare"
 		 */
 		BranchPtr bnp = dynamic_cast<BranchPtr>(leaf->getFather());
-		bnp->setChild(leaf->getChildIdx(), newLevel.newBranch);
+		u_char childIdx = leaf->getChildIdx();
+		delete leaf;
+		leaf = NULL;
+		bnp->setChild(childIdx, newLevel.newBranch);
 		
 		// TODO release readLock
 		
-		return newLevel.newLeaves;
+		return newLevel;
 	}
 	
 	void purgeLeaf(LeafPtr &leaf) {
@@ -188,7 +205,8 @@ public:
 	/**
 	 * 
 	 * @param obb
-	 * @param isom isometry transformation from this box (the MODEL) to given one
+	 * @param isom isometry transformation from this box (the MODEL) to given one:
+	 * needed to transform \c obb coordinates in MODEL's basis
 	 * @return
 	 */
 	LeavesDequePtr getIntersectingLeaves(const SimpleBox &obb,
@@ -196,23 +214,22 @@ public:
 		
 		// TODO acquire ReadLock
 		
-		typedef boost::shared_ptr< std::deque< OctreeNodePtr > > NodeQueuePtr;
+		typedef std::deque< OctreeNode::Ptr > NodeQueue;
+		typedef boost::shared_ptr< NodeQueue > NodeQueuePtr;
 		
-		NodeQueuePtr currLvlNodes = boost::make_shared< std::deque< OctreeNodePtr > >();
+		NodeQueuePtr currLvlNodes = boost::make_shared< NodeQueue >();
 		for (int i = 0; i < BranchNode::N_CHILDREN; i++) {
 			if (getRoot()->hasChild(i))
 				currLvlNodes->push_back(getRoot()->getChild(i));
 		}
 		
-		LeavesDequePtr intersectingLeaves = boost::make_shared< std::deque< LeafPtr > >();
-		
-		NodeQueuePtr nextLvlNodes = boost::make_shared< std::deque< OctreeNodePtr > >();
+		LeavesDequePtr intersectingLeaves = boost::make_shared< LeavesDeque >();
 		
 		do {
-			OctreeNodePtr currNode = currLvlNodes->back();
+			OctreeNode::Ptr currNode = currLvlNodes->back();
 			currLvlNodes->pop_back();
 			
-			ShiftedBox::ConstPtr currBox = currNode->getBox();
+			const ShiftedBox::ConstPtr &currBox = currNode->getBox();
 			
 			// checks for intersection
 			if (currBox->isIntersecting(obb, isom, accurate)) {
@@ -222,17 +239,17 @@ public:
 				 */
 				
 				switch (currNode->getType()) {
-					case LEAF_NODE: {
+					case OctreeNode::LEAF_NODE: {
 						LeafPtr lnp = dynamic_cast<LeafPtr>(currNode);
 						intersectingLeaves->push_back(lnp);
 						break;
 					}
-					case BRANCH_NODE: {
+					case OctreeNode::BRANCH_NODE: {
 						BranchPtr bnp = dynamic_cast<BranchPtr>(currNode);
 						// add children to nextLvlNodes
 						for (int i = 0; i < BranchNode::N_CHILDREN; i++) {
 							if (bnp->hasChild(i))
-								nextLvlNodes->push_back(bnp->getChild(i));
+								currLvlNodes->push_back(bnp->getChild(i));
 						}
 						break;
 					}
@@ -240,13 +257,6 @@ public:
 						throw std::runtime_error("invalid node type");
 						break;
 				}
-			}
-			
-			
-			if (currLvlNodes->empty()) {
-				// finished checking current depth, switch to next level
-				currLvlNodes = nextLvlNodes;
-				nextLvlNodes = boost::make_shared< std::deque< OctreeNodePtr > >();
 			}
 			
 		} while (!currLvlNodes->empty());
@@ -294,13 +304,6 @@ private:
 	LeafPtr getFirstLeaf() const {
 		return LEAVES_LIST->getNext();
 	}
-	
-	struct PushedLevel {
-		PushedLevel() : newLeaves(boost::make_shared< LeavesArray >()) { }
-		
-		BranchPtr newBranch;
-		LeavesArrayPtr newLeaves;
-	};
 	
 	PushedLevel createLevel(LeafConstPtr leaf) {
 		PushedLevel toRet;

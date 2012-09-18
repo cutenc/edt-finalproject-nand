@@ -88,8 +88,7 @@ public:
 	/**
 	 * 
 	 * @param otherBox
-	 * @param traslation
-	 * @param rotation
+	 * @param rototras
 	 * @param accurate tells wether check should be very accurate or not:
 	 * if this flag is set to false some NON colliding cases will be threated
 	 * as collinding ones but method execution will be ~3/7 times faster.

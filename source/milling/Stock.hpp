@@ -88,7 +88,8 @@ class Stock : public Model3D {
 	
 public:
 	
-	typedef boost::shared_ptr< Stock > StockPtr;
+	typedef boost::shared_ptr< Stock > Ptr;
+	typedef boost::shared_ptr< const Stock > ConstPtr;
 	
 private:
 	
@@ -110,7 +111,7 @@ public:
 	 * stock basis
 	 * @return
 	 */
-	IntersectionResult intersect(const Cutter::CutterPtr &cutter, const Eigen::Isometry3d &rototrasl);
+	IntersectionResult intersect(const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &rototrasl);
 	
 	Eigen::Vector3d getResolution() const;
 	
@@ -126,7 +127,7 @@ private:
 	 * @return
 	 */
 	VoxelInfo buildInfos(const _Octree::LeafConstPtr &leaf, 
-			const Cutter::CutterPtr &cutter, const Eigen::Isometry3d &isometry);
+			const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &isometry);
 	
 	/**
 	 * Updates waste on given \c leaf according to given \c newInfo and then

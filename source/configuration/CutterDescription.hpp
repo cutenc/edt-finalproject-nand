@@ -14,6 +14,11 @@
 #include "common/Color.hpp"
 
 class CutterDescription {
+	
+public:
+	typedef boost::shared_ptr<CutterDescription> Ptr;
+	typedef boost::shared_ptr<const CutterDescription> ConstPtr;
+	
 public:
 	CutterDescription(const GeometryPtr &desc, const Color &color);
 	virtual ~CutterDescription();
@@ -25,7 +30,5 @@ private:
 	const GeometryPtr DESCRIPTION;
 	const Color COLOR;
 };
-
-typedef boost::shared_ptr<CutterDescription> CutterDescriptionPtr;
 
 #endif /* CUTTERDESCRIPTION_HPP_ */

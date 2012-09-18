@@ -25,8 +25,8 @@ class ConfigFileParser {
 	
 	const std::string FILENAME;
 	const ParsersMap PARSERS;
-	StockDescriptionPtr stock;
-	CutterDescriptionPtr cutter;
+	StockDescription::ConstPtr stock;
+	CutterDescription::ConstPtr cutter;
 	std::streampos firstPointPos;
 	bool foundPoints, foundCutter, foundStock;
 	
@@ -34,8 +34,8 @@ public:
 	ConfigFileParser(const std::string filename);
 	virtual ~ConfigFileParser();
 	
-	const StockDescriptionPtr getStockDescription() const;
-	const CutterDescriptionPtr getCutterDescription() const;
+	const StockDescription::ConstPtr getStockDescription() const;
+	const CutterDescription::ConstPtr getCutterDescription() const;
 	CNCMoveIterator CNCMoveBegin() const;
 	CNCMoveIterator CNCMoveEnd() const;
 	

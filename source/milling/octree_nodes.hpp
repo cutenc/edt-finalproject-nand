@@ -21,25 +21,26 @@
 #include "common/Utilities.hpp"
 #include "ShiftedBox.hpp"
 
-enum OctreeNodeType {
-	BRANCH_NODE,
-	LEAF_NODE
-};
-
-class OctreeNode;
-typedef OctreeNode * OctreeNodePtr;
-typedef const OctreeNode * OctreeNodeConstPtr;
-
 class OctreeNode {
 	
-	const OctreeNodePtr father;
+public:
+	typedef OctreeNode * Ptr;
+	
+	enum OctreeNodeType {
+		BRANCH_NODE,
+		LEAF_NODE
+	};
+	
+private:
+	
+	const OctreeNode::Ptr father;
 	const u_char childIdx;
 	const ShiftedBox::ConstPtr sbox;
 	
 public:
 	OctreeNode(const ShiftedBox::ConstPtr &box) : father(), childIdx(255), sbox(box) { }
 	
-	OctreeNode(const OctreeNodePtr &father, u_char childIdx, const ShiftedBox::ConstPtr &sbox) :
+	OctreeNode(const OctreeNode::Ptr &father, u_char childIdx, const ShiftedBox::ConstPtr &sbox) :
 			father(father), childIdx(childIdx), sbox(sbox) {
 		
 		if (father == NULL)
@@ -54,7 +55,7 @@ public:
 	
 	bool isRoot() const { return (this->father == NULL); }
 	
-	OctreeNodePtr getFather() const {
+	OctreeNode::Ptr getFather() const {
 		if (isRoot())
 			throw std::runtime_error("cannot ask root's father");
 		
@@ -93,11 +94,11 @@ public:
 	static const u_char N_CHILDREN = 8;
 	
 private:
-	boost::array< OctreeNodePtr, N_CHILDREN > children;
+	boost::array< OctreeNode::Ptr, N_CHILDREN > children;
 	
 public:
 	BranchNode(const ShiftedBox::ConstPtr &box) : OctreeNode(box) { initChildren(); }
-	BranchNode(OctreeNodePtr father, u_char childIdx, const ShiftedBox::ConstPtr &sbox) : 
+	BranchNode(OctreeNode::Ptr father, u_char childIdx, const ShiftedBox::ConstPtr &sbox) : 
 		OctreeNode(father, childIdx, sbox) { initChildren(); }
 	
 	virtual ~BranchNode() {
@@ -115,7 +116,7 @@ public:
 		return children[i] != NULL;
 	}
 	
-	OctreeNodePtr getChild(u_char i) const {
+	OctreeNode::Ptr getChild(u_char i) const {
 		assert(hasChild(i));
 		
 		return children[i];
@@ -129,10 +130,9 @@ public:
 		children[i] = NULL;
 	}
 	
-	void setChild(u_char i, OctreeNodePtr child) {
+	void setChild(u_char i, OctreeNode::Ptr child) {
 		
 		// TODO implement swapping & dirtying
-		
 		(this->children)[i] = child;
 	}
 	
@@ -178,7 +178,7 @@ private:
 public:
 	LeafNode(const ShiftedBox::ConstPtr &box) : OctreeNode(box), DEPTH(0) { initVariables(); }
 	
-	LeafNode(const OctreeNodePtr &father, u_char childIdx, const ShiftedBox::ConstPtr &sbox,
+	LeafNode(const OctreeNode::Ptr &father, u_char childIdx, const ShiftedBox::ConstPtr &sbox,
 			u_int depth) : OctreeNode(father, childIdx, sbox), DEPTH(depth) {
 		
 		initVariables();

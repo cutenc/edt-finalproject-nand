@@ -20,13 +20,12 @@
 #include "Cutter.hpp"
 #include "Stock.hpp"
 
-MillingAlgorithm::MillingAlgorithm(const ConfigFileParser &cfp, u_int maxOctreeDepth) :
-		MAX_OCTREE_DEPTH(maxOctreeDepth),
-		MOVE_IT(cfp.CNCMoveBegin()), MOVE_END(cfp.CNCMoveEnd()),
-		waterFluxWasteCount(0.0), stepNumber(0) {
-	
-	stock = boost::make_shared< Stock >(*cfp.getStockDescription(), MAX_OCTREE_DEPTH);
-	cutter = Cutter::buildCutter(*cfp.getCutterDescription());
+MillingAlgorithm::MillingAlgorithm(Stock::Ptr stock, Cutter::ConstPtr cutter,
+		const CNCMoveIterator &begin, const CNCMoveIterator &end) :
+		STOCK(stock), CUTTER(cutter), MOVE_IT(begin), MOVE_END(end)
+{
+	this->waterFluxWasteCount = 0;
+	this->stepNumber = 0;
 }
 
 MillingAlgorithm::~MillingAlgorithm() { }
@@ -61,7 +60,7 @@ u_int MillingAlgorithm::getStepNumber() {
 }
 
 Eigen::Vector3d MillingAlgorithm::getResolution() const {
-	return this->stock->getResolution();
+	return this->STOCK->getResolution();
 }
 
 IntersectionResult MillingAlgorithm::doIntersection(const CNCMove &move) {
@@ -84,7 +83,7 @@ IntersectionResult MillingAlgorithm::doIntersection(const CNCMove &move) {
 	 */
 	Eigen::Isometry3d cutterIsom_stock = move.STOCK.asEigen().inverse() * move.CUTTER.asEigen();
 	
-	return stock->intersect(cutter, cutterIsom_stock);
+	return STOCK->intersect(CUTTER, cutterIsom_stock);
 }
 
 std::ostream& operator <<(std::ostream& os, const MillingAlgorithm& ma) {
@@ -94,9 +93,9 @@ std::ostream& operator <<(std::ostream& os, const MillingAlgorithm& ma) {
 	else
 		os << *(ma.MOVE_IT);
 	os << ")" << std::endl
-			<< "\tCutter: " << *ma.cutter //; ma.cutter->toOutStream(os)
+			<< "\tCutter: " << *ma.CUTTER //; ma.cutter->toOutStream(os)
 			<< std::endl
-			<< "\tStock: " << *ma.stock;
+			<< "\tStock: " << *ma.STOCK;
 	os << std::endl << "END_MILLING_ALGORITHM";
 	
 	return os;

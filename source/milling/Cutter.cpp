@@ -12,7 +12,7 @@
 #include "configuration/Geometry.hpp"
 #include "cutters.hpp"
 
-Cutter::CutterPtr Cutter::buildCutter(const CutterDescription &desc) {
+Cutter::Ptr Cutter::buildCutter(const CutterDescription &desc) {
 	
 	switch (desc.getGeometry()->getType()) {
 		case Geometry::CYLINDER: {

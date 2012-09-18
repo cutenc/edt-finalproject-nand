@@ -17,18 +17,19 @@
 #include "MeshingInfo.hpp"
 
 class MillingAlgorithm {
-	
-	const u_int MAX_OCTREE_DEPTH;
+
+	const Stock::Ptr STOCK;
+	const Cutter::ConstPtr CUTTER;
 	CNCMoveIterator MOVE_IT, MOVE_END;
 	
 	double waterFluxWasteCount;
 	u_int stepNumber;
 	
-	Cutter::CutterPtr cutter;
-	Stock::StockPtr stock;
 	
 public:
-	MillingAlgorithm(const ConfigFileParser &cfp, u_int maxOctreeDepth);
+	MillingAlgorithm(Stock::Ptr stock, Cutter::ConstPtr cutter,
+			const CNCMoveIterator &begin, const CNCMoveIterator &end);
+	
 	virtual ~MillingAlgorithm();
 	
 	MillingResult step();

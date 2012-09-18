@@ -33,7 +33,7 @@ Stock::Stock(const StockDescription &desc, u_int maxDepth) :
 
 Stock::~Stock() { }
 
-IntersectionResult Stock::intersect(const Cutter::CutterPtr &cutter,
+IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 		const Eigen::Isometry3d &rototras) {
 	
 	boost::chrono::thread_clock::time_point startTime = boost::chrono::thread_clock::now();
@@ -110,7 +110,7 @@ IntersectionResult Stock::intersect(const Cutter::CutterPtr &cutter,
 				results.pushed_leaves++;
 				
 				// we can push another level so let's do it
-				_Octree::LeavesArrayPtr newLeaves = MODEL.pushLevel(currLeaf);
+				_Octree::LeavesArrayPtr newLeaves = MODEL.pushLevel(currLeaf).newLeaves;
 				
 				/* now we have to check wether returned leaves intersect
 				 * or not using approximated test (that should be
@@ -121,7 +121,7 @@ IntersectionResult Stock::intersect(const Cutter::CutterPtr &cutter,
 					
 					ShiftedBox::ConstPtr sbp = (*newLeavesIt)->getBox();
 					
-					if (sbp->isIntersecting(cutterBox, cutterIsom_model, false)) {
+					if (sbp->isIntersecting(cutterBox, bboxIsom_model, false)) {
 						/* let's add this new leaf to leaves array for 
 						 * further investigation
 						 */
@@ -175,7 +175,7 @@ IntersectionResult Stock::intersect(const Cutter::CutterPtr &cutter,
 }
 
 VoxelInfo Stock::buildInfos(const _Octree::LeafConstPtr &leaf, 
-		const Cutter::CutterPtr &cutter,
+		const Cutter::ConstPtr &cutter,
 		const Eigen::Isometry3d &rototras) {
 	
 	VoxelInfo info;

@@ -22,7 +22,8 @@ class Cutter : public Model3D {
 	
 public:
 	
-	typedef boost::shared_ptr< Cutter > CutterPtr;
+	typedef boost::shared_ptr< Cutter > Ptr;
+	typedef boost::shared_ptr< const Cutter > ConstPtr;
 	
 private:
 	
@@ -71,7 +72,7 @@ public:
 		return c.toOutStream(os);
 	}
 	
-	static CutterPtr buildCutter(const CutterDescription &desc);
+	static Cutter::Ptr buildCutter(const CutterDescription &desc);
 	
 };
 

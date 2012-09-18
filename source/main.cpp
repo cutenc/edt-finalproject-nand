@@ -371,7 +371,10 @@ int main(int argc, const char **argv) {
 	std::string configFile = clp.getConfigFile();
 	
 	ConfigFileParser cfp(configFile);
-	MillingAlgorithm millingAlg(cfp, max_depth);
+	Stock::Ptr stock = boost::make_shared< Stock >(*cfp.getStockDescription(), max_depth);
+	Cutter::ConstPtr cutter = Cutter::buildCutter(*cfp.getCutterDescription());
+	
+	MillingAlgorithm millingAlg(stock, cutter, cfp.CNCMoveBegin(), cfp.CNCMoveEnd());
 	
 	cout << millingAlg << std::endl;
 	while(!millingAlg.hasFinished()) {

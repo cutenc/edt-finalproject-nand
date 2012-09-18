@@ -69,11 +69,11 @@ ConfigFileParser::ConfigFileParser(const std::string filename) :
 
 ConfigFileParser::~ConfigFileParser() { }
 
-const StockDescriptionPtr ConfigFileParser::getStockDescription() const {
+const StockDescription::ConstPtr ConfigFileParser::getStockDescription() const {
 	return stock;
 }
 
-const CutterDescriptionPtr ConfigFileParser::getCutterDescription() const {
+const CutterDescription::ConstPtr ConfigFileParser::getCutterDescription() const {
 	return cutter;
 }
 
