@@ -25,6 +25,7 @@ class OctreeNode {
 	
 public:
 	typedef OctreeNode * Ptr;
+	typedef const OctreeNode * ConstPtr;
 	
 	enum OctreeNodeType {
 		BRANCH_NODE,
@@ -91,10 +92,15 @@ public:
 class BranchNode : public OctreeNode {
 	
 public:
+	typedef BranchNode * Ptr;
+	typedef const BranchNode * ConstPtr;
+	
+public:
 	static const u_char N_CHILDREN = 8;
 	
 private:
 	boost::array< OctreeNode::Ptr, N_CHILDREN > children;
+	u_char removedChildren;
 	
 public:
 	BranchNode(const ShiftedBox::ConstPtr &box) : OctreeNode(box) { initChildren(); }
@@ -122,18 +128,71 @@ public:
 		return children[i];
 	}
 	
-	void deleteChild(u_char i) {
+	/**
+	 * Returns true if this branch should be deleted (because all its
+	 * children has been deleted)
+	 * @param i
+	 * @return
+	 */
+	bool deleteChild(u_char i) {
 		assert(hasChild(i));
 		
-		// TODO implement swapping & dirtying
-		delete children[i];
+		removedChildren++;
+		
 		children[i] = NULL;
+		return removedChildren == N_CHILDREN;
 	}
 	
 	void setChild(u_char i, OctreeNode::Ptr child) {
+		assert(!hasChild(i));
 		
-		// TODO implement swapping & dirtying
+		removedChildren--;
+		
 		(this->children)[i] = child;
+	}
+	
+	/**
+	 * Returns the first (left-most) child node with given type or \c NULL if
+	 * no such child can be found
+	 * @param type
+	 * @return
+	 */
+	inline
+	OctreeNode::Ptr getFirst(OctreeNodeType type) const {
+		for (u_char i = 0; i < N_CHILDREN; ++i) {
+			if (hasChild(i)) {
+				OctreeNode::Ptr child = getChild(i);
+				if (child->getType() == type)
+					return child;
+				
+				if (child->getType() == this->getType())
+					return (dynamic_cast< BranchNode::Ptr >(child))->getFirst(type);
+			}
+		}
+		
+		return NULL;
+	}
+	
+	/**
+	 * Returns the first (left-most) child node with given type or \c NULL if
+	 * no such child can be found
+	 * @param type
+	 * @return
+	 */
+	inline
+	OctreeNode::Ptr getLast(OctreeNodeType type) const {
+		for (u_char i = N_CHILDREN - 1; i >= 0; --i) {
+			if (hasChild(i)) {
+				OctreeNode::Ptr child = getChild(i);
+				if (child->getType() == type)
+					return child;
+				
+				if (child->getType() == this->getType())
+					return (dynamic_cast< BranchNode::Ptr >(child))->getLast(type);
+			}
+		}
+		
+		return NULL;
 	}
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const {
@@ -156,6 +215,8 @@ private:
 	void initChildren() {
 		for (u_char i = 0; i < N_CHILDREN; i++)
 			children[i] = NULL;
+		
+		removedChildren = N_CHILDREN;
 	}
 };
 
@@ -165,21 +226,32 @@ class LeafNode : public OctreeNode {
 public:
 	typedef boost::shared_ptr< DataT > DataPtr;
 	typedef boost::shared_ptr< const DataT > DataConstPtr;
-	typedef LeafNode< DataT > * LeafPtr;
-	typedef const LeafNode< DataT > * LeafConstPtr;
+	
+	typedef LeafNode< DataT > * Ptr;
+	typedef const LeafNode< DataT > * ConstPtr;
+	
+	typedef LeafNode< DataT >::Ptr LeafPtr;
 	
 private:
 	
 	const u_int DEPTH;
+	const u_int VERSION;
 	
 	LeafPtr prev, next;
 	DataPtr data;
 	
 public:
-	LeafNode(const ShiftedBox::ConstPtr &box) : OctreeNode(box), DEPTH(0) { initVariables(); }
+	LeafNode(const ShiftedBox::ConstPtr &box) :
+			OctreeNode(box),
+			DEPTH(0), VERSION(-1) {
+		
+		initVariables();
+	}
 	
-	LeafNode(const OctreeNode::Ptr &father, u_char childIdx, const ShiftedBox::ConstPtr &sbox,
-			u_int depth) : OctreeNode(father, childIdx, sbox), DEPTH(depth) {
+	LeafNode(const OctreeNode::Ptr &father, u_char childIdx, 
+			const ShiftedBox::ConstPtr &sbox, u_int depth, u_int version) :
+				OctreeNode(father, childIdx, sbox),
+				DEPTH(depth), VERSION(version) {
 		
 		initVariables();
 	}
@@ -194,14 +266,12 @@ public:
 		return this->data;
 	}
 	
-	void setData(const DataT &data) {
-		// TODO implementare swapping & dirtying
-		this->data = boost::make_shared< DataT >(data);
+	u_int getVersion() const {
+		return this->VERSION;
 	}
 	
-	DataPtr getDirtyData() {
-		// TODO implementare swapping & dirtying
-		return this->data;
+	void setData(const DataT &data) {
+		this->data = boost::make_shared< DataT >(data);
 	}
 	
 	LeafPtr getPrevious() const {

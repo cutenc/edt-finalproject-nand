@@ -17,10 +17,13 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <boost/array.hpp>
+#include <boost/thread.hpp>
 
 #include <Eigen/Geometry>
 
+#include "common/AtomicNumber.hpp"
 #include "octree_nodes.hpp"
+#include "octree_tickets.hpp"
 #include "Voxel.hpp"
 
 
@@ -86,11 +89,28 @@ public:
 	typedef boost::shared_ptr< DataDeque > DataDequePtr;
 	
 private:
+	typedef OctreeTicket< DataT > Ticket;
+	typedef boost::shared_ptr< Ticket > TicketPtr;
+	typedef std::deque< TicketPtr > TicketDeque;
+	
+	typedef boost::shared_lock< boost::shared_mutex > SharedLock;
+	typedef boost::unique_lock< boost::shared_mutex > UniqueLock;
+	typedef boost::unique_lock< boost::mutex > TicketLock;
+	
+	typedef AtomicNumber<u_int> Versioner;
+	
+private:
 	
 	const Eigen::Vector3d EXTENT;
 	SimpleBoxCache BOX_CACHE;
 	const boost::shared_ptr< LeafNode< DataT > > LEAVES_LIST;
 	BranchPtr ROOT;
+	
+	boost::mutex ticketMutex;
+	TicketDeque ticketQueue;
+	
+	boost::shared_mutex mutex;
+	Versioner versioner;
 	
 public:
 	
@@ -132,20 +152,24 @@ public:
 	 */
 	void notifyChanges() {
 		
-		// TODO acquire writeLock
+		/* the defer_lock here is used just for "teaching" in fact until lock
+		 * acquisition order remains octree->ticket in the whole class, no
+		 * deadlock is possible 
+		 */
+		UniqueLock octreeLock(mutex, boost::defer_lock);
+		TicketLock ticketLock(ticketMutex, boost::defer_lock);
 		
-		// TODO implement NOTIFY changes
+		boost::lock(octreeLock, ticketLock);
 		
-		// TODO release writeLock
+		TicketDeque::iterator tickit = ticketQueue.begin();
+		for (; tickit != ticketQueue.end(); ++tickit) {
+			TicketPtr ticket = *tickit;
+			ticket->performAction();
+		}
+		
+		versioner.incAndGet();
 	}
 	
-	
-	struct PushedLevel {
-		PushedLevel() : newLeaves(boost::make_shared< LeavesArray >()) { }
-		
-		BranchPtr newBranch;
-		LeavesArrayPtr newLeaves;
-	};
 	
 	/**
 	 * Calling this method will invalidate given leaf pointer (the leaf
@@ -153,54 +177,62 @@ public:
 	 * @param leaf
 	 * @return
 	 */
-	PushedLevel pushLevel(LeafPtr &leaf) {
+	LeavesArrayPtr pushLevel(LeafPtr &leaf) {
 		
-		// TODO acquire readLock
+		SharedLock _(mutex);
 		
-		PushedLevel newLevel = createLevel(leaf);
+		u_int currVersion = versioner.get();
 		
-		// link new branch to remaining tree 
-		/* TODO devo ricordarmi che queste modifiche non vanno effettuate finchè
-		 * non viene invocato il metodo notifyChanges => il vecchio BranchNode
-		 * deve rimanere non-cosciente del fatto che la vecchia foglia è stata
-		 * sostituita da un nuovo BranchNode fino a quel momento
-		 * Probabilmente sarà necessario prevedere una lista di "cambiamenti
-		 * da fare"
-		 */
-		BranchPtr bnp = dynamic_cast<BranchPtr>(leaf->getFather());
-		u_char childIdx = leaf->getChildIdx();
-		delete leaf;
-		leaf = NULL;
-		bnp->setChild(childIdx, newLevel.newBranch);
+		PushedLevel newLevel = createLevel(leaf, currVersion);
 		
-		// TODO release readLock
+		if (isNewlyCreated(leaf, currVersion)) {
+			/* this is a newly created leaf, so, we can make changes directly
+			 * on it
+			 */
+			PushLevelTicket::attachBranch(leaf, newLevel.newBranch);
+			
+		} else {
+			/* this is a leaf attached to the tree, so we have to create a
+			 * ticket in order to perform required action
+			 */
+			TicketPtr ticket = boost::make_shared< PushLevelTicket >(leaf, newLevel.newBranch);
+			
+			TicketLock tickLock(ticketMutex);
+			ticketQueue.push_back(ticket);
+		}
 		
 		return newLevel;
 	}
 	
 	void purgeLeaf(LeafPtr &leaf) {
 		
-		// TODO acquire readLock
+		SharedLock _(mutex);
 		
-		/* TODO probabilmente questa parte andrà spostata nella fase di notify
-		 * e qui aggiungo semplicemente la foglia alla lista di foglie da
-		 * eliminare (se una foglia viene messa 2 volte?? -> potrei prima fare
-		 * la rimozione dal branch -che lancia eccezione se già stata fatta-
-		 * e poi l'aggiustamento dei puntatori, salvandoli prima)
-		 */
-		// remove given leaf from LEAVES_LIST
-		leaf->getPrevious()->setNext(leaf->getNext());
-		if (leaf->getNext() != NULL) {
-			leaf->getNext()->setPrevious(leaf->getPrevious());
+		if (isNewlyCreated(leaf, versioner.get())) {
+			PurgeLeafTicket::purgeLeaf(leaf);
+			
+		} else {
+			TicketPtr ticket = boost::make_shared< PurgeLeafTicket >(leaf);
+			
+			TicketLock tickLock(ticketMutex);
+			ticketQueue.push_back(ticket);
 		}
 		
-		// tells father to forget her
-		BranchPtr bnp = dynamic_cast<BranchPtr>(leaf->getFather());
-		bnp->deleteChild(leaf->getChildIdx());
-		
-		// TODO release readLock
 	}
 	
+	void updateLeafData(LeafPtr &leaf) {
+		// TODO !!!!
+		/*
+		if (newlycreated) {
+			if (dataUpdater(leaf, newData)) {
+				deleteLeaf(leaf)
+			}
+		} else {
+			// Ticket for future updates
+		}
+		 * 
+		 */
+	}
 	
 	/**
 	 * 
@@ -212,7 +244,7 @@ public:
 	LeavesDequePtr getIntersectingLeaves(const SimpleBox &obb,
 			const Eigen::Isometry3d &isom, bool accurate) const {
 		
-		// TODO acquire ReadLock
+		SharedLock _lock(mutex);
 		
 		typedef std::deque< OctreeNode::Ptr > NodeQueue;
 		typedef boost::shared_ptr< NodeQueue > NodeQueuePtr;
@@ -261,8 +293,6 @@ public:
 			
 		} while (!currLvlNodes->empty());
 		
-		// TODO release readLock
-		
 		return intersectingLeaves;
 	}
 	
@@ -277,7 +307,8 @@ public:
 	 * @return
 	 */
 	DataDequePtr getStoredData(bool onlyIfChanged = false) const {
-		// TODO acquire readLock
+		
+		SharedLock _(mutex);
 		
 		DataDequePtr data = boost::make_shared< DataDeque >();
 		
@@ -290,22 +321,51 @@ public:
 			data->push_back(currLeaf->getData());
 		} while((currLeaf = currLeaf->getNext()) != NULL);
 		
-		// TODO release ReadLock
 		return data;
 	}
 	
 	
 private:
 	
+	inline
 	BranchPtr getRoot() const {
 		return ROOT;
 	}
 	
+	inline
 	LeafPtr getFirstLeaf() const {
 		return LEAVES_LIST->getNext();
 	}
 	
-	PushedLevel createLevel(LeafConstPtr leaf) {
+	inline
+	bool isNewlyCreated(const LeafPtr &leaf, u_int currVersion) {
+		return leaf->getVersion() >= currVersion;
+	}
+	
+	
+	struct PushedLevel {
+		PushedLevel() : newLeaves(boost::make_shared< LeavesArray >()) { }
+		
+		BranchPtr newBranch;
+		LeavesArrayPtr newLeaves;
+	};
+	
+	/**
+	 * Create a one-level tree detached from the main one; the new tree will
+	 * have:
+	 * \li inner-consistent: meaning that new branch and all leaves are linked
+	 * together;
+	 * \li father-consistent: that is new branch is linked also with
+	 * correct father;
+	 * \li leaves list-consistent meaning that first leaf's prev pointer and
+	 * last leaf next pointer are left pointing to NULL;
+	 * \li main tree isolation that is it will not modify main tree links, so
+	 * it is not reachable from it.
+	 * @param leaf
+	 * @return
+	 */
+	PushedLevel createLevel(LeafConstPtr leaf, u_int leafVersion) {
+		
 		PushedLevel toRet;
 		
 		// first create new branch node that will replace given leaf
@@ -319,7 +379,7 @@ private:
 		
 		// create some variables needed in the following leaves-generation loop
 		u_int newDepth = leaf->getDepth() + 1;
-		LeafPtr prevNode = leaf->getPrevious();
+		LeafPtr prevNode = NULL;
 		
 		SimpleBox::ConstPtr thisLvlBox = BOX_CACHE.getSimpleBox(newDepth);
 		ShiftedBox baseSBox = leaf->getBox()->getResized(thisLvlBox);
@@ -371,11 +431,13 @@ private:
 					toRet.newBranch,
 					i,
 					boost::make_shared< ShiftedBox >(newBox),
-					newDepth);
+					newDepth, leafVersion);
 			
 			// set previous & next pointers
-			prevNode->setNext(child);
 			child->setPrevious(prevNode);
+			if (prevNode != NULL)
+				prevNode->setNext(child);
+			
 			prevNode = child;
 			
 			toRet.newBranch->setChild(i, child);
@@ -383,11 +445,6 @@ private:
 			toRet.newLeaves->at(i) = child;
 		}
 		
-		// ...adjust last child's next pointer and leaf->getNext prev pointer
-		toRet.newLeaves->back()->setNext(leaf->getNext());
-		if (leaf->getNext() != NULL)
-			leaf->getNext()->setPrevious(toRet.newLeaves->back());
-	
 		return toRet;
 	}
 	
@@ -397,7 +454,6 @@ private:
 		
 		return os;
 	}
-	
 	
 };
 

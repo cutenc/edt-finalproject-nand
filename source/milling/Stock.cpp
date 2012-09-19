@@ -110,18 +110,19 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 				results.pushed_leaves++;
 				
 				// we can push another level so let's do it
-				_Octree::LeavesArrayPtr newLeaves = MODEL.pushLevel(currLeaf).newLeaves;
+				_Octree::LeavesArrayPtr newLeaves = MODEL.pushLevel(currLeaf);
 				
 				/* now we have to check wether returned leaves intersect
-				 * or not using approximated test (that should be
-				 * faster than checking for every corner's distance)
+				 * or not: we cannot simply check for each corner distance
+				 * because all corners may be outside cutter but butter itself
+				 * is intersecting the voxel
 				 */
 				_Octree::LeavesArray::const_iterator newLeavesIt;
 				for (newLeavesIt = newLeaves->begin(); newLeavesIt != newLeaves->end(); ++newLeavesIt) {
 					
 					ShiftedBox::ConstPtr sbp = (*newLeavesIt)->getBox();
 					
-					if (sbp->isIntersecting(cutterBox, bboxIsom_model, false)) {
+					if (sbp->isIntersecting(cutterBox, bboxIsom_model, true)) {
 						/* let's add this new leaf to leaves array for 
 						 * further investigation
 						 */
