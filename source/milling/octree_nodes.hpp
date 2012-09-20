@@ -143,7 +143,7 @@ public:
 		return removedChildren == N_CHILDREN;
 	}
 	
-	void setChild(u_char i, OctreeNode::Ptr child) {
+	void setChild(u_char i, const OctreeNode::Ptr &child) {
 		assert(!hasChild(i));
 		
 		removedChildren--;
@@ -181,7 +181,7 @@ public:
 	 */
 	inline
 	OctreeNode::Ptr getLast(OctreeNodeType type) const {
-		for (u_char i = N_CHILDREN - 1; i >= 0; --i) {
+		for (int i = N_CHILDREN - 1; i >= 0; --i) {
 			if (hasChild(i)) {
 				OctreeNode::Ptr child = getChild(i);
 				if (child->getType() == type)
@@ -238,7 +238,7 @@ private:
 	const u_int VERSION;
 	
 	LeafPtr prev, next;
-	DataPtr data;
+	DataConstPtr data;
 	
 public:
 	LeafNode(const ShiftedBox::ConstPtr &box) :
@@ -270,8 +270,8 @@ public:
 		return this->VERSION;
 	}
 	
-	void setData(const DataT &data) {
-		this->data = boost::make_shared< DataT >(data);
+	void setData(const DataConstPtr &data) {
+		this->data = data;
 	}
 	
 	LeafPtr getPrevious() const {

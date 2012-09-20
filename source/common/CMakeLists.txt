@@ -1,7 +1,6 @@
 
 SET (common_SRC
 # add here both your sources (cpp) and header (hpp) files
-AtomicNumber.cpp
 AtomicNumber.hpp
 Color.cpp
 Color.hpp

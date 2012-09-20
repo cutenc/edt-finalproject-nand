@@ -18,6 +18,8 @@
 
 class VoxelInfo {
 	
+	// updated by updateInsideness(u_char, double) function
+	u_char insideCornerNumber;
 	double insideness[Corner::N_CORNERS];
 	
 public:
@@ -25,29 +27,19 @@ public:
 		for (int i = 0; i < Corner::N_CORNERS; ++i) {
 			insideness[i] = -CommonUtils::INFINITE;
 		}
+		insideCornerNumber = 0;
 	}
 	
 	virtual ~VoxelInfo() { }
 	
 	inline
 	bool isIntersecting() const {
-		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
-			if (isInside(i)) {
-				return true;
-			}
-		}
-		return false;
+		return insideCornerNumber > 0;
 	}
 	
 	inline
 	bool isContained() const {
-		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
-			if (!isInside(i)) {
-				return false;
-			}
-		}
-		
-		return true;
+		return insideCornerNumber == Corner::N_CORNERS;
 	}
 	
 	inline
@@ -56,14 +48,7 @@ public:
 	}
 	
 	u_char getInsideCornersNumber() const {
-		u_char count = 0;
-		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
-			if (isInside(i)) {
-				count++;
-			}
-		}
-		
-		return count;
+		return insideCornerNumber;
 	}
 	
 	double getInsideness(Corner::CornerType c) const {
@@ -100,21 +85,23 @@ private:
 	
 	inline
 	bool isInside(u_char i) const {
-		assert(CommonUtils::isBetween(i, 0, Corner::N_CORNERS));
-		
 		return insideness[i] >= 0;
 	}
 	
 	double getInsideness(u_char i) const {
-		assert(CommonUtils::isBetween(i, 0, Corner::N_CORNERS));
-		
 		return insideness[i];
 	}
 	
 	void updateInsideness(u_char i, double newInsideness) {
-		assert(CommonUtils::isBetween(i, 0, Corner::N_CORNERS));
+		bool prevInside = isInside(i);
 		
 		insideness[i] = std::max< double >(insideness[i], newInsideness);
+		
+		if (!prevInside && isInside(i)) {
+			++insideCornerNumber;
+		} /* there is no else clause because function used for update is a MAX
+		 * so previously inside corners cannot fall outside
+		*/ 
 	}
 	
 };

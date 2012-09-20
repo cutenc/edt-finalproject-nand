@@ -72,8 +72,8 @@ template <typename DataT>
 class Octree {
 	
 public:
-	typedef typename LeafNode< DataT >::LeafPtr LeafPtr;
-	typedef typename LeafNode< DataT >::LeafConstPtr LeafConstPtr;
+	typedef typename LeafNode< DataT >::Ptr LeafPtr;
+	typedef typename LeafNode< DataT >::ConstPtr LeafConstPtr;
 	typedef typename LeafNode< DataT >::DataPtr DataPtr;
 	typedef typename LeafNode< DataT >::DataConstPtr DataConstPtr;
 	typedef BranchNode* BranchPtr;
@@ -89,7 +89,7 @@ public:
 	typedef boost::shared_ptr< DataDeque > DataDequePtr;
 	
 private:
-	typedef OctreeTicket< DataT > Ticket;
+	typedef OctreeTicket Ticket;
 	typedef boost::shared_ptr< Ticket > TicketPtr;
 	typedef std::deque< TicketPtr > TicketDeque;
 	
@@ -131,17 +131,20 @@ public:
 		 */
 		boost::shared_ptr< LeafNode< DataT > > fakeRoot = 
 				boost::make_shared< LeafNode<DataT> >(BOX_CACHE.getShiftedBox(0));
-		LEAVES_LIST->setNext(fakeRoot.get());
-		fakeRoot->setPrevious(LEAVES_LIST.get());
 		
-		PushedLevel level = createLevel(fakeRoot.get());
-		// then set the REAL root pointer!
+		PushedLevel level = createLevel(fakeRoot.get(), versioner.get());
+		
+		// then set the REAL root pointer & link it in the leaves list
 		ROOT = level.newBranch;
+		LEAVES_LIST->setNext(level.newLeaves->front());
+		level.newLeaves->front()->setPrevious(LEAVES_LIST.get());
 		
 		notifyChanges();
 	}
 	
 	virtual ~Octree() {
+		notifyChanges();
+		
 		delete ROOT;
 	}
 	
@@ -161,9 +164,8 @@ public:
 		
 		boost::lock(octreeLock, ticketLock);
 		
-		TicketDeque::iterator tickit = ticketQueue.begin();
-		for (; tickit != ticketQueue.end(); ++tickit) {
-			TicketPtr ticket = *tickit;
+		while (!ticketQueue.empty()) {
+			TicketPtr ticket = ticketQueue.back(); ticketQueue.pop_back();
 			ticket->performAction();
 		}
 		
@@ -177,7 +179,7 @@ public:
 	 * @param leaf
 	 * @return
 	 */
-	LeavesArrayPtr pushLevel(LeafPtr &leaf) {
+	LeavesArrayPtr pushLevel(LeafPtr leaf) {
 		
 		SharedLock _(mutex);
 		
@@ -189,49 +191,51 @@ public:
 			/* this is a newly created leaf, so, we can make changes directly
 			 * on it
 			 */
-			PushLevelTicket::attachBranch(leaf, newLevel.newBranch);
+			PushLevelTicket< DataT >::attachBranch(leaf, newLevel.newBranch);
 			
 		} else {
 			/* this is a leaf attached to the tree, so we have to create a
 			 * ticket in order to perform required action
 			 */
-			TicketPtr ticket = boost::make_shared< PushLevelTicket >(leaf, newLevel.newBranch);
-			
-			TicketLock tickLock(ticketMutex);
-			ticketQueue.push_back(ticket);
+			TicketPtr ticket = boost::make_shared< PushLevelTicket< DataT > >(leaf, newLevel.newBranch);
+			this->queueTicket(ticket);
 		}
 		
-		return newLevel;
+		return newLevel.newLeaves;
 	}
 	
-	void purgeLeaf(LeafPtr &leaf) {
+	void purgeLeaf(LeafPtr leaf) {
 		
 		SharedLock _(mutex);
 		
 		if (isNewlyCreated(leaf, versioner.get())) {
-			PurgeLeafTicket::purgeLeaf(leaf);
+			PurgeNodeTicket::DeletionInfo info = 
+					PurgeLeafTicket < DataT >::purgeLeaf(leaf, false);
+			
+			if (info.shouldDelete) {
+				TicketPtr ticket = boost::make_shared< PurgeNodeTicket >(info.reference);
+				this->queueTicket(ticket);
+			}
 			
 		} else {
-			TicketPtr ticket = boost::make_shared< PurgeLeafTicket >(leaf);
-			
-			TicketLock tickLock(ticketMutex);
-			ticketQueue.push_back(ticket);
+			TicketPtr ticket = boost::make_shared< PurgeLeafTicket< DataT > >(leaf);
+			this->queueTicket(ticket);
 		}
 		
 	}
 	
-	void updateLeafData(LeafPtr &leaf) {
-		// TODO !!!!
-		/*
-		if (newlycreated) {
-			if (dataUpdater(leaf, newData)) {
-				deleteLeaf(leaf)
-			}
+	void updateLeafData(LeafPtr leaf, const DataConstPtr &data) {
+		
+		SharedLock _(mutex);
+		
+		if(isNewlyCreated(leaf, versioner.get())) {
+			UpdateDataTicket< DataT >::updateData(leaf, data);
+			
 		} else {
-			// Ticket for future updates
+			TicketPtr ticket = boost::make_shared< UpdateDataTicket< DataT > >(leaf, data);
+			this->queueTicket(ticket);
 		}
-		 * 
-		 */
+		
 	}
 	
 	/**
@@ -242,9 +246,9 @@ public:
 	 * @return
 	 */
 	LeavesDequePtr getIntersectingLeaves(const SimpleBox &obb,
-			const Eigen::Isometry3d &isom, bool accurate) const {
+			const Eigen::Isometry3d &isom, bool accurate) {
 		
-		SharedLock _lock(mutex);
+		SharedLock _(mutex);
 		
 		typedef std::deque< OctreeNode::Ptr > NodeQueue;
 		typedef boost::shared_ptr< NodeQueue > NodeQueuePtr;
@@ -306,7 +310,7 @@ public:
 	 * @param onlyIfChanged
 	 * @return
 	 */
-	DataDequePtr getStoredData(bool onlyIfChanged = false) const {
+	DataDequePtr getStoredData(bool onlyIfChanged = false) {
 		
 		SharedLock _(mutex);
 		
@@ -349,6 +353,11 @@ private:
 		BranchPtr newBranch;
 		LeavesArrayPtr newLeaves;
 	};
+	
+	void queueTicket(TicketPtr newTicket) {
+		TicketLock _l(ticketMutex);
+		this->ticketQueue.push_back(newTicket);
+	}
 	
 	/**
 	 * Create a one-level tree detached from the main one; the new tree will

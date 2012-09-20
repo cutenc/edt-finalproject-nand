@@ -11,6 +11,7 @@ MillingAlgorithm.cpp
 MillingAlgorithm.hpp
 MillingResult.hpp
 octree_nodes.hpp
+octree_tickets.hpp
 Octree.hpp
 ShiftedBox.hpp
 SimpleBox.hpp

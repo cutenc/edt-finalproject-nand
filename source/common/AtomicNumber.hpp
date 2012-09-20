@@ -23,16 +23,46 @@ private:
 	boost::shared_mutex mutex;
 	
 public:
-	AtomicNumber();
-	virtual ~AtomicNumber();
+	AtomicNumber() : number(0) { }
+	virtual ~AtomicNumber() { }
 	
-	T get() const;
-	T incAndGet();
-	T getAndInc();
-	T decAndGet();
-	T getAndDec();
-	T addAndGet(const T &n);
-	T getAndAdd(const T &n);
+	T get() {
+		SharedLock _(mutex);
+		
+		return this->number;
+	}
+	
+	T set(const T n)  {
+		UniqueLock _(mutex);
+		
+		T copy(number);
+		number = n;
+		
+		return copy;
+	}
+
+	T addAndGet(const T n) {
+		UniqueLock _(mutex);
+		
+		number += n;
+		
+		return number;
+	}
+	
+	T getAndAdd(const T n) {
+		UniqueLock _(mutex);
+		
+		T copy(number);
+		number += n;
+		
+		return copy;
+	}
+	
+	T incAndGet() { return addAndGet(1); }
+	T getAndInc() { return getAndAdd(1); }
+	T decAndGet() { return addAndGet(-1); }
+	T getAndDec()  { return getAndAdd(-1); }
 };
+
 
 #endif /* ATOMICNUMBER_HPP_ */

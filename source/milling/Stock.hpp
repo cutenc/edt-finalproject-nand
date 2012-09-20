@@ -9,6 +9,7 @@
 #define STOCK_HPP_
 
 #include <ostream>
+#include <sstream>
 
 #include <boost/chrono.hpp>
 #include <boost/shared_ptr.hpp>
@@ -68,32 +69,47 @@ struct IntersectionResult {
 		return boost::chrono::microseconds(us.count() / this->analyzed_leaves);
 	}
 	
+	static std::string getPrintHeader() {
+		std::stringstream ss;
+		ss << "waste"
+				<< "\t#analyzed leaves"
+				<< "\t#purged"
+				<< "\t#lazy purged"
+				<< "\t#pushed"
+				<< "\t#approx_error"
+				<< "\t#approx_skips"
+				<< "\t#elapsed time (s)"
+				<< "\t#mean time per leaf (us)";
+		return ss.str();
+	}
+	
 	friend std::ostream & operator<<(std::ostream &os, const IntersectionResult &res) {
-		os << "\twaste: " << res.waste << std::endl
-				<< "\t#analyzed leaves: " << res.analyzed_leaves << std::endl
-				<< "\t#purged: " << res.purged_leaves << std::endl
-				<< "\t#lazy purged: " << res.lazy_purged_leaves << std::endl
-				<< "\t#pushed: " << res.pushed_leaves << std::endl
-				<< "\t#approx_error: " << res.intersection_approx_errors << std::endl
-				<< "\t#approx_skips: " << res.intersection_approx_skips << std::endl
-				<< "\t#elapsed time: " << res.elapsedTime.count() / 1000.0 << "s" << std::endl
-				<< "\t#mean time per leaf: " << res.meanTimePerLeaf().count() << "us"
+		os << res.waste
+				<< "\t" << res.analyzed_leaves
+				<< "\t" << res.purged_leaves
+				<< "\t" << res.lazy_purged_leaves
+				<< "\t" << res.pushed_leaves
+				<< "\t" << res.intersection_approx_errors
+				<< "\t" << res.intersection_approx_skips
+				<< "\t" << res.elapsedTime.count() / 1000.0
+				<< "\t" << res.meanTimePerLeaf().count()
 		;
 		
 		return os;
 	}
 };
 
+
 class Stock : public Model3D {
 	
 public:
-	
 	typedef boost::shared_ptr< Stock > Ptr;
 	typedef boost::shared_ptr< const Stock > ConstPtr;
 	
 private:
-	
 	typedef Octree< VoxelInfo > _Octree;
+	typedef Octree< VoxelInfo >::DataPtr VoxelInfoPtr;
+	typedef Octree< VoxelInfo >::DataConstPtr VoxelInfoConstPtr;
 	
 	const u_int MAX_DEPTH;
 	const Eigen::Vector3d EXTENT;
@@ -126,19 +142,9 @@ private:
 	 * @param rototras cutter (not the bounding box) rototraslation in terms of model basis
 	 * @return
 	 */
-	VoxelInfo buildInfos(const _Octree::LeafConstPtr &leaf, 
+	VoxelInfoPtr buildInfos(const _Octree::LeafConstPtr &leaf, 
 			const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &isometry);
-	
-	/**
-	 * Updates waste on given \c leaf according to given \c newInfo and then
-	 * returns an approximation of the amount of new waste.
-	 * 
-	 * @param leaf
-	 * @param newInfo
-	 * @return
-	 */
-	double updateWaste(const _Octree::LeafPtr &leaf, const VoxelInfo &newInfo);
-	
+
 	/**
 	 * 
 	 * @param voxel
@@ -147,9 +153,9 @@ private:
 	 * with new ones
 	 * @return
 	 */
-	double getApproxWaste(const SimpleBox &box, const VoxelInfo &oldInfo, const VoxelInfo &updatedInfo) const;
+	double getApproxWaste(const SimpleBox &box, const VoxelInfoConstPtr &oldInfo, const VoxelInfoConstPtr &updatedInfo) const;
 	
-	double intersectedVolume(const SimpleBox &box, const VoxelInfo &info) const;
+	double intersectedVolume(const SimpleBox &box, const VoxelInfoConstPtr &info) const;
 	
 	bool canPushLevel(const _Octree::LeafPtr &leaf) const;
 	

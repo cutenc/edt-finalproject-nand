@@ -8,6 +8,8 @@
 #ifndef MILLINGRESULT_HPP_
 #define MILLINGRESULT_HPP_
 
+#include <sstream>
+
 struct MillingResult {
 	
 public:
@@ -18,9 +20,12 @@ public:
 	IntersectionResult intersection;
 	bool water;
 	
+	static std::string getPrintHeader() {
+		return "#move\twater(y/n)\t" + IntersectionResult::getPrintHeader();
+	}
+	
 	friend std::ostream & operator<<(std::ostream &os, const MillingResult &mr) {
-		os << "#" << mr.stepNumber << " [" << ((mr.water) ? "X" : " ") << "] water" << std::endl;
-		os << mr.intersection;
+		os << mr.stepNumber << "\t" << ((mr.water) ? "y" : "n") << "\t" << mr.intersection;
 		
 		return os;
 	}

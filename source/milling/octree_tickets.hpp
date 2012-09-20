@@ -10,22 +10,10 @@
 
 #include "octree_nodes.hpp"
 
-template < typename T >
 class OctreeTicket {
 	
-private:
-	typedef typename LeafNode< T >::LeafPtr LeafPtr;
-	
-	const LeafPtr targetLeaf;
-	
 public:
-	OctreeTicket(const LeafPtr &leaf) : targetLeaf(leaf) {
-		checkNull(targetLeaf);
-	}
-	
-	virtual ~OctreeTicket();
-	
-	LeafPtr getTarget() const { return this->targetLeaf; }
+	virtual ~OctreeTicket() { }
 	
 	virtual void performAction() const =0;
 	
@@ -38,13 +26,35 @@ protected:
 };
 
 template < typename T >
-class PushLevelTicket : public OctreeTicket< T > {
+class OctreeLeafTicket : public OctreeTicket {
 	
-	BranchNode::ConstPtr newBranch;
+protected:
+	typedef typename LeafNode< T >::LeafPtr LeafPtr;
+	
+	const LeafPtr targetLeaf;
 	
 public:
-	PushLevelTicket(const LeafPtr &leaf, const BranchNode::ConstPtr &newBranch) :
-			OctreeTicket(leaf), newBranch(newBranch) {
+	OctreeLeafTicket(const LeafPtr &leaf) : targetLeaf(leaf) {
+		checkNull(targetLeaf);
+	}
+	
+	virtual ~OctreeLeafTicket() { }
+	
+	LeafPtr getTarget() const { return this->targetLeaf; }
+	
+};
+
+template < typename T >
+class PushLevelTicket : public OctreeLeafTicket< T > {
+	
+private:
+	typedef typename OctreeLeafTicket< T >::LeafPtr LeafPtr;
+	
+	BranchNode::Ptr newBranch;
+	
+public:
+	PushLevelTicket(const LeafPtr leaf, const BranchNode::Ptr &newBranch) :
+		OctreeLeafTicket< T >(leaf), newBranch(newBranch) {
 		
 		OctreeTicket::checkNull(newBranch);
 	}
@@ -52,22 +62,34 @@ public:
 	virtual ~PushLevelTicket() { }
 	
 	virtual void performAction() const {
-		attachBranch(getTarget(), newBranch);
+		attachBranch(OctreeLeafTicket< T >::getTarget(), newBranch);
 	}
 	
-	static void attachBranch(LeafPtr &leaf, const BranchNode::Ptr &newBranch) {
-		checkNull(leaf, newBranch);
+	static void attachBranch(LeafPtr leaf, const BranchNode::Ptr newBranch) {
+		OctreeTicket::checkNull(newBranch);
 		
 		BranchNode::Ptr father = dynamic_cast< BranchNode::Ptr >(leaf->getFather());
 		assert(father == newBranch->getFather());
 		
-		LeafPtr firstLeaf = newBranch->getFirst(OctreeNode::LEAF_NODE),
-				lastLeaf = newBranch->getLast(OctreeNode::LEAF_NODE);
+		LeafPtr firstLeaf = dynamic_cast< LeafPtr >(newBranch->getFirst(OctreeNode::LEAF_NODE)),
+				lastLeaf = dynamic_cast< LeafPtr >(newBranch->getLast(OctreeNode::LEAF_NODE));
+		
+		assert(firstLeaf != NULL && lastLeaf != NULL);
+		
 		u_char leafIdx = leaf->getChildIdx();
 		
 		// first of all, update leaves list's pointers
-		leaf->getPrevious()->setNext(firstLeaf);
-		firstLeaf->setPrevious(leaf->getPrevious());
+		if (leaf->getPrevious() != NULL) {
+			leaf->getPrevious()->setNext(firstLeaf);
+			firstLeaf->setPrevious(leaf->getPrevious());
+		} else {
+			/* this can occur if we push a newly created first-leaf (it has
+			 * not been attached to the rest of the tree yet) otherwise it
+			 * MUST not occur because due to the presence of a starting fake
+			 * leaf there should be always a "previous"
+			 */
+			assert(leaf->getVersion() == firstLeaf->getVersion());
+		}
 		
 		if (leaf->getNext() != NULL) {
 			leaf->getNext()->setPrevious(lastLeaf);
@@ -81,24 +103,70 @@ public:
 		father->setChild(leafIdx, newBranch);
 		
 		// then free leaf's memory (no longer needed)
-		delete leaf; leaf = NULL;
+		delete leaf;
 	}
 	
 };
 
-template < typename T >
-class PurgeLeafTicket : public OctreeTicket< T > {
+class PurgeNodeTicket : public OctreeTicket {
+
+public:
+	struct DeletionInfo {
+		DeletionInfo(bool b, const OctreeNode::Ptr &p) :
+			shouldDelete(b), reference(p)
+		{ }
+		
+		bool shouldDelete;
+		OctreeNode::Ptr reference;
+	};
+	
+private:
+	const OctreeNode::Ptr node;
 	
 public:
-	PurgeLeafTicket(const LeafPtr &leaf) : OctreeTicket(leaf) { }
+	PurgeNodeTicket(const OctreeNode::Ptr &node) : node(node) { }
+	virtual ~PurgeNodeTicket() { }
+	
+	virtual void performAction() const {
+		purgeNode(node, true);
+	}
+	
+	static DeletionInfo purgeNode(OctreeNode::Ptr node, bool recursive) {
+		// tells father to forget her...
+		bool deleteBranch = false;
+		do {
+			BranchNode::Ptr bnp = dynamic_cast< BranchNode::Ptr >(node->getFather());
+			deleteBranch = bnp->deleteChild(node->getChildIdx());
+			
+			// then free leaf's memory (no longer needed)
+			delete node;
+			
+			// and prepare for upper level deletion (if needed)
+			node = bnp;
+		} while (deleteBranch && recursive && (!node->isRoot()));
+		
+		return DeletionInfo( deleteBranch && (!node->isRoot()),
+				node
+		);
+	}
+};
+
+template < typename T >
+class PurgeLeafTicket : public OctreeLeafTicket< T > {
+	
+private:
+	typedef typename OctreeLeafTicket< T >::LeafPtr LeafPtr;
+	
+public:
+	PurgeLeafTicket(const LeafPtr leaf) : OctreeLeafTicket< T >(leaf) { }
 	
 	virtual ~PurgeLeafTicket() { }
 	
 	virtual void performAction() const {
-		purgeLeaf(getTarget());
+		purgeLeaf(OctreeLeafTicket< T >::getTarget(), true);
 	}
 	
-	static void purgeLeaf(LeafPtr &leaf) {
+	static PurgeNodeTicket::DeletionInfo purgeLeaf(LeafPtr leaf, bool recursive) {
 		
 		// adjust previous & next pointers
 		if (leaf->getPrevious() != NULL) {
@@ -108,13 +176,35 @@ public:
 			leaf->getNext()->setPrevious(leaf->getPrevious());
 		}
 		
-		// tells father to forget her
-		BranchNode::Ptr bnp = dynamic_cast< BranchNode::Ptr >(leaf->getFather());
-		bnp->deleteChild(leaf->getChildIdx());
-		
-		// then free leaf's memory (no longer needed)
-		delete leaf; leaf = NULL;
-		
+		return PurgeNodeTicket::purgeNode(leaf, recursive);
+	}
+	
+};
+
+template < typename T >
+class UpdateDataTicket : public OctreeLeafTicket< T > {
+	
+public:
+	typedef typename LeafNode< T >::DataConstPtr DataConstPtr;
+	
+private:
+	typedef typename OctreeLeafTicket< T >::LeafPtr LeafPtr;
+	
+private:
+	const DataConstPtr newData;
+	
+public:
+	UpdateDataTicket(const LeafPtr leaf, const DataConstPtr &newData) :
+		OctreeLeafTicket< T >(leaf), newData(newData) { }
+	
+	virtual ~UpdateDataTicket() { }
+	
+	virtual void performAction() const {
+		updateData(OctreeLeafTicket< T >::getTarget(), newData);
+	}
+	
+	static void updateData(LeafPtr leaf, const DataConstPtr &newData) {
+		leaf->setData(newData);
 	}
 	
 };

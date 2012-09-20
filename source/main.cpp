@@ -377,6 +377,7 @@ int main(int argc, const char **argv) {
 	MillingAlgorithm millingAlg(stock, cutter, cfp.CNCMoveBegin(), cfp.CNCMoveEnd());
 	
 	cout << millingAlg << std::endl;
+	cout << "Start milling:" << endl << MillingResult::getPrintHeader() << endl;
 	while(!millingAlg.hasFinished()) {
 		MillingResult res = millingAlg.step();
 		cout << res << std::endl;

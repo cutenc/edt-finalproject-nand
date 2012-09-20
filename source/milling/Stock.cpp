@@ -89,14 +89,17 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 		 * least, some of their corners are inside/outside cutter blade
 		 */
 		
-		VoxelInfo currInfo = buildInfos(currLeaf, cutter, cutterIsom_model);
+		VoxelInfoPtr currInfo = buildInfos(currLeaf, cutter, cutterIsom_model);
 		
-		if (currInfo.isContained()) {
+		if (currInfo->isContained()) {
 			
 			results.purged_leaves++;
 			
 			// update waste sum
-			results.waste += updateWaste(currLeaf, currInfo);
+			*currInfo += *currLeaf->getData();
+			results.waste += getApproxWaste(*currLeaf->getBox()->getSimpleBox(),
+					currLeaf->getData(),
+					currInfo);
 			
 			// then delete currLeaf from the model
 			MODEL.purgeLeaf(currLeaf);
@@ -139,7 +142,7 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 				 * so let's update saved data incrementing waste count
 				 */
 				
-				if (!currInfo.isIntersecting()) {
+				if (!currInfo->isIntersecting()) {
 					/* we reach this point by two conditions: cutter is really
 					 * intersecting but we don't have enough voxel resolution
 					 * or we stuck upon a bounding-box approximation error;
@@ -152,16 +155,23 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 					continue;
 				}
 				
-				results.waste += updateWaste(currLeaf, currInfo);
+				*currInfo += *currLeaf->getData();
+				results.waste += getApproxWaste(*currLeaf->getBox()->getSimpleBox(),
+						currLeaf->getData(),
+						currInfo);
 				
 				/* it may happen that after a bunch of partial erosions given
 				 * leaf should be deleted (all corners have crossed cutter's
-				 * limits at least once)
+				 * limits at least once). Such a case is due to lack of
+				 * resolution in model voxels.
 				 */
-				if (currLeaf->getDirtyData()->isContained()) {
+				if (currInfo->isContained()) {
 					results.lazy_purged_leaves++;
 					
 					MODEL.purgeLeaf(currLeaf);
+				} else {
+					
+					MODEL.updateLeafData(currLeaf, currInfo);
 				}
 			} // if (canPushLevel)
 		} // if (isContained)
@@ -175,11 +185,10 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 	return results;
 }
 
-VoxelInfo Stock::buildInfos(const _Octree::LeafConstPtr &leaf, 
-		const Cutter::ConstPtr &cutter,
-		const Eigen::Isometry3d &rototras) {
+Stock::VoxelInfoPtr Stock::buildInfos(const _Octree::LeafConstPtr &leaf, 
+			const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &isometry) {
 	
-	VoxelInfo info;
+	VoxelInfoPtr info = boost::make_shared< VoxelInfo >();
 	
 	/* we have to convert stockPoint in cutter basis: given isometry
 	 * is for the cutter in respect of model basis, so we
@@ -187,40 +196,26 @@ VoxelInfo Stock::buildInfos(const _Octree::LeafConstPtr &leaf,
 	 * cutter basis, that is, the isometry that converts model points in
 	 * cutter points.
 	 */
-	Voxel::ConstPtr v = leaf->getBox()->getVoxel(rototras.inverse());
+	Voxel::ConstPtr v = leaf->getBox()->getVoxel(isometry.inverse());
 	for (CornerIterator cit = CornerIterator::begin(); cit != CornerIterator::end(); ++cit) {
 		const Eigen::Vector3d &point = v->getCorner(*cit);
 		
 		double distance =  cutter->getDistance(Point3D(point));
 		
-		info.updateInsideness(*cit, distance);
+		info->updateInsideness(*cit, distance);
 	}
 	
 	return info;
 }
 
-double Stock::updateWaste(const _Octree::LeafPtr &leaf, const VoxelInfo &newInfo) {
-	
-	// save old informations for incremental waste calculation
-	VoxelInfo oldInfo = *(leaf->getData());
-	
-	// update saved informations with new ones
-	(*leaf->getDirtyData()) += newInfo;
-	
-	// return an approximation of new waste
-	_Octree::SimpleBoxPtr sbp = leaf->getBox()->getSimpleBox();
-	return getApproxWaste(*sbp, oldInfo, *leaf->getDirtyData());
-	
-}
-
 double Stock::getApproxWaste(const SimpleBox &box, 
-		const VoxelInfo &oldInfo, const VoxelInfo &updatedInfo) const {
+		const VoxelInfoConstPtr &oldInfo, const VoxelInfoConstPtr &updatedInfo) const {
 	
 	return intersectedVolume(box, updatedInfo) - intersectedVolume(box, oldInfo);
 }
 
-double Stock::intersectedVolume(const SimpleBox &box, const VoxelInfo &info) const {
-	u_char nInsideCorners = info.getInsideCornersNumber();
+double Stock::intersectedVolume(const SimpleBox &box, const VoxelInfoConstPtr &info) const {
+	u_char nInsideCorners = info->getInsideCornersNumber();
 	
 	if (nInsideCorners == 0)
 		return 0;
