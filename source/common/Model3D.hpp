@@ -15,7 +15,7 @@ class Model3D {
 public:
 	virtual ~Model3D() { }
 	
-	virtual Mesh getMeshing() =0;
+	virtual Mesh::Ptr getMeshing() =0;
 	
 };
 

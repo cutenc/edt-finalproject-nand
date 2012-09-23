@@ -10,10 +10,17 @@
 
 class Runnable {
 	
+public:
 	virtual ~Runnable() { }
 	
 	virtual void run() =0;
 	
+	/**
+	 * MUST NOT BE OVERRIDED/OVERLOADED
+	 */
+	void operator()() {
+		run();
+	}
 };
 
 

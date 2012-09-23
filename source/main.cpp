@@ -12,6 +12,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/assign.hpp>
 #include <boost/math/constants/constants.hpp>
+#include <boost/thread.hpp>
 
 #include <Eigen/Geometry>
 
@@ -28,6 +29,9 @@
 #include "milling/Octree.hpp"
 #include "milling/Stock.hpp"
 #include "milling/cutters.hpp"
+#include "milling/MillingAlgorithmConf.hpp"
+#include "visualizer/MillerRunnable.hpp"
+#include "visualizer/MesherStub.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -360,6 +364,36 @@ int main(int argc, const char **argv) {
 	/* 
 	 * ******** Milling algorithm TEST ********
 	 */
+//	CommandLineParser clp(argc, argv);
+//	
+//	if (clp.isHelpAsked()) {
+//		clp.printUsage(cout);
+//		return 0;
+//	}
+//	
+//	u_int max_depth = clp.getMaxOctreeHeight();
+//	std::string configFile = clp.getConfigFile();
+//	
+//	ConfigFileParser cfp(configFile);
+//	Stock::Ptr stock = boost::make_shared< Stock >(*cfp.getStockDescription(), max_depth);
+//	Cutter::ConstPtr cutter = Cutter::buildCutter(*cfp.getCutterDescription());
+//	
+//	MillingAlgorithm millingAlg(stock, cutter, cfp.CNCMoveBegin(), cfp.CNCMoveEnd());
+//	
+//	cout << millingAlg << std::endl;
+//	cout << "Start milling:" << endl << MillingResult::getPrintHeader() << endl;
+//	while(!millingAlg.hasFinished()) {
+//		MillingResult res = millingAlg.step();
+//		cout << res << std::endl;
+//		if (clp.verbosityLevel() > 0)
+//			cout << millingAlg << std::endl;
+//	}
+	
+	
+
+	/* 
+	 * ******** Threading TEST ********
+	 */
 	CommandLineParser clp(argc, argv);
 	
 	if (clp.isHelpAsked()) {
@@ -374,18 +408,48 @@ int main(int argc, const char **argv) {
 	Stock::Ptr stock = boost::make_shared< Stock >(*cfp.getStockDescription(), max_depth);
 	Cutter::ConstPtr cutter = Cutter::buildCutter(*cfp.getCutterDescription());
 	
-	MillingAlgorithm millingAlg(stock, cutter, cfp.CNCMoveBegin(), cfp.CNCMoveEnd());
+	MillingAlgorithmConf millingConf(stock, cutter, cfp.CNCMoveBegin(), cfp.CNCMoveEnd());
 	
-	cout << millingAlg << std::endl;
-	cout << "Start milling:" << endl << MillingResult::getPrintHeader() << endl;
-	while(!millingAlg.hasFinished()) {
-		MillingResult res = millingAlg.step();
-		cout << res << std::endl;
-		if (clp.verbosityLevel() > 0)
-			cout << millingAlg << std::endl;
-	}
+	MillingSignaler::Ptr signaler = boost::make_shared< MillingSignaler >();
+	SteppableController::Ptr controller = boost::make_shared< SteppableController >();
 	
+	MillingAlgorithm::Ptr algorithm = boost::make_shared< MillingAlgorithm >(millingConf);
 	
+	MillerRunnable miller(controller, signaler, algorithm);
+	MesherStub mesher(signaler);
+	
+	boost::thread millerThrd(boost::ref(miller));
+	boost::thread mesherThrd(boost::ref(mesher));
+	char c;
+	do {
+		cin >> c;
+		switch (c) {
+			case 'q':
+				controller->stop();
+				break;
+			case 'n':
+				controller->stepOnce();
+				break;
+			case 'g':
+				controller->play();
+				break;
+			case 'p':
+				controller->pause();
+				break;
+			case 'r':
+				controller->resume();
+				break;
+			default:
+				cout << "key not registered" << endl;
+				break;
+		}
+	} while (c != 'q');
+	
+	cout << "exiting main & waiting for miller thread..." << endl;
+	millerThrd.join();
+	cout << "miller ended, now waiting for mesher..." << endl;
+	mesherThrd.join();
+	cout << "meshaer ended! Bye..." << endl;
 	
 	/* ****************
 	 * *** MAIN *******

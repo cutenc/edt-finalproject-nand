@@ -28,10 +28,10 @@ class SphereCutter : public Cutter {
 public:
 	
 	
-	virtual Mesh getMeshing() {
+	virtual Mesh::Ptr getMeshing() {
 		
 		// TODO implement meshing method
-		return Mesh();
+		return boost::make_shared< Mesh >();
 		
 	}
 	
@@ -71,7 +71,7 @@ public:
 	
 	virtual double getDistance(const Point3D &point) const {
 		if (point.getZ() < 0)
-			return -CommonUtils::INFINITE;
+			return -CommonUtils::INFINITE();
 		
 		/* following implicit function given in "Adaptive NC Simulation 
 		 * for Multi-axis Solid Machining" for a flat endmill aligned with
@@ -96,10 +96,10 @@ public:
 	}
 	
 	
-	virtual Mesh getMeshing() {
+	virtual Mesh::Ptr getMeshing() {
 		
 		// TODO implement meshing method
-		return Mesh();
+		return boost::make_shared< Mesh >();
 		
 	}
 	
@@ -116,10 +116,10 @@ class CustomCutter : public Cutter {
 public:
 	
 	
-	virtual Mesh getMeshing() {
+	virtual Mesh::Ptr getMeshing() {
 		
 		// TODO implement meshing method
-		return Mesh();
+		return boost::make_shared< Mesh >();
 		
 	}
 	

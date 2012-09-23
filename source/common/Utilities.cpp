@@ -86,6 +86,3 @@ std::string StringUtils::repeat(const std::string &pattern, u_int nTimes) {
 	return sstream.str();
 }
 
-const double CommonUtils::INFINITE = (std::numeric_limits<double>::has_infinity) ? 
-		std::numeric_limits<double>::infinity() : std::numeric_limits<double>::max();
-

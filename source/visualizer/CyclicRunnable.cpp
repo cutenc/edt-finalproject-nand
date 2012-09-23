@@ -8,11 +8,27 @@
 #include "CyclicRunnable.hpp"
 
 CyclicRunnable::CyclicRunnable() {
-	// TODO Auto-generated constructor stub
 
 }
 
 CyclicRunnable::~CyclicRunnable() {
-	// TODO Auto-generated destructor stub
 }
+
+void CyclicRunnable::run() {
+	
+	onBegin();
+	
+	while (!hasFinished()) {
+		this->cycleCounter.incAndGet();
+		
+		this->doCycle();
+	}
+	
+	onEnd();
+}
+
+u_long CyclicRunnable::getCycleCount() {
+	return this->cycleCounter.get();
+}
+
 

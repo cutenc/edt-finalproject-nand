@@ -10,6 +10,10 @@
 
 #include <sstream>
 
+#include <boost/shared_ptr.hpp>
+
+#include "Stock.hpp"
+
 struct MillingResult {
 	
 public:

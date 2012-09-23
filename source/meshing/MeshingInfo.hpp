@@ -14,8 +14,8 @@
 #include <boost/shared_ptr.hpp>
 
 #include "configuration/CNCMoveIterator.hpp"
-#include "ShiftedBox.hpp"
-#include "VoxelInfo.hpp"
+#include "milling/ShiftedBox.hpp"
+#include "milling/VoxelInfo.hpp"
 
 class MeshingInfo {
 	
@@ -34,7 +34,7 @@ public:
 	 * 
 	 * @return
 	 */
-	VoxelData getInfos() const;
+	VoxelDataPtr getInfos() const;
 	CNCMove getLastMove() const;
 	
 };

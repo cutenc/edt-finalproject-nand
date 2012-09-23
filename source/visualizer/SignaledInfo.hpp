@@ -8,17 +8,24 @@
 #ifndef SIGNALEDINFO_HPP_
 #define SIGNALEDINFO_HPP_
 
+#include "meshing/MeshingInfo.hpp"
+#include "milling/MillingResult.hpp"
+
 class SignaledInfo {
 	
 public:
 	typedef std::deque< MillingResult > MillingData;
 	typedef boost::shared_ptr< MillingData > MillingDataPtr;
 	
-	SignaledInfo() { }
+public:
+	SignaledInfo(MillingDataPtr results, const CNCMove &lastMove) :
+		millingResults(results), lastMove(lastMove)
+	{ }
+	
 	virtual ~SignaledInfo() { }
 	
 	MillingDataPtr millingResults;
-	MeshingInfo meshing;
+	CNCMove lastMove;
 };
 
 

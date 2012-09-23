@@ -10,19 +10,35 @@
 
 #include <boost/interprocess/detail/atomic.hpp>
 
+#include "common/AtomicNumber.hpp"
 #include "Runnable.hpp"
 
 class CyclicRunnable: public Runnable {
 	
-	u_int cycleCount;
+private:
+	AtomicNumber<u_long> cycleCounter;
 	
 protected:
-	virtual bool hasFinished() =0;
+	virtual bool hasFinished() throw() =0;
 	
 	/**
 	 * Performs a processing cycle
 	 */
-	virtual void doCycle() =0;
+	virtual void doCycle() throw() =0;
+	
+	/**
+	 * This hook method will be called before any call to #hasFinished or
+	 * #doCycle methods. A default empty implementation is already provided
+	 * (it isn't abstract).
+	 */
+	virtual void onBegin() throw() { }
+	
+	/**
+	 * This hook method will be called when the #hasFinished method returns
+	 * true. A default empty implementation is already provided (it isn't
+	 * abstract).
+	 */
+	virtual void onEnd() throw() { }
 	
 public:
 	CyclicRunnable();
@@ -30,11 +46,8 @@ public:
 	
 	void run();
 	
-	u_int getCycleCount() const;
+	u_long getCycleCount();
 	
-private:
-	void atomicIncCylce();
-	u_int atomicGetCycle() const;
 };
 
 #endif /* CYCLICRUNNABLE_HPP_ */

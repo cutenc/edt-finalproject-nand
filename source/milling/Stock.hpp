@@ -18,6 +18,7 @@
 
 #include "common/Model3D.hpp"
 #include "configuration/StockDescription.hpp"
+#include "meshing/Mesher.hpp"
 #include "Cutter.hpp"
 #include "VoxelInfo.hpp"
 #include "Octree.hpp"
@@ -41,6 +42,8 @@ struct IntersectionResult {
 	u_long lazy_purged_leaves;
 	u_long pushed_leaves;
 	
+	u_long updated_data_leaves;
+	
 	/**
 	 * counts number of leaves that bounding-box intersection test states are 
 	 * intersecting but, at the end, distance misuration
@@ -57,7 +60,7 @@ struct IntersectionResult {
 	
 	IntersectionResult() :
 		waste(0), analyzed_leaves(0), purged_leaves(0), lazy_purged_leaves(0), 
-		pushed_leaves(0), intersection_approx_errors(0), 
+		pushed_leaves(0), updated_data_leaves(0), intersection_approx_errors(0), 
 		intersection_approx_skips(0), elapsedTime(0)
 	{ }
 	
@@ -75,6 +78,7 @@ struct IntersectionResult {
 				<< "\t#analyzed leaves"
 				<< "\t#purged"
 				<< "\t#lazy purged"
+				<< "\t#updated_data_leaves"
 				<< "\t#pushed"
 				<< "\t#approx_error"
 				<< "\t#approx_skips"
@@ -88,6 +92,7 @@ struct IntersectionResult {
 				<< "\t" << res.analyzed_leaves
 				<< "\t" << res.purged_leaves
 				<< "\t" << res.lazy_purged_leaves
+				<< "\t" << res.updated_data_leaves
 				<< "\t" << res.pushed_leaves
 				<< "\t" << res.intersection_approx_errors
 				<< "\t" << res.intersection_approx_skips
@@ -114,6 +119,7 @@ private:
 	const u_int MAX_DEPTH;
 	const Eigen::Vector3d EXTENT;
 	const Eigen::Translation3d STOCK_MODEL_TRASLATION;
+	const VoxelInfoConstPtr DEFAULT_DATA;
 	_Octree MODEL;
 	
 public:
@@ -131,7 +137,7 @@ public:
 	
 	Eigen::Vector3d getResolution() const;
 	
-	virtual Mesh getMeshing();
+	virtual Mesh::Ptr getMeshing();
 	
 private:
 	
@@ -144,7 +150,20 @@ private:
 	 */
 	VoxelInfoPtr buildInfos(const _Octree::LeafConstPtr &leaf, 
 			const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &isometry);
-
+	
+	/**
+	 * Calculate new waste produced by milling of given \c leaf according to
+	 * erosion information contained in \c newInfo. \c newInfo will be updated
+	 * inside the method in order to reflect all erosion happened so far to
+	 * given \c leaf.
+	 * 
+	 * @param leaf
+	 * @param newInfo
+	 * @return
+	 */
+	double calculateWaste(const _Octree::LeafConstPtr &leaf,
+			const VoxelInfoPtr &newInfo) const;
+	
 	/**
 	 * 
 	 * @param voxel

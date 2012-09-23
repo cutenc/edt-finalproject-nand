@@ -8,7 +8,24 @@
 #ifndef STEPPABLECONTROLLER_HPP_
 #define STEPPABLECONTROLLER_HPP_
 
+#include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
+
 class SteppableController {
+	
+public:
+	typedef boost::shared_ptr< SteppableController > Ptr;
+	
+private:
+	typedef boost::unique_lock< boost::mutex > UniqueLock;
+	
+private:
+	boost::mutex mutex;
+	boost::condition_variable awaitPlay;
+	
+	volatile bool isStopped;
+	volatile bool isPaused;
+	volatile u_long remainingStep;
 	
 public:
 	SteppableController();
@@ -26,8 +43,13 @@ public:
 	void stop();
 	void play();
 	void pause();
+	void resume();
 	void stepOnce();
-	void step(u_int n);
+	void step(u_long n);
+	
+private:
+	bool shouldWait() const;
+	
 };
 
 #endif /* STEPPABLECONTROLLER_HPP_ */

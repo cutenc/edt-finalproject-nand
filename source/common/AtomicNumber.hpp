@@ -62,6 +62,10 @@ public:
 	T getAndInc() { return getAndAdd(1); }
 	T decAndGet() { return addAndGet(-1); }
 	T getAndDec()  { return getAndAdd(-1); }
+	
+	/* there's no ++ and -- operators because they would have to return a T
+	 * reference instead of an AtmoicNumber< T > and this could be ambigous
+	 */
 };
 
 

@@ -6,3 +6,26 @@
  */
 
 #include "MillerRunnable.hpp"
+
+#include "milling/MillingResult.hpp"
+
+MillerRunnable::MillerRunnable(SteppableController::Ptr controller,
+		MillingSignaler::Ptr signaler, MillingAlgorithm::Ptr alg) :
+		SteppableRunnable(controller), signaler(signaler), algorithm(alg)
+		{ }
+
+MillerRunnable::~MillerRunnable() {
+}
+
+bool MillerRunnable::isEnded() throw() {
+	return algorithm->hasFinished();
+}
+
+void MillerRunnable::doCycle() throw() {
+	MillingAlgorithm::StepInfo res = algorithm->step();
+	signaler->signalMesher(res.first, res.second);
+}
+
+void MillerRunnable::onEnd() throw() {
+	signaler->signalMesher();
+}

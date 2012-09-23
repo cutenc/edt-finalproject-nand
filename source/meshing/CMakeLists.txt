@@ -1,7 +1,11 @@
 
 SET (meshing_SRC
 # add here both your sources (cpp) and header (hpp) files
-
+Mesher.hpp
+MeshingInfo.cpp
+MeshingInfo.hpp
+StockMesher.cpp
+StockMesher.hpp
 )
 
 ADD_LIBRARY(meshing STATIC ${meshing_SRC})

@@ -24,8 +24,8 @@ Stock::Stock(const StockDescription &desc, u_int maxDepth) :
 	MAX_DEPTH(maxDepth),
 	EXTENT(desc.getGeometry()->X, desc.getGeometry()->Y, desc.getGeometry()->Z),
 	STOCK_MODEL_TRASLATION(EXTENT / 2.0),
-	MODEL(EXTENT) {
-	
+	DEFAULT_DATA(boost::make_shared< const VoxelInfo >(VoxelInfo::DEFAULT_INSIDENESS())), MODEL(EXTENT)
+{
 	GeometryUtils::checkExtent(EXTENT);
 	if(MAX_DEPTH <= 0)
 		throw std::invalid_argument("max depth should be >0");
@@ -60,10 +60,9 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 	 * all summed up:
 	 */
 	
-	Eigen::Isometry3d bboxIsom_model = 
-			STOCK_MODEL_TRASLATION.inverse() * rototras * bboxInfo.rototraslation;
-	
 	Eigen::Isometry3d cutterIsom_model = STOCK_MODEL_TRASLATION.inverse() * rototras;
+	
+	Eigen::Isometry3d bboxIsom_model = cutterIsom_model * bboxInfo.rototraslation;
 	
 	_Octree::LeavesDequePtr leaves = MODEL.getIntersectingLeaves(cutterBox, bboxIsom_model, true);
 	
@@ -80,8 +79,8 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 		results.analyzed_leaves++;
 		_Octree::LeafPtr currLeaf = leaves->back(); leaves->pop_back();
 		
-		/* by now we only know that currLeaf bounding box is intersecting
-		 * our model (if the test has set to be faster but inaccurate it may
+		/* by now we only know that cutter bounding box is intersecting
+		 * currLeaf (if the test has set to be faster but inaccurate it may
 		 * even not touching) but we have no clue about the fact that real
 		 * cutter is intersecting or not.
 		 * In order to do so we have to try to push model depth as deep as
@@ -89,6 +88,11 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 		 * least, some of their corners are inside/outside cutter blade
 		 */
 		
+		/* TODO controllare in quanto per le foglie pushate questo calcolo è
+		 * inutile: lo faccio qui all'inizio solo perchè voglio verificare se
+		 * la foglia è completamente contenuta in modo da cancellarla subito
+		 * e non farne il push
+		 */
 		VoxelInfoPtr currInfo = buildInfos(currLeaf, cutter, cutterIsom_model);
 		
 		if (currInfo->isContained()) {
@@ -96,10 +100,7 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 			results.purged_leaves++;
 			
 			// update waste sum
-			*currInfo += *currLeaf->getData();
-			results.waste += getApproxWaste(*currLeaf->getBox()->getSimpleBox(),
-					currLeaf->getData(),
-					currInfo);
+			results.waste += calculateWaste(currLeaf, currInfo);
 			
 			// then delete currLeaf from the model
 			MODEL.purgeLeaf(currLeaf);
@@ -155,10 +156,7 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 					continue;
 				}
 				
-				*currInfo += *currLeaf->getData();
-				results.waste += getApproxWaste(*currLeaf->getBox()->getSimpleBox(),
-						currLeaf->getData(),
-						currInfo);
+				results.waste += calculateWaste(currLeaf, currInfo);
 				
 				/* it may happen that after a bunch of partial erosions given
 				 * leaf should be deleted (all corners have crossed cutter's
@@ -170,6 +168,7 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 					
 					MODEL.purgeLeaf(currLeaf);
 				} else {
+					results.updated_data_leaves++;
 					
 					MODEL.updateLeafData(currLeaf, currInfo);
 				}
@@ -202,10 +201,27 @@ Stock::VoxelInfoPtr Stock::buildInfos(const _Octree::LeafConstPtr &leaf,
 		
 		double distance =  cutter->getDistance(Point3D(point));
 		
-		info->updateInsideness(*cit, distance);
+		info->setInsideness(*cit, distance);
 	}
 	
 	return info;
+}
+
+double Stock::calculateWaste(const _Octree::LeafConstPtr& leaf,
+		const VoxelInfoPtr& newInfo) const {
+	
+	VoxelInfoConstPtr leafData;
+	if (leaf->hasData()) {
+		leafData = leaf->getData();
+	} else {
+		leafData = this->DEFAULT_DATA;
+	}
+	
+	*newInfo += *leafData;
+	return getApproxWaste(*leaf->getBox()->getSimpleBox(),
+			leafData,
+			newInfo);
+	
 }
 
 double Stock::getApproxWaste(const SimpleBox &box, 
@@ -247,10 +263,10 @@ std::ostream & operator<<(std::ostream &os, const Stock &stock) {
 }
 
 
-Mesh Stock::getMeshing() {
+Mesh::Ptr Stock::getMeshing() {
 	
 	// TODO implement meshing method
-	return Mesh();
+	return boost::make_shared< Mesh >();
 	
 }
 

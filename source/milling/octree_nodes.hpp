@@ -263,11 +263,18 @@ public:
 	}
 	
 	DataConstPtr getData() const {
+		if(!hasData())
+			throw std::runtime_error("There's no data yet, you have to set it first");
+		
 		return this->data;
 	}
 	
 	u_int getVersion() const {
 		return this->VERSION;
+	}
+	
+	bool hasData() const {
+		return this->data.get() != 0;
 	}
 	
 	void setData(const DataConstPtr &data) {
@@ -310,7 +317,6 @@ private:
 	
 	void initVariables() {
 		prev = next = NULL;
-		data = boost::make_shared< DataT >();
 	}
 	
 };

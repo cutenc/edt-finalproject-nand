@@ -9,30 +9,36 @@
 #define MILLINGALGORITHM_HPP_
 
 #include <ostream>
+#include <utility>
+
+#include <boost/shared_ptr.hpp>
 
 #include "configuration/ConfigFileParser.hpp"
+#include "meshing/MeshingInfo.hpp"
 #include "Cutter.hpp"
 #include "Stock.hpp"
 #include "MillingResult.hpp"
-#include "MeshingInfo.hpp"
+#include "MillingAlgorithmConf.hpp"
 
 class MillingAlgorithm {
 
-	const Stock::Ptr STOCK;
-	const Cutter::ConstPtr CUTTER;
-	CNCMoveIterator MOVE_IT, MOVE_END;
+public:
+	typedef std::pair<MillingResult, CNCMove> StepInfo;
+	typedef boost::shared_ptr< MillingAlgorithm > Ptr;
+	
+private:
+	MillingAlgorithmConf CONFIG;
 	
 	double waterFluxWasteCount;
 	u_int stepNumber;
 	
 	
 public:
-	MillingAlgorithm(Stock::Ptr stock, Cutter::ConstPtr cutter,
-			const CNCMoveIterator &begin, const CNCMoveIterator &end);
+	MillingAlgorithm(const MillingAlgorithmConf &config);
 	
 	virtual ~MillingAlgorithm();
 	
-	MillingResult step();
+	StepInfo step();
 	
 	bool hasFinished();
 	
@@ -44,7 +50,7 @@ public:
 	 */
 	Eigen::Vector3d getResolution() const;
 	
-	MeshingInfo buildCurrentMeshingInfo();
+	// MeshingInfo buildCurrentMeshingInfo();
 	
 	friend std::ostream & operator<<(std::ostream &os, const MillingAlgorithm &ma);
 	

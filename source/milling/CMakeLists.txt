@@ -5,10 +5,9 @@ Corner.hpp
 Cutter.cpp
 Cutter.hpp
 cutters.hpp
-MeshingInfo.cpp
-MeshingInfo.hpp
 MillingAlgorithm.cpp
 MillingAlgorithm.hpp
+MillingAlgorithmConf.hpp
 MillingResult.hpp
 octree_nodes.hpp
 octree_tickets.hpp
@@ -19,6 +18,7 @@ Stock.cpp
 Stock.hpp
 Voxel.cpp
 Voxel.hpp
+VoxelInfo.cpp
 VoxelInfo.hpp
 )
 

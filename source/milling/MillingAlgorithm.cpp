@@ -20,9 +20,8 @@
 #include "Cutter.hpp"
 #include "Stock.hpp"
 
-MillingAlgorithm::MillingAlgorithm(Stock::Ptr stock, Cutter::ConstPtr cutter,
-		const CNCMoveIterator &begin, const CNCMoveIterator &end) :
-		STOCK(stock), CUTTER(cutter), MOVE_IT(begin), MOVE_END(end)
+MillingAlgorithm::MillingAlgorithm(const MillingAlgorithmConf &conf) :
+		CONFIG(conf)
 {
 	this->waterFluxWasteCount = 0;
 	this->stepNumber = 0;
@@ -30,13 +29,13 @@ MillingAlgorithm::MillingAlgorithm(Stock::Ptr stock, Cutter::ConstPtr cutter,
 
 MillingAlgorithm::~MillingAlgorithm() { }
 
-MillingResult MillingAlgorithm::step() {
+MillingAlgorithm::StepInfo MillingAlgorithm::step() {
 	if (hasFinished())
 		throw std::runtime_error("Algorithm is already finished");
 	
 	this->stepNumber++;
 	
-	const CNCMove &move = *MOVE_IT;
+	const CNCMove &move = *CONFIG.MOVE_IT;
 	IntersectionResult infos = doIntersection(move);
 	
 	bool water = false;
@@ -47,12 +46,12 @@ MillingResult MillingAlgorithm::step() {
 		water = true;
 	}
 			
-	++(this->MOVE_IT);
-	return MillingResult(this->stepNumber, infos, water);
+	++(CONFIG.MOVE_IT);
+	return StepInfo(MillingResult(this->stepNumber, infos, water), move);
 }
 
 bool MillingAlgorithm::hasFinished() {
-	return this->MOVE_IT == this->MOVE_END;
+	return CONFIG.MOVE_IT == CONFIG.MOVE_END;
 }
 
 u_int MillingAlgorithm::getStepNumber() {
@@ -60,7 +59,7 @@ u_int MillingAlgorithm::getStepNumber() {
 }
 
 Eigen::Vector3d MillingAlgorithm::getResolution() const {
-	return this->STOCK->getResolution();
+	return CONFIG.STOCK->getResolution();
 }
 
 IntersectionResult MillingAlgorithm::doIntersection(const CNCMove &move) {
@@ -83,19 +82,19 @@ IntersectionResult MillingAlgorithm::doIntersection(const CNCMove &move) {
 	 */
 	Eigen::Isometry3d cutterIsom_stock = move.STOCK.asEigen().inverse() * move.CUTTER.asEigen();
 	
-	return STOCK->intersect(CUTTER, cutterIsom_stock);
+	return CONFIG.STOCK->intersect(CONFIG.CUTTER, cutterIsom_stock);
 }
 
 std::ostream& operator <<(std::ostream& os, const MillingAlgorithm& ma) {
 	os << "MILLING_ALGORITHM(currStep#:" << ma.stepNumber << "; next_move:";
-	if (ma.MOVE_IT == ma.MOVE_END)
+	if (ma.CONFIG.MOVE_IT == ma.CONFIG.MOVE_END)
 		os << "ENDED";
 	else
-		os << *(ma.MOVE_IT);
+		os << *(ma.CONFIG.MOVE_IT);
 	os << ")" << std::endl
-			<< "\tCutter: " << *ma.CUTTER //; ma.cutter->toOutStream(os)
+			<< "\tCutter: " << *ma.CONFIG.CUTTER //; ma.cutter->toOutStream(os)
 			<< std::endl
-			<< "\tStock: " << *ma.STOCK;
+			<< "\tStock: " << *ma.CONFIG.STOCK;
 	os << std::endl << "END_MILLING_ALGORITHM";
 	
 	return os;

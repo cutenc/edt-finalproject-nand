@@ -15,20 +15,18 @@
 
 class SteppableRunnable: public CyclicRunnable {
 	
-public:
-	typedef boost::shared_ptr< SteppableController > ControllerPtr;
-	
 private:
-	const ControllerPtr CONTROLLER;
+	const SteppableController::Ptr CONTROLLER;
 	
 protected:
-	virtual void doStep() =0;
-	virtual bool isEnded() =0; 
+	virtual bool isEnded() throw() =0; 
+	virtual void doCycle() throw() =0;
+	
+	virtual bool hasFinished() throw();
 	
 public:
-	SteppableRunnable(const ControllerPtr &controller);
+	explicit SteppableRunnable(SteppableController::Ptr controller);
 	virtual ~SteppableRunnable();
-	
 };
 
 #endif /* STEPPABLERUNNABLE_HPP_ */

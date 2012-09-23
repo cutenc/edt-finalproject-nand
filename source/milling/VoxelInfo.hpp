@@ -18,16 +18,27 @@
 
 class VoxelInfo {
 	
+private:
 	// updated by updateInsideness(u_char, double) function
 	u_char insideCornerNumber;
 	double insideness[Corner::N_CORNERS];
 	
 public:
+	
+	/**
+	 * This constructor leave object in a incosistent state and should be
+	 * used only in conjunction with the #setInsideness method. It is
+	 * provided just to increase performance avoiding useless initializations.
+	 */
 	VoxelInfo() {
-		for (int i = 0; i < Corner::N_CORNERS; ++i) {
-			insideness[i] = -CommonUtils::INFINITE;
-		}
 		insideCornerNumber = 0;
+	}
+	
+	VoxelInfo(double val) {
+		insideCornerNumber = 0;
+		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
+			setInsideness(i, val);
+		}
 	}
 	
 	virtual ~VoxelInfo() { }
@@ -53,6 +64,22 @@ public:
 	
 	double getInsideness(Corner::CornerType c) const {
 		return getInsideness(static_cast<u_char>(c));
+	}
+	
+	/**
+	 * You should use this method only in combination with the empty constructor
+	 * to initialize all corners of this object, but not for future
+	 * manipulation. Wrong usage of this method may result in current object
+	 * misbehaviour (in particular inside corner count may be incorrect,
+	 * affecting also methods like #isContained and #isIntersecting)
+	 * 
+	 * @param c
+	 * @param insideness
+	 * 
+	 * @see #updateInsideness
+	 */
+	void setInsideness(Corner::CornerType c, double insideness) {
+		return setInsideness(static_cast<u_char>(c), insideness);
 	}
 	
 	void updateInsideness(Corner::CornerType c, double insideness) {
@@ -81,6 +108,12 @@ public:
 		return os;
 	}
 	
+	inline
+	static double DEFAULT_INSIDENESS() {
+		static const double DEF_INSIDENESS = -CommonUtils::INFINITE();
+		return DEF_INSIDENESS;
+	}
+	
 private:
 	
 	inline
@@ -90,6 +123,13 @@ private:
 	
 	double getInsideness(u_char i) const {
 		return insideness[i];
+	}
+	
+	void setInsideness(u_char i, double val) {
+		insideness[i] = val;
+		if (isInside(i)) {
+			++insideCornerNumber;
+		}
 	}
 	
 	void updateInsideness(u_char i, double newInsideness) {

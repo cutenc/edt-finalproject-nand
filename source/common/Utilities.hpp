@@ -109,7 +109,13 @@ public:
 		return (x >= a) && (x < b);
 	}
 	
-	static const double INFINITE;
+	inline
+	static double INFINITE() {
+		static const double INF = (std::numeric_limits<double>::has_infinity) ? 
+				std::numeric_limits<double>::infinity() : std::numeric_limits<double>::max();
+		
+		return INF;
+	}
 };
 
 #endif /* UTILITIES_HPP_ */

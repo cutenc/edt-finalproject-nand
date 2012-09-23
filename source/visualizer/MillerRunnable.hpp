@@ -10,16 +10,29 @@
 
 #include <deque>
 
+#include "milling/MillingAlgorithm.hpp"
+#include "milling/MillingAlgorithmConf.hpp"
 #include "SteppableRunnable.hpp"
-#include "milling/MeshingInfo.hpp"
+#include "MillingSignaler.hpp"
 
 class MillerRunnable: public SteppableRunnable {
 	
+private:
+	MillingSignaler::Ptr signaler;
+	MillingAlgorithm::Ptr algorithm;
+	
 public:
-	MillerRunnable();
+	MillerRunnable(SteppableController::Ptr controller,
+			MillingSignaler::Ptr signaler,
+			MillingAlgorithm::Ptr algorithm);
+	
 	virtual ~MillerRunnable();
 	
-	MeshingDataPtr getMeshingData();
+protected:
+	virtual bool isEnded() throw();
+	virtual void doCycle() throw();
+	virtual void onEnd() throw();
+	
 };
 
 #endif /* MILLERRUNNABLE_HPP_ */

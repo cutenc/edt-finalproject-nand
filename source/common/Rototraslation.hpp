@@ -33,9 +33,8 @@ public:
 		 * Isometry3d = Translation3d * Matrix3d results in a wrong Isometry
 		 * matrix (both rotation and translation)
 		 */
-		Eigen::Isometry3d tmpTrans(TRASLATION.asTranslation());
 		Eigen::Isometry3d tmpRot(ROTATION.asEigen());
-		Eigen::Isometry3d rototras = tmpTrans * tmpRot;
+		Eigen::Isometry3d rototras = TRASLATION.asTranslation() * tmpRot;
 		
 		return rototras;
 	}

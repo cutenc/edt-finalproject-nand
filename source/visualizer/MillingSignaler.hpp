@@ -8,41 +8,47 @@
 #ifndef MILLINGSIGNALER_HPP_
 #define MILLINGSIGNALER_HPP_
 
-#include <boost/signals.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
-#include "milling/MeshingInfo.hpp"
+#include "meshing/MeshingInfo.hpp"
 #include "milling/MillingResult.hpp"
+#include "MillerEndedException.hpp"
+#include "SignaledInfo.hpp"
 
 class MillingSignaler {
 	
+public:
+	typedef boost::shared_ptr< MillingSignaler > Ptr;
+	
 private:
-	struct Slot {
-		void operator()(const MillingResult &res) {
-			// acquire lock on milling results
-			// add res to milling result
-			// release lock on milling results
-			
-			// acquire lock on sleep condition
-			// awake any sleeping miller
-			// release lock on sleep condition
-		}
-	};
+	typedef boost::unique_lock< boost::mutex > UniqueLock;
 	
+private:
+	SignaledInfo::MillingDataPtr millingResults;
+	CNCMove lastMove;
+	volatile bool millingEnd;
 	
-	MillingDataPtr millingResults;
-	const Slot SLOT;
-	boost::signal<void (const MillingResult &)> SIGNAL;
 	boost::condition_variable millingReady;
-	boost::mutex millingReadyMutex;
-	boost::mutex millinResultsMutex;
+	boost::mutex mutex;
 	
 public:
 	MillingSignaler();
 	virtual ~MillingSignaler();
 	
-	SignaledInfo awaitMiller();
-	void signalMesher(const MillingResult &results);
+	virtual SignaledInfo awaitMiller() throw(MillerEndedException);
+	
+	/**
+	 * Used to tell awaiting meshers that miller has finished its work and
+	 * there will be no more mills.
+	 */
+	virtual void signalMesher();
+	
+	/**
+	 * Send a new mill result to the mesher
+	 * @param results
+	 */
+	virtual void signalMesher(const MillingResult &results, const CNCMove &move);
 	
 private:
 	
