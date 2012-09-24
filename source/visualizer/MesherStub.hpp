@@ -31,6 +31,7 @@ protected:
 	
 	virtual void onBegin() throw() {
 		std::cout << "Mesher up and running" << std::endl;
+		std::cout << MillingResult::getPrintHeader() << std::endl;
 	}
 	
 	virtual void onEnd() throw() {
@@ -41,7 +42,7 @@ protected:
 		try {
 			SignaledInfo infos = signaler->awaitMiller();
 			
-			std::cout << infos.lastMove << std::endl;
+//			std::cout << infos.lastMove << std::endl;
 			SignaledInfo::MillingData::const_iterator it;
 			for (it = infos.millingResults->begin(); it != infos.millingResults->end(); ++it) {
 				std::cout << *it << std::endl;

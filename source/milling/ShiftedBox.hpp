@@ -9,6 +9,7 @@
 #define SHIFTEDBOX_HPP_
 
 #include <ostream>
+#include <cmath>
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
@@ -115,21 +116,21 @@ public:
 		//A's basis vectors
 		for(int i = 0; i < 3; i++ ) {
 			ra = a[i];
-			rb = b[0] * std::abs<double>((double)rotation(i, 0)) 
-					+ b[1] * std::abs<double>((double)rotation(i, 1)) 
-					+ b[2] * std::abs<double>((double)rotation(i, 2)) ;
-			t = std::abs<double>((double) traslation[i]);
+			rb = b[0] * fabs((double)rotation(i, 0)) 
+					+ b[1] * fabs((double)rotation(i, 1)) 
+					+ b[2] * fabs((double)rotation(i, 2)) ;
+			t = fabs((double) traslation[i]);
 			if( t > ra + rb )
 				return false;
 		}
 
 		//B's basis vectors
 		for(int i = 0; i<3 ; i++ ) {
-			ra = a[0] * std::abs<double>((double)rotation(0, i))
-					+ a[1] * std::abs<double>((double)rotation(1, i))
-					+ a[2] * std::abs<double>((double)rotation(2, i)); 
+			ra = a[0] * fabs((double)rotation(0, i))
+					+ a[1] * fabs((double)rotation(1, i))
+					+ a[2] * fabs((double)rotation(2, i)); 
 			rb = b[i];
-			t = std::abs<double>((double)(
+			t = fabs((double)(
 					traslation[0] * rotation(0, i)
 					+ traslation[1] * rotation(1, i)
 					+ traslation[2] * rotation(2, i)
@@ -142,65 +143,65 @@ public:
 			//9 cross products
 	
 			//L = A0 x B0
-			ra = a[1]*std::abs<double>((double)rotation(2, 0)) + a[2]*std::abs<double>((double)rotation(1, 0));
-			rb = b[1]*std::abs<double>((double)rotation(0, 2)) + b[2]*std::abs<double>((double)rotation(0, 1));
-			t = std::abs<double>((double)(traslation[2]*rotation(1, 0) - traslation[1]*rotation(2, 0)));
+			ra = a[1]*fabs((double)rotation(2, 0)) + a[2]*fabs((double)rotation(1, 0));
+			rb = b[1]*fabs((double)rotation(0, 2)) + b[2]*fabs((double)rotation(0, 1));
+			t = fabs((double)(traslation[2]*rotation(1, 0) - traslation[1]*rotation(2, 0)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A0 x B1
-			ra = a[1]*std::abs<double>((double)rotation(2, 1)) + a[2]*std::abs<double>((double)rotation(1, 1));
-			rb = b[0]*std::abs<double>((double)rotation(0, 2)) + b[2]*std::abs<double>((double)rotation(0, 0));
-			t = std::abs<double>((double)(traslation[2]*rotation(1, 1) - traslation[1]*rotation(2, 1)));
+			ra = a[1]*fabs((double)rotation(2, 1)) + a[2]*fabs((double)rotation(1, 1));
+			rb = b[0]*fabs((double)rotation(0, 2)) + b[2]*fabs((double)rotation(0, 0));
+			t = fabs((double)(traslation[2]*rotation(1, 1) - traslation[1]*rotation(2, 1)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A0 x B2
-			ra = a[1]*std::abs<double>((double)rotation(2, 2)) + a[2]*std::abs<double>((double)rotation(1, 2));
-			rb = b[0]*std::abs<double>((double)rotation(0, 1)) + b[1]*std::abs<double>((double)rotation(0, 0));
-			t = std::abs<double>((double)(traslation[2]*rotation(1, 2) - traslation[1]*rotation(2, 2)));
+			ra = a[1]*fabs((double)rotation(2, 2)) + a[2]*fabs((double)rotation(1, 2));
+			rb = b[0]*fabs((double)rotation(0, 1)) + b[1]*fabs((double)rotation(0, 0));
+			t = fabs((double)(traslation[2]*rotation(1, 2) - traslation[1]*rotation(2, 2)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A1 x B0
-			ra = a[0]*std::abs<double>((double)rotation(2, 0)) + a[2]*std::abs<double>((double)rotation(0, 0));
-			rb = b[1]*std::abs<double>((double)rotation(1, 2)) + b[2]*std::abs<double>((double)rotation(1, 1));
-			t = std::abs<double>((double)(traslation[0]*rotation(2, 0) - traslation[2]*rotation(0, 0)));
+			ra = a[0]*fabs((double)rotation(2, 0)) + a[2]*fabs((double)rotation(0, 0));
+			rb = b[1]*fabs((double)rotation(1, 2)) + b[2]*fabs((double)rotation(1, 1));
+			t = fabs((double)(traslation[0]*rotation(2, 0) - traslation[2]*rotation(0, 0)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A1 x B1
-			ra = a[0]*std::abs<double>((double)rotation(2, 1)) + a[2]*std::abs<double>((double)rotation(0, 1));
-			rb = b[0]*std::abs<double>((double)rotation(1, 2)) + b[2]*std::abs<double>((double)rotation(1, 0));
-			t = std::abs<double>((double)(traslation[0]*rotation(2, 1) - traslation[2]*rotation(0, 1)));
+			ra = a[0]*fabs((double)rotation(2, 1)) + a[2]*fabs((double)rotation(0, 1));
+			rb = b[0]*fabs((double)rotation(1, 2)) + b[2]*fabs((double)rotation(1, 0));
+			t = fabs((double)(traslation[0]*rotation(2, 1) - traslation[2]*rotation(0, 1)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A1 x B2
-			ra = a[0]*std::abs<double>((double)rotation(2, 2)) + a[2]*std::abs<double>((double)rotation(0, 2));
-			rb = b[0]*std::abs<double>((double)rotation(1, 1)) + b[1]*std::abs<double>((double)rotation(1, 0));
-			t = std::abs<double>((double)(traslation[0]*rotation(2, 2) - traslation[2]*rotation(0, 2)));
+			ra = a[0]*fabs((double)rotation(2, 2)) + a[2]*fabs((double)rotation(0, 2));
+			rb = b[0]*fabs((double)rotation(1, 1)) + b[1]*fabs((double)rotation(1, 0));
+			t = fabs((double)(traslation[0]*rotation(2, 2) - traslation[2]*rotation(0, 2)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A2 x B0
-			ra = a[0]*std::abs<double>((double)rotation(1, 0)) + a[1]*std::abs<double>((double)rotation(0, 0));
-			rb = b[1]*std::abs<double>((double)rotation(2, 2)) + b[2]*std::abs<double>((double)rotation(2, 1));
-			t = std::abs<double>((double)(traslation[1]*rotation(0, 0) - traslation[0]*rotation(1, 0)));
+			ra = a[0]*fabs((double)rotation(1, 0)) + a[1]*fabs((double)rotation(0, 0));
+			rb = b[1]*fabs((double)rotation(2, 2)) + b[2]*fabs((double)rotation(2, 1));
+			t = fabs((double)(traslation[1]*rotation(0, 0) - traslation[0]*rotation(1, 0)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A2 x B1
-			ra = a[0]*std::abs<double>((double)rotation(1, 1)) + a[1]*std::abs<double>((double)rotation(0, 1));
-			rb = b[0] *std::abs<double>((double)rotation(2, 2)) + b[2]*std::abs<double>((double)rotation(2, 0));
-			t = std::abs<double>((double)(traslation[1]*rotation(0, 1) - traslation[0]*rotation(1, 1)));
+			ra = a[0]*fabs((double)rotation(1, 1)) + a[1]*fabs((double)rotation(0, 1));
+			rb = b[0] *fabs((double)rotation(2, 2)) + b[2]*fabs((double)rotation(2, 0));
+			t = fabs((double)(traslation[1]*rotation(0, 1) - traslation[0]*rotation(1, 1)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A2 x B2
-			ra = a[0]*std::abs<double>((double)rotation(1, 2)) + a[1]*std::abs<double>((double)rotation(0, 2));
-			rb = b[0]*std::abs<double>((double)rotation(2, 1)) + b[1]*std::abs<double>((double)rotation(2, 0));
-			t = std::abs<double>((double)(traslation[1]*rotation(0, 2) - traslation[0]*rotation(1, 2)));
+			ra = a[0]*fabs((double)rotation(1, 2)) + a[1]*fabs((double)rotation(0, 2));
+			rb = b[0]*fabs((double)rotation(2, 1)) + b[1]*fabs((double)rotation(2, 0));
+			t = fabs((double)(traslation[1]*rotation(0, 2) - traslation[0]*rotation(1, 2)));
 			if( t > ra + rb )
 				return false;
 			

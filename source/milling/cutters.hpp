@@ -78,7 +78,7 @@ public:
 		 * Z-axis we can write:
 		 */
 		double distance = std::max< double >(
-				std::abs< double >(point.getZ() - HALF_LENGTH) - HALF_LENGTH,
+				fabs(point.getZ() - HALF_LENGTH) - HALF_LENGTH,
 				sqr(point.getX()) + sqr(point.getY()) - SQR_RADIUS
 		);
 		
