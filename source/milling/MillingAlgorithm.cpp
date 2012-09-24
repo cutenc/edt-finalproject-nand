@@ -30,7 +30,7 @@ MillingAlgorithm::MillingAlgorithm(const MillingAlgorithmConf &conf) :
 MillingAlgorithm::~MillingAlgorithm() { }
 
 MillingAlgorithm::StepInfo MillingAlgorithm::step() {
-	if (hasFinished())
+	if (!hasNextStep())
 		throw std::runtime_error("Algorithm is already finished");
 	
 	this->stepNumber++;
@@ -50,8 +50,8 @@ MillingAlgorithm::StepInfo MillingAlgorithm::step() {
 	return StepInfo(MillingResult(this->stepNumber, infos, water), move);
 }
 
-bool MillingAlgorithm::hasFinished() {
-	return CONFIG.MOVE_IT == CONFIG.MOVE_END;
+bool MillingAlgorithm::hasNextStep() {
+	return CONFIG.MOVE_IT != CONFIG.MOVE_END;
 }
 
 u_int MillingAlgorithm::getStepNumber() {

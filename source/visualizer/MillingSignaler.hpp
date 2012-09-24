@@ -23,6 +23,7 @@ public:
 	
 private:
 	typedef boost::unique_lock< boost::mutex > UniqueLock;
+	typedef boost::lock_guard< boost::mutex > LockGuard;
 	
 private:
 	SignaledInfo::MillingDataPtr millingResults;

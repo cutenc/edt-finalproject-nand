@@ -15,8 +15,8 @@ SteppableRunnable::SteppableRunnable(SteppableController::Ptr controller) :
 SteppableRunnable::~SteppableRunnable() {
 }
 
-bool SteppableRunnable::hasFinished() throw() {
-	// TODO il controller viene cortocircuitato qui!!
-	return this->isEnded() && (!CONTROLLER->canStep());
+bool SteppableRunnable::hasNextCycle() throw() {
+	return (CONTROLLER->canStep()) && this->hasNextStep();
 }
 
+const u_long SteppableController::MAX_STEPS = std::numeric_limits< u_long >::max();

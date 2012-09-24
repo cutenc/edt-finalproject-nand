@@ -36,17 +36,21 @@ SignaledInfo MillingSignaler::awaitMiller() throw(MillerEndedException) {
 }
 
 void MillingSignaler::signalMesher(const MillingResult& result, const CNCMove &move) {
-	UniqueLock millingLock(mutex);
+	{
+		LockGuard millingLock(mutex);
 	
-	millingResults->push_back(result);
-	lastMove = move;
+		millingResults->push_back(result);
+		lastMove = move;
+	}
 	
 	millingReady.notify_all();
 }
 
 void MillingSignaler::signalMesher() {
-	UniqueLock _(mutex);
-	millingEnd = true;
+	{
+		LockGuard _(mutex);
+		millingEnd = true;
+	}
 	
 	millingReady.notify_all();
 }

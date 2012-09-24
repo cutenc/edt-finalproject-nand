@@ -29,7 +29,7 @@ public:
 	virtual ~MillerRunnable();
 	
 protected:
-	virtual bool isEnded() throw();
+	virtual bool hasNextStep() throw();
 	virtual void doCycle() throw();
 	virtual void onEnd() throw();
 	

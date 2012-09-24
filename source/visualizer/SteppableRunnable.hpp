@@ -19,10 +19,10 @@ private:
 	const SteppableController::Ptr CONTROLLER;
 	
 protected:
-	virtual bool isEnded() throw() =0; 
+	virtual bool hasNextStep() throw() =0; 
 	virtual void doCycle() throw() =0;
 	
-	virtual bool hasFinished() throw();
+	bool hasNextCycle() throw();
 	
 public:
 	explicit SteppableRunnable(SteppableController::Ptr controller);

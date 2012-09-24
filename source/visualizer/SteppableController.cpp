@@ -10,8 +10,10 @@
 #include "SteppableController.hpp"
 
 SteppableController::SteppableController() :
-	isStopped(false), isPaused(true), remainingStep( std::numeric_limits<u_long>::max() ){
-}
+	isStopped(false),
+	isPaused(true),
+	remainingStep( MAX_STEPS )
+{ }
 
 SteppableController::~SteppableController() {
 }
@@ -25,14 +27,14 @@ bool SteppableController::canStep() {
 	
 	remainingStep--;
 	
-	return isStopped;
+	return !isStopped;
 }
 
 void SteppableController::stop() {
 	UniqueLock _(mutex);
 	isStopped = true;
 	
-	resume();
+	resume(_);
 }
 
 void SteppableController::pause() {
@@ -49,21 +51,26 @@ void SteppableController::step(u_long n) {
 	
 	remainingStep = n;
 	
-	resume();
+	resume(_);
 }
 
 void SteppableController::play() {
-	step( std::numeric_limits<u_long>::max() );
+	step( MAX_STEPS );
 }
 
 void SteppableController::resume() {
-	UniqueLock lock(mutex);
-	
+	UniqueLock l(mutex);
+	resume(l);
+}
+
+void SteppableController::resume(UniqueLock &lock) {
 	isPaused = false;
+	lock.unlock();
+	
 	awaitPlay.notify_all();
 }
 
 bool SteppableController::shouldWait() const {
-	return isPaused && (!isStopped) && (remainingStep <= 0);
+	return (!isStopped) && (isPaused || (remainingStep == 0));
 }
 

@@ -18,7 +18,7 @@ void CyclicRunnable::run() {
 	
 	onBegin();
 	
-	while (!hasFinished()) {
+	while (hasNextCycle()) {
 		this->cycleCounter.incAndGet();
 		
 		this->doCycle();

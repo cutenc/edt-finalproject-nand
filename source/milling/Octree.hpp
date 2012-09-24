@@ -95,7 +95,7 @@ private:
 	
 	typedef boost::shared_lock< boost::shared_mutex > SharedLock;
 	typedef boost::unique_lock< boost::shared_mutex > UniqueLock;
-	typedef boost::unique_lock< boost::mutex > TicketLock;
+	typedef boost::lock_guard< boost::mutex > TicketLock;
 	
 	typedef AtomicNumber<u_int> Versioner;
 	
@@ -157,12 +157,14 @@ public:
 		
 		/* the defer_lock here is used just for "teaching" in fact until lock
 		 * acquisition order remains octree->ticket in the whole class, no
-		 * deadlock is possible 
+		 * deadlock is possible
+		 * 
+		 * Edit: defer_lock removed in order to use a simpler lock_guard on
+		 * the ticketMutex; as stated before, DO NOT CHANGE locking order
+		 * in the whole class!!
 		 */
-		UniqueLock octreeLock(mutex, boost::defer_lock);
-		TicketLock ticketLock(ticketMutex, boost::defer_lock);
-		
-		boost::lock(octreeLock, ticketLock);
+		UniqueLock octreeLock(mutex);
+		TicketLock ticketLock(ticketMutex);
 		
 		while (!ticketQueue.empty()) {
 			TicketPtr ticket = ticketQueue.back(); ticketQueue.pop_back();

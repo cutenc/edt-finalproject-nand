@@ -20,13 +20,13 @@ private:
 private:
 	
 	T number;
-	boost::shared_mutex mutex;
+	mutable boost::shared_mutex mutex;
 	
 public:
 	AtomicNumber() : number(0) { }
 	virtual ~AtomicNumber() { }
 	
-	T get() {
+	T get() const {
 		SharedLock _(mutex);
 		
 		return this->number;

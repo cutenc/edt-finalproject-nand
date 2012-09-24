@@ -40,7 +40,7 @@ public:
 	
 	StepInfo step();
 	
-	bool hasFinished();
+	bool hasNextStep();
 	
 	u_int getStepNumber();
 	

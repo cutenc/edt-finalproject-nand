@@ -19,7 +19,7 @@ private:
 	AtomicNumber<u_long> cycleCounter;
 	
 protected:
-	virtual bool hasFinished() throw() =0;
+	virtual bool hasNextCycle() throw() =0;
 	
 	/**
 	 * Performs a processing cycle

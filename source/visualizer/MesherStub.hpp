@@ -25,8 +25,8 @@ public:
 	virtual ~MesherStub() { }
 	
 protected:
-	virtual bool hasFinished() throw() {
-		return finished;
+	virtual bool hasNextCycle() throw() {
+		return !finished;
 	}
 	
 	virtual void onBegin() throw() {

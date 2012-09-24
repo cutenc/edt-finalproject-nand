@@ -18,8 +18,11 @@ public:
 	
 private:
 	typedef boost::unique_lock< boost::mutex > UniqueLock;
+	typedef boost::lock_guard< boost::mutex > LockGuard;
 	
 private:
+	const static u_long MAX_STEPS;
+	
 	boost::mutex mutex;
 	boost::condition_variable awaitPlay;
 	
@@ -49,6 +52,7 @@ public:
 	
 private:
 	bool shouldWait() const;
+	void resume(UniqueLock &lock);
 	
 };
 

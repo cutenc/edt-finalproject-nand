@@ -7,6 +7,8 @@
 
 #include "MillerRunnable.hpp"
 
+#include <iostream>
+
 #include "milling/MillingResult.hpp"
 
 MillerRunnable::MillerRunnable(SteppableController::Ptr controller,
@@ -17,8 +19,8 @@ MillerRunnable::MillerRunnable(SteppableController::Ptr controller,
 MillerRunnable::~MillerRunnable() {
 }
 
-bool MillerRunnable::isEnded() throw() {
-	return algorithm->hasFinished();
+bool MillerRunnable::hasNextStep() throw() {
+	return algorithm->hasNextStep();
 }
 
 void MillerRunnable::doCycle() throw() {
@@ -29,3 +31,4 @@ void MillerRunnable::doCycle() throw() {
 void MillerRunnable::onEnd() throw() {
 	signaler->signalMesher();
 }
+
