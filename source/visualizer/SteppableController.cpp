@@ -9,9 +9,9 @@
 
 #include "SteppableController.hpp"
 
-SteppableController::SteppableController() :
+SteppableController::SteppableController(bool startPaused) :
 	isStopped(false),
-	isPaused(true),
+	isPaused(startPaused),
 	remainingStep( MAX_STEPS )
 { }
 

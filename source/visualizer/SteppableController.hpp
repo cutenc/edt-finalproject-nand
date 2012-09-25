@@ -31,7 +31,7 @@ private:
 	volatile u_long remainingStep;
 	
 public:
-	SteppableController();
+	SteppableController(bool startPaused = false);
 	virtual ~SteppableController();
 	
 	/**
