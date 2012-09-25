@@ -8,6 +8,8 @@
 #ifndef CUTTERS_HPP_
 #define CUTTERS_HPP_
 
+#include "Cutter.hpp"
+
 #include <limits>
 #include <algorithm>
 #include <cmath>
@@ -17,21 +19,18 @@
 
 #include <Eigen/Geometry>
 
-#include "Cutter.hpp"
 #include "configuration/CutterDescription.hpp"
-#include "common/Color.hpp"
-#include "common/Point3D.hpp"
+#include "common/meshes.hpp"
 #include "SimpleBox.hpp"
 
 class SphereCutter : public Cutter {
 
 public:
 	
-	
 	virtual Mesh::Ptr getMeshing() {
 		
 		// TODO implement meshing method
-		return boost::make_shared< Mesh >();
+		return boost::make_shared< StubMesh >();
 		
 	}
 	
@@ -99,7 +98,7 @@ public:
 	virtual Mesh::Ptr getMeshing() {
 		
 		// TODO implement meshing method
-		return boost::make_shared< Mesh >();
+		return boost::make_shared< StubMesh >();
 		
 	}
 	
@@ -119,7 +118,7 @@ public:
 	virtual Mesh::Ptr getMeshing() {
 		
 		// TODO implement meshing method
-		return boost::make_shared< Mesh >();
+		return boost::make_shared< StubMesh >();
 		
 	}
 	

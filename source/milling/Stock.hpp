@@ -111,19 +111,24 @@ public:
 	typedef boost::shared_ptr< Stock > Ptr;
 	typedef boost::shared_ptr< const Stock > ConstPtr;
 	
+	typedef typename Octree< VoxelInfo >::DataView DataView;
+	typedef Mesher< DataView > MesherType;
+	
 private:
 	typedef Octree< VoxelInfo > _Octree;
 	typedef Octree< VoxelInfo >::DataPtr VoxelInfoPtr;
 	typedef Octree< VoxelInfo >::DataConstPtr VoxelInfoConstPtr;
 	
+private:
 	const u_int MAX_DEPTH;
 	const Eigen::Vector3d EXTENT;
 	const Eigen::Translation3d STOCK_MODEL_TRASLATION;
 	const VoxelInfoConstPtr DEFAULT_DATA;
 	_Octree MODEL;
+	mutable MesherType::Ptr MESHER;
 	
 public:
-	Stock(const StockDescription &desc, u_int maxDepth);
+	Stock(const StockDescription &desc, u_int maxDepth, MesherType::Ptr mesher);
 	virtual ~Stock();
 	
 	/**

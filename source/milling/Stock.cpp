@@ -20,11 +20,13 @@
 #include "SimpleBox.hpp"
 #include "Corner.hpp"
 
-Stock::Stock(const StockDescription &desc, u_int maxDepth) :
+Stock::Stock(const StockDescription &desc, u_int maxDepth, MesherType::Ptr mesher) :
 	MAX_DEPTH(maxDepth),
 	EXTENT(desc.getGeometry()->X, desc.getGeometry()->Y, desc.getGeometry()->Z),
 	STOCK_MODEL_TRASLATION(EXTENT / 2.0),
-	DEFAULT_DATA(boost::make_shared< const VoxelInfo >(VoxelInfo::DEFAULT_INSIDENESS())), MODEL(EXTENT)
+	DEFAULT_DATA(boost::make_shared< const VoxelInfo >(VoxelInfo::DEFAULT_INSIDENESS())),
+	MODEL(EXTENT),
+	MESHER(mesher)
 {
 	GeometryUtils::checkExtent(EXTENT);
 	if(MAX_DEPTH <= 0)
@@ -254,10 +256,12 @@ Eigen::Vector3d Stock::getResolution() const {
 }
 
 std::ostream & operator<<(std::ostream &os, const Stock &stock) {
-	os << "STOCK(maxDepth=" << stock.MAX_DEPTH <<";minBlockSize=["
-			<< stock.getResolution().transpose()
+	os << "STOCK(extent=[" << stock.EXTENT.transpose()
+			<< "];maxDepth=" << stock.MAX_DEPTH
+			<< ";minBlockSize=[" << stock.getResolution().transpose()
 			<< "])"
-			<< std::endl << stock.MODEL;
+//			<< std::endl << stock.MODEL
+			;
 	
 	return os;
 }
@@ -265,8 +269,9 @@ std::ostream & operator<<(std::ostream &os, const Stock &stock) {
 
 Mesh::Ptr Stock::getMeshing() {
 	
-	// TODO implement meshing method
-	return boost::make_shared< Mesh >();
+	DataView data = MODEL.getStoredData(this->DEFAULT_DATA);
+	
+	return MESHER->buildMesh(data);
 	
 }
 

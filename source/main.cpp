@@ -16,22 +16,14 @@
 
 #include <Eigen/Geometry>
 
-#include "common/Point3D.hpp"
-#include "common/Rototraslation.hpp"
-#include "configuration/Geometry.hpp"
-#include "configuration/StockDescription.hpp"
-#include "configuration/CutterDescription.hpp"
 #include "configuration/ConfigFileParser.hpp"
 #include "configuration/CommandLineParser.hpp"
 #include "milling/MillingAlgorithm.hpp"
-#include "milling/SimpleBox.hpp"
-#include "milling/ShiftedBox.hpp"
-#include "milling/Octree.hpp"
 #include "milling/Stock.hpp"
 #include "milling/cutters.hpp"
-#include "milling/MillingAlgorithmConf.hpp"
 #include "visualizer/MillerRunnable.hpp"
 #include "visualizer/MesherStub.hpp"
+#include "meshing/StockMesher.hpp"
 
 using namespace std;
 using namespace Eigen;
@@ -405,7 +397,9 @@ int main(int argc, const char **argv) {
 	std::string configFile = clp.getConfigFile();
 	
 	ConfigFileParser cfp(configFile);
-	Stock::Ptr stock = boost::make_shared< Stock >(*cfp.getStockDescription(), max_depth);
+	
+	StockMesher::Ptr stockMesher = boost::make_shared< StockMesher >();
+	Stock::Ptr stock = boost::make_shared< Stock >(*cfp.getStockDescription(), max_depth, stockMesher);
 	Cutter::ConstPtr cutter = Cutter::buildCutter(*cfp.getCutterDescription());
 	
 	MillingAlgorithmConf millingConf(stock, cutter, cfp.CNCMoveBegin(), cfp.CNCMoveEnd());
@@ -416,7 +410,13 @@ int main(int argc, const char **argv) {
 	MillingAlgorithm::Ptr algorithm = boost::make_shared< MillingAlgorithm >(millingConf);
 	
 	MillerRunnable miller(controller, signaler, algorithm);
-	MesherStub mesher(signaler);
+	MesherStub mesher(signaler, stock);
+	
+	cout << "Setup info: " << endl
+			<< "\tPosition file: " << configFile << endl
+			<< "\tCutter: " << *cutter << endl
+			<< "\tStock: " << *stock << endl
+			;
 	
 	boost::thread millerThrd(boost::ref(miller));
 	boost::thread mesherThrd(boost::ref(mesher));
@@ -450,6 +450,7 @@ int main(int argc, const char **argv) {
 	cout << "miller ended, now waiting for mesher..." << endl;
 	mesherThrd.join();
 	cout << "meshaer ended! Bye..." << endl;
+	
 	
 	/* ****************
 	 * *** MAIN *******

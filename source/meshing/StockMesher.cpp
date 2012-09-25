@@ -7,12 +7,19 @@
 
 #include "StockMesher.hpp"
 
-StockMesher::StockMesher() {
-	// TODO Auto-generated constructor stub
+#include <sstream>
 
+#include "common/meshes.hpp"
+
+StockMesher::StockMesher() {
 }
 
 StockMesher::~StockMesher() {
-	// TODO Auto-generated destructor stub
 }
 
+Mesh::Ptr StockMesher::buildMesh(const VoxelInfoDataView &data) {
+	std::stringstream ss;
+	ss << "# of leaves: " << data.getStoredData()->size();
+	
+	return boost::make_shared< StockMesh >(ss.str());
+}

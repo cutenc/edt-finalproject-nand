@@ -16,13 +16,14 @@ template < typename T >
 class Mesher {
 
 public:
-	typedef boost::shared_ptr< Mesher > Ptr;
+	typedef boost::shared_ptr< Mesher< T > > Ptr;
+	typedef boost::shared_ptr< Mesher< T > > ConstPtr;
 	
 public:
 	Mesher() { }
 	virtual ~Mesher() { }
 	
-	virtual Mesh::Ptr buildMesh(T data) =0;
+	virtual Mesh::Ptr buildMesh(const T &data) =0;
 	
 };
 

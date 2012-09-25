@@ -7,7 +7,6 @@ Color.hpp
 constants.hpp
 EulerAngles.cpp
 EulerAngles.hpp
-Mesh.cpp
 Mesh.hpp
 Model3D.hpp
 Point3D.cpp

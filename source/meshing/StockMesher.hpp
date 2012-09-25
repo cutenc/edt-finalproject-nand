@@ -8,20 +8,22 @@
 #ifndef STOCKMESHER_HPP_
 #define STOCKMESHER_HPP_
 
-#include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
-
 #include "Mesher.hpp"
-#include "MeshingInfo.hpp"
 
-class StockMesher: public Mesher< MeshingInfo::VoxelDataPtr > {
+#include "milling/Octree.hpp"
+#include "milling/VoxelInfo.hpp"
+
+class StockMesher: public Mesher< typename Octree<VoxelInfo>::DataView > {
 	
 public:
-	
+	typedef typename Octree< VoxelInfo >::DataView VoxelInfoDataView;
+	typedef Mesher< VoxelInfoDataView >::Ptr Ptr;
 	
 public:
 	StockMesher();
 	virtual ~StockMesher();
+	
+	virtual Mesh::Ptr buildMesh(const VoxelInfoDataView &data);
 };
 
 #endif /* STOCKMESHER_HPP_ */

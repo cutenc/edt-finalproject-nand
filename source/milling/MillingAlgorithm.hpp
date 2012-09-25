@@ -14,7 +14,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "configuration/ConfigFileParser.hpp"
-#include "meshing/MeshingInfo.hpp"
 #include "Cutter.hpp"
 #include "Stock.hpp"
 #include "MillingResult.hpp"

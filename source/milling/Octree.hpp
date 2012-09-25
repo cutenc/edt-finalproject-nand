@@ -9,7 +9,6 @@
 #define OCTREE_HPP_
 
 #include <ostream>
-#include <queue>
 #include <deque>
 #include <map>
 #include <cmath>
@@ -29,6 +28,7 @@
 
 class SimpleBoxCache {
 	
+private:
 	const Eigen::Vector3d EXTENT;
 	std::map<u_int, SimpleBox::ConstPtr> CACHE;
 	
@@ -63,6 +63,26 @@ public:
 	}
 };
 
+template < typename DataT >
+class StoredData {
+	
+public:
+	typedef std::pair< ShiftedBox::ConstPtr, typename LeafNode< DataT >::DataConstPtr > VoxelPair;
+	typedef std::deque< VoxelPair > VoxelData;
+	typedef boost::shared_ptr< VoxelData > VoxelDataPtr;
+	
+private:
+	const VoxelDataPtr data;
+	
+public:
+	StoredData(const VoxelDataPtr &data) : data(data) { }
+	virtual ~StoredData() { }
+	
+	VoxelDataPtr getStoredData() const {
+		return data;
+	}
+	
+};
 
 
 /**
@@ -85,8 +105,7 @@ public:
 	typedef boost::array< LeafPtr, BranchNode::N_CHILDREN > LeavesArray;
 	typedef boost::shared_ptr< LeavesArray > LeavesArrayPtr;
 	
-	typedef std::deque< DataConstPtr > DataDeque;
-	typedef boost::shared_ptr< DataDeque > DataDequePtr;
+	typedef StoredData< DataT > DataView;
 	
 private:
 	typedef OctreeTicket Ticket;
@@ -102,14 +121,14 @@ private:
 private:
 	
 	const Eigen::Vector3d EXTENT;
-	SimpleBoxCache BOX_CACHE;
+	mutable SimpleBoxCache BOX_CACHE;
 	const boost::shared_ptr< LeafNode< DataT > > LEAVES_LIST;
 	BranchPtr ROOT;
 	
 	boost::mutex ticketMutex;
 	TicketDeque ticketQueue;
 	
-	boost::shared_mutex mutex;
+	mutable boost::shared_mutex mutex;
 	Versioner versioner;
 	
 public:
@@ -302,7 +321,6 @@ public:
 		return intersectingLeaves;
 	}
 	
-	
 	/**
 	 * Returns all data contained inside octree leafs: if you activate the
 	 * onlyIfChanged flag, data will be returned only if octree state changed
@@ -312,20 +330,23 @@ public:
 	 * @param onlyIfChanged
 	 * @return
 	 */
-	DataDequePtr getStoredData(bool onlyIfChanged = false) {
+	DataView getStoredData(const DataConstPtr &defaultData, bool onlyIfChanged = false) const {
+		
+		typename DataView::VoxelDataPtr data = boost::make_shared< typename DataView::VoxelData >();
 		
 		SharedLock _(mutex);
-		
-		DataDequePtr data = boost::make_shared< DataDeque >();
 		
 		if (onlyIfChanged) {
 			// TODO reset 'changed' flag with an atomic compare-exchange operation
 		}
 		
-		LeafPtr currLeaf = getFirstLeaf();
-		do {
-			data->push_back(currLeaf->getData());
-		} while((currLeaf = currLeaf->getNext()) != NULL);
+		LeafPtr currLeaf = getLeavesListHead();
+		
+		while((currLeaf = currLeaf->getNext()) != NULL) {
+			typename DataView::VoxelPair vp(currLeaf->getBox(),
+					(currLeaf->hasData()) ? currLeaf->getData() : defaultData);
+			data->push_back(vp);
+		}
 		
 		return data;
 	}
@@ -339,12 +360,12 @@ private:
 	}
 	
 	inline
-	LeafPtr getFirstLeaf() const {
-		return LEAVES_LIST->getNext();
+	LeafPtr getLeavesListHead() const {
+		return LEAVES_LIST.get();
 	}
 	
 	inline
-	bool isNewlyCreated(const LeafPtr &leaf, u_int currVersion) {
+	bool isNewlyCreated(const LeafPtr &leaf, u_int currVersion) const {
 		return leaf->getVersion() >= currVersion;
 	}
 	
@@ -375,7 +396,7 @@ private:
 	 * @param leaf
 	 * @return
 	 */
-	PushedLevel createLevel(LeafConstPtr leaf, u_int leafVersion) {
+	PushedLevel createLevel(const LeafConstPtr &leaf, u_int leafVersion) const {
 		
 		PushedLevel toRet;
 		

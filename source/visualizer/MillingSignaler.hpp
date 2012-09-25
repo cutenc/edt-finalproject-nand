@@ -11,8 +11,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
-#include "meshing/MeshingInfo.hpp"
 #include "milling/MillingResult.hpp"
+#include "configuration/CNCMoveIterator.hpp"
 #include "MillerEndedException.hpp"
 #include "SignaledInfo.hpp"
 

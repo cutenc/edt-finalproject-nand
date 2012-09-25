@@ -16,10 +16,12 @@ class MesherStub : public CyclicRunnable {
 	
 private:
 	const MillingSignaler::Ptr signaler;
+	Stock::Ptr stock;
 	bool finished;
 	
 public:
-	MesherStub(MillingSignaler::Ptr signaler) : signaler(signaler), finished(false)
+	MesherStub(MillingSignaler::Ptr signaler, Stock::Ptr stock) :
+		signaler(signaler), stock(stock), finished(false)
 	{ }
 	
 	virtual ~MesherStub() { }
@@ -41,6 +43,9 @@ protected:
 	virtual void doCycle() throw() {
 		try {
 			SignaledInfo infos = signaler->awaitMiller();
+			
+			Mesh::Ptr mesh = stock->getMeshing();
+			std::cout << "mesh: " << *mesh << std::endl;
 			
 //			std::cout << infos.lastMove << std::endl;
 			SignaledInfo::MillingData::const_iterator it;

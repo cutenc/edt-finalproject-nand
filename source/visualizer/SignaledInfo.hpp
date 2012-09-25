@@ -8,7 +8,6 @@
 #ifndef SIGNALEDINFO_HPP_
 #define SIGNALEDINFO_HPP_
 
-#include "meshing/MeshingInfo.hpp"
 #include "milling/MillingResult.hpp"
 
 class SignaledInfo {
