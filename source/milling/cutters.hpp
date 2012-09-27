@@ -38,13 +38,13 @@ public:
 
 class CylinderCutter : public Cutter {
 	
-	const double RADIUS;
-	const double LENGTH;
+	const float RADIUS;
+	const float LENGTH;
 	
 	// used to speed up getDistance calculation
-	const double HALF_LENGTH;
-	const double DIAMETER;
-	const double SQR_RADIUS;
+	const float HALF_LENGTH;
+	const float DIAMETER;
+	const float SQR_RADIUS;
 	
 public:
 	CylinderCutter(const Cylinder &geom, const Color &color) :
@@ -53,22 +53,22 @@ public:
 		HALF_LENGTH(geom.HEIGHT / 2.0), DIAMETER(geom.RADIUS * 2),
 		SQR_RADIUS(sqr(geom.RADIUS)) {
 		
-		if (RADIUS <= std::numeric_limits<double>::epsilon())
+		if (RADIUS <= std::numeric_limits<float>::epsilon())
 			throw std::invalid_argument("negative diameter (or too small)");
 		// i need that half_length has an appreciable size
-		if (HALF_LENGTH <= std::numeric_limits<double>::epsilon())
+		if (HALF_LENGTH <= std::numeric_limits<float>::epsilon())
 			throw std::invalid_argument("negative length (or too small)");
 	}
 	
 	virtual BoundingBoxInfo getBoundingBox() const {
 		
-		Eigen::Vector3d extents(DIAMETER, DIAMETER, LENGTH);
-		Eigen::Translation3d originTraslation(0, 0, HALF_LENGTH);
+		Eigen::Vector3f extents(DIAMETER, DIAMETER, LENGTH);
+		Eigen::Translation3f originTraslation(0, 0, HALF_LENGTH);
 		
-		return BoundingBoxInfo(extents, Eigen::Isometry3d(originTraslation));
+		return BoundingBoxInfo(extents, Eigen::Isometry3f(originTraslation));
 	}
 	
-	virtual double getDistance(const Point3D &point) const {
+	virtual float getDistance(const Point3D &point) const {
 		if (point.getZ() < 0)
 			return -CommonUtils::INFINITE();
 		
@@ -76,7 +76,7 @@ public:
 		 * for Multi-axis Solid Machining" for a flat endmill aligned with
 		 * Z-axis we can write:
 		 */
-		double distance = std::max< double >(
+		float distance = std::max< float >(
 				fabs(point.getZ() - HALF_LENGTH) - HALF_LENGTH,
 				sqr(point.getX()) + sqr(point.getY()) - SQR_RADIUS
 		);
@@ -104,7 +104,7 @@ public:
 	
 private:
 	
-	inline static double sqr(double x) {
+	inline static float sqr(float x) {
 		return x * x;
 	}
 	

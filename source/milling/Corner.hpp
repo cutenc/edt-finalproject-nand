@@ -77,9 +77,7 @@ public:
 	virtual ~CornerIterator() { }
 	
 	CornerIterator& operator++() {
-		if (isEnded()) {
-			throw std::runtime_error("iterator ended: cannot ++");
-		}
+		assert(!isEnded());
 		
 		if (this->curr == Corner::UpperRearLeft) {
 			this->curr = CornerIterator::END_FLAG;
@@ -100,9 +98,7 @@ public:
 	}
 	
 	Corner::CornerType operator*() {
-		if (isEnded()) {
-			throw std::runtime_error("iterator ended: cannot dereference it");
-		}
+		assert(!isEnded());
 		
 		return this->curr;
 	}

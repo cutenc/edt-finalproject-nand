@@ -25,11 +25,11 @@ protected:
 	
 };
 
-template < typename T >
+template < typename LeafType >
 class OctreeLeafTicket : public OctreeTicket {
 	
 protected:
-	typedef typename LeafNode< T >::LeafPtr LeafPtr;
+	typedef typename LeafType::Ptr LeafPtr;
 	
 	const LeafPtr targetLeaf;
 	
@@ -44,17 +44,17 @@ public:
 	
 };
 
-template < typename T >
-class PushLevelTicket : public OctreeLeafTicket< T > {
+template < typename LeafType >
+class PushLevelTicket : public OctreeLeafTicket< LeafType > {
 	
 private:
-	typedef typename OctreeLeafTicket< T >::LeafPtr LeafPtr;
+	typedef typename OctreeLeafTicket< LeafType >::LeafPtr LeafPtr;
 	
 	BranchNode::Ptr newBranch;
 	
 public:
 	PushLevelTicket(const LeafPtr leaf, const BranchNode::Ptr &newBranch) :
-		OctreeLeafTicket< T >(leaf), newBranch(newBranch) {
+		OctreeLeafTicket< LeafType >(leaf), newBranch(newBranch) {
 		
 		OctreeTicket::checkNull(newBranch);
 	}
@@ -62,17 +62,17 @@ public:
 	virtual ~PushLevelTicket() { }
 	
 	virtual void performAction() const {
-		attachBranch(OctreeLeafTicket< T >::getTarget(), newBranch);
+		attachBranch(OctreeLeafTicket< LeafType >::getTarget(), newBranch);
 	}
 	
 	static void attachBranch(LeafPtr leaf, const BranchNode::Ptr newBranch) {
 		OctreeTicket::checkNull(newBranch);
 		
-		BranchNode::Ptr father = dynamic_cast< BranchNode::Ptr >(leaf->getFather());
+		BranchNode::Ptr father = static_cast< BranchNode::Ptr >(leaf->getFather());
 		assert(father == newBranch->getFather());
 		
-		LeafPtr firstLeaf = dynamic_cast< LeafPtr >(newBranch->getFirst(OctreeNode::LEAF_NODE)),
-				lastLeaf = dynamic_cast< LeafPtr >(newBranch->getLast(OctreeNode::LEAF_NODE));
+		LeafPtr firstLeaf = static_cast< LeafPtr >(newBranch->getFirst(OctreeNode::LEAF_NODE)),
+				lastLeaf = static_cast< LeafPtr >(newBranch->getLast(OctreeNode::LEAF_NODE));
 		
 		assert(firstLeaf != NULL && lastLeaf != NULL);
 		
@@ -135,7 +135,7 @@ public:
 		// tells father to forget her...
 		bool deleteBranch = false;
 		do {
-			BranchNode::Ptr bnp = dynamic_cast< BranchNode::Ptr >(node->getFather());
+			BranchNode::Ptr bnp = static_cast< BranchNode::Ptr >(node->getFather());
 			deleteBranch = bnp->deleteChild(node->getChildIdx());
 			
 			// then free leaf's memory (no longer needed)
@@ -151,19 +151,19 @@ public:
 	}
 };
 
-template < typename T >
-class PurgeLeafTicket : public OctreeLeafTicket< T > {
+template < typename LeafType >
+class PurgeLeafTicket : public OctreeLeafTicket< LeafType > {
 	
 private:
-	typedef typename OctreeLeafTicket< T >::LeafPtr LeafPtr;
+	typedef typename OctreeLeafTicket< LeafType >::LeafPtr LeafPtr;
 	
 public:
-	PurgeLeafTicket(const LeafPtr leaf) : OctreeLeafTicket< T >(leaf) { }
+	PurgeLeafTicket(const LeafPtr leaf) : OctreeLeafTicket< LeafType >(leaf) { }
 	
 	virtual ~PurgeLeafTicket() { }
 	
 	virtual void performAction() const {
-		purgeLeaf(OctreeLeafTicket< T >::getTarget(), true);
+		purgeLeaf(OctreeLeafTicket< LeafType >::getTarget(), true);
 	}
 	
 	static PurgeNodeTicket::DeletionInfo purgeLeaf(LeafPtr leaf, bool recursive) {
@@ -181,29 +181,30 @@ public:
 	
 };
 
-template < typename T >
-class UpdateDataTicket : public OctreeLeafTicket< T > {
+template < typename LeafType >
+class UpdateDataTicket : public OctreeLeafTicket< LeafType > {
 	
 public:
-	typedef typename LeafNode< T >::DataConstPtr DataConstPtr;
+	typedef typename LeafType::DataConst DataConst;
+	typedef typename LeafType::DataConstRef DataConstRef;
 	
 private:
-	typedef typename OctreeLeafTicket< T >::LeafPtr LeafPtr;
+	typedef typename OctreeLeafTicket< LeafType >::LeafPtr LeafPtr;
 	
 private:
-	const DataConstPtr newData;
+	DataConst newData;
 	
 public:
-	UpdateDataTicket(const LeafPtr leaf, const DataConstPtr &newData) :
-		OctreeLeafTicket< T >(leaf), newData(newData) { }
+	UpdateDataTicket(const LeafPtr leaf, DataConstRef newData) :
+		OctreeLeafTicket< LeafType >(leaf), newData(newData) { }
 	
 	virtual ~UpdateDataTicket() { }
 	
 	virtual void performAction() const {
-		updateData(OctreeLeafTicket< T >::getTarget(), newData);
+		updateData(OctreeLeafTicket< LeafType >::getTarget(), newData);
 	}
 	
-	static void updateData(LeafPtr leaf, const DataConstPtr &newData) {
+	static void updateData(LeafPtr leaf, DataConstRef newData) {
 		leaf->setData(newData);
 	}
 	

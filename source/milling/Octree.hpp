@@ -17,6 +17,8 @@
 #include <boost/make_shared.hpp>
 #include <boost/array.hpp>
 #include <boost/thread.hpp>
+#include <boost/ptr_container/ptr_deque.hpp>
+#include <boost/assign/ptr_list_inserter.hpp>
 
 #include <Eigen/Geometry>
 
@@ -29,11 +31,11 @@
 class SimpleBoxCache {
 	
 private:
-	const Eigen::Vector3d EXTENT;
+	const Eigen::Vector3f EXTENT;
 	std::map<u_int, SimpleBox::ConstPtr> CACHE;
 	
 public:
-	SimpleBoxCache(Eigen::Vector3d extent) : EXTENT(extent), CACHE() {
+	SimpleBoxCache(Eigen::Vector3f extent) : EXTENT(extent), CACHE() {
 		GeometryUtils::checkExtent(EXTENT);
 	}
 	
@@ -45,7 +47,7 @@ public:
 		SimpleBox::ConstPtr sbp;
 		if(elm == CACHE.end()) {
 			// element not found, build, insert & return
-			double rate = std::pow(2.0, (double)depth);
+			float rate = std::pow((float)2.0, (float)depth);
 			sbp = boost::make_shared< SimpleBox >(EXTENT / rate);
 			
 			CACHE[depth] = sbp;
@@ -57,17 +59,19 @@ public:
 	}
 	
 	ShiftedBox::ConstPtr getShiftedBox(u_int depth,
-			const Eigen::Translation3d &shift = Eigen::Translation3d::Identity()) {
+			const Eigen::Translation3f &shift = Eigen::Translation3f::Identity()) {
 		
 		return boost::make_shared< ShiftedBox >(getSimpleBox(depth), shift);
 	}
 };
 
-template < typename DataT >
+template < typename LeafType >
 class StoredData {
 	
 public:
-	typedef std::pair< ShiftedBox::ConstPtr, typename LeafNode< DataT >::DataConstPtr > VoxelPair;
+	typedef std::pair< 
+			ShiftedBox::ConstPtr,
+			typename LeafType::DataConst > VoxelPair;
 	typedef std::deque< VoxelPair > VoxelData;
 	typedef boost::shared_ptr< VoxelData > VoxelDataPtr;
 	
@@ -88,15 +92,19 @@ public:
 /**
  * Thread-safe implementation of the Octree data structure
  */
-template <typename DataT>
+template <typename DataT, typename data_traits = DataTraits< DataT > >
 class Octree {
 	
 public:
-	typedef typename LeafNode< DataT >::Ptr LeafPtr;
-	typedef typename LeafNode< DataT >::ConstPtr LeafConstPtr;
-	typedef typename LeafNode< DataT >::DataPtr DataPtr;
-	typedef typename LeafNode< DataT >::DataConstPtr DataConstPtr;
+	typedef LeafNode< DataT, data_traits > LeafType;
+	typedef typename LeafType::Ptr LeafPtr;
+	typedef typename LeafType::ConstPtr LeafConstPtr;
+	
+	typedef typename LeafType::DataRef DataRef;
+	typedef typename LeafType::DataConstRef DataConstRef;
+	
 	typedef BranchNode* BranchPtr;
+	
 	typedef typename SimpleBox::ConstPtr SimpleBoxPtr;
 	
 	typedef std::deque< LeafPtr > LeavesDeque;
@@ -105,12 +113,11 @@ public:
 	typedef boost::array< LeafPtr, BranchNode::N_CHILDREN > LeavesArray;
 	typedef boost::shared_ptr< LeavesArray > LeavesArrayPtr;
 	
-	typedef StoredData< DataT > DataView;
+	typedef StoredData< LeafType > DataView;
 	
 private:
 	typedef OctreeTicket Ticket;
-	typedef boost::shared_ptr< Ticket > TicketPtr;
-	typedef std::deque< TicketPtr > TicketDeque;
+	typedef boost::ptr_deque< Ticket > TicketDeque;
 	
 	typedef boost::shared_lock< boost::shared_mutex > SharedLock;
 	typedef boost::unique_lock< boost::shared_mutex > UniqueLock;
@@ -120,9 +127,9 @@ private:
 	
 private:
 	
-	const Eigen::Vector3d EXTENT;
+	const Eigen::Vector3f EXTENT;
 	mutable SimpleBoxCache BOX_CACHE;
-	const boost::shared_ptr< LeafNode< DataT > > LEAVES_LIST;
+	const boost::shared_ptr< LeafType > LEAVES_LIST;
 	BranchPtr ROOT;
 	
 	boost::mutex ticketMutex;
@@ -133,11 +140,11 @@ private:
 	
 public:
 	
-	Octree(Eigen::Vector3d extent) :
+	Octree(Eigen::Vector3f extent) :
 			EXTENT(extent),
 			BOX_CACHE(extent),
 			LEAVES_LIST(
-					boost::make_shared< LeafNode< DataT > >(
+					boost::make_shared< LeafType >(
 							BOX_CACHE.getShiftedBox(0)
 							)
 						)
@@ -148,8 +155,8 @@ public:
 		/* create a FAKE root, link it with the leaves list and then "push"
 		 * it to get a branch (REAL root) and it's first children level
 		 */
-		boost::shared_ptr< LeafNode< DataT > > fakeRoot = 
-				boost::make_shared< LeafNode<DataT> >(BOX_CACHE.getShiftedBox(0));
+		boost::shared_ptr< LeafType > fakeRoot = 
+				boost::make_shared< LeafType >(BOX_CACHE.getShiftedBox(0));
 		
 		PushedLevel level = createLevel(fakeRoot.get(), versioner.get());
 		
@@ -186,7 +193,7 @@ public:
 		TicketLock ticketLock(ticketMutex);
 		
 		while (!ticketQueue.empty()) {
-			TicketPtr ticket = ticketQueue.back(); ticketQueue.pop_back();
+			TicketDeque::auto_type ticket = ticketQueue.pop_back();
 			ticket->performAction();
 		}
 		
@@ -212,14 +219,14 @@ public:
 			/* this is a newly created leaf, so, we can make changes directly
 			 * on it
 			 */
-			PushLevelTicket< DataT >::attachBranch(leaf, newLevel.newBranch);
+			PushLevelTicket< LeafType >::attachBranch(leaf, newLevel.newBranch);
 			
 		} else {
 			/* this is a leaf attached to the tree, so we have to create a
 			 * ticket in order to perform required action
 			 */
-			TicketPtr ticket = boost::make_shared< PushLevelTicket< DataT > >(leaf, newLevel.newBranch);
-			this->queueTicket(ticket);
+			TicketLock l(ticketMutex);
+			boost::assign::ptr_push_back< PushLevelTicket < LeafType > >( ticketQueue )(leaf, newLevel.newBranch);
 		}
 		
 		return newLevel.newLeaves;
@@ -231,30 +238,30 @@ public:
 		
 		if (isNewlyCreated(leaf, versioner.get())) {
 			PurgeNodeTicket::DeletionInfo info = 
-					PurgeLeafTicket < DataT >::purgeLeaf(leaf, false);
+					PurgeLeafTicket < LeafType >::purgeLeaf(leaf, false);
 			
 			if (info.shouldDelete) {
-				TicketPtr ticket = boost::make_shared< PurgeNodeTicket >(info.reference);
-				this->queueTicket(ticket);
+				TicketLock l(ticketMutex);
+				boost::assign::ptr_push_back< PurgeNodeTicket >( ticketQueue )(info.reference);
 			}
 			
 		} else {
-			TicketPtr ticket = boost::make_shared< PurgeLeafTicket< DataT > >(leaf);
-			this->queueTicket(ticket);
+			TicketLock l(ticketMutex);
+			boost::assign::ptr_push_back< PurgeLeafTicket< LeafType > >( ticketQueue )(leaf);
 		}
 		
 	}
 	
-	void updateLeafData(LeafPtr leaf, const DataConstPtr &data) {
+	void updateLeafData(LeafPtr leaf, DataConstRef data) {
 		
 		SharedLock _(mutex);
 		
 		if(isNewlyCreated(leaf, versioner.get())) {
-			UpdateDataTicket< DataT >::updateData(leaf, data);
+			UpdateDataTicket< LeafType >::updateData(leaf, data);
 			
 		} else {
-			TicketPtr ticket = boost::make_shared< UpdateDataTicket< DataT > >(leaf, data);
-			this->queueTicket(ticket);
+			TicketLock l(ticketMutex);
+			boost::assign::ptr_push_back< UpdateDataTicket< LeafType > >( ticketQueue )(leaf, data);
 		}
 		
 	}
@@ -267,7 +274,7 @@ public:
 	 * @return
 	 */
 	LeavesDequePtr getIntersectingLeaves(const SimpleBox &obb,
-			const Eigen::Isometry3d &isom, bool accurate) {
+			const Eigen::Isometry3f &isom, bool accurate) {
 		
 		SharedLock _(mutex);
 		
@@ -282,7 +289,7 @@ public:
 		
 		LeavesDequePtr intersectingLeaves = boost::make_shared< LeavesDeque >();
 		
-		do {
+		while (!currLvlNodes->empty()) {
 			OctreeNode::Ptr currNode = currLvlNodes->back();
 			currLvlNodes->pop_back();
 			
@@ -297,12 +304,12 @@ public:
 				
 				switch (currNode->getType()) {
 					case OctreeNode::LEAF_NODE: {
-						LeafPtr lnp = dynamic_cast<LeafPtr>(currNode);
+						LeafPtr lnp = static_cast<LeafPtr>(currNode);
 						intersectingLeaves->push_back(lnp);
 						break;
 					}
 					case OctreeNode::BRANCH_NODE: {
-						BranchPtr bnp = dynamic_cast<BranchPtr>(currNode);
+						BranchPtr bnp = static_cast<BranchPtr>(currNode);
 						// add children to nextLvlNodes
 						for (int i = 0; i < BranchNode::N_CHILDREN; i++) {
 							if (bnp->hasChild(i))
@@ -316,7 +323,7 @@ public:
 				}
 			}
 			
-		} while (!currLvlNodes->empty());
+		}
 		
 		return intersectingLeaves;
 	}
@@ -330,7 +337,7 @@ public:
 	 * @param onlyIfChanged
 	 * @return
 	 */
-	DataView getStoredData(const DataConstPtr &defaultData, bool onlyIfChanged = false) const {
+	DataView getStoredData(bool onlyIfChanged = false) const {
 		
 		typename DataView::VoxelDataPtr data = boost::make_shared< typename DataView::VoxelData >();
 		
@@ -343,8 +350,7 @@ public:
 		LeafPtr currLeaf = getLeavesListHead();
 		
 		while((currLeaf = currLeaf->getNext()) != NULL) {
-			typename DataView::VoxelPair vp(currLeaf->getBox(),
-					(currLeaf->hasData()) ? currLeaf->getData() : defaultData);
+			typename DataView::VoxelPair vp(currLeaf->getBox(), currLeaf->getData());
 			data->push_back(vp);
 		}
 		
@@ -376,11 +382,6 @@ private:
 		BranchPtr newBranch;
 		LeavesArrayPtr newLeaves;
 	};
-	
-	void queueTicket(TicketPtr newTicket) {
-		TicketLock _l(ticketMutex);
-		this->ticketQueue.push_back(newTicket);
-	}
 	
 	/**
 	 * Create a one-level tree detached from the main one; the new tree will
@@ -416,11 +417,11 @@ private:
 		SimpleBox::ConstPtr thisLvlBox = BOX_CACHE.getSimpleBox(newDepth);
 		ShiftedBox baseSBox = leaf->getBox()->getResized(thisLvlBox);
 		// base translation needed to build all the others
-		Eigen::Vector3d baseTraslation(thisLvlBox->getHalfExtent());
+		Eigen::Vector3f baseTraslation(thisLvlBox->getHalfExtent());
 		
 		for (u_char i = 0; i < BranchNode::N_CHILDREN; i++) {
 			// calculate child traslation
-			Eigen::Vector3d traslation(baseTraslation);
+			Eigen::Vector3f traslation(baseTraslation);
 			
 			switch (i) {
 				case 0:
@@ -457,9 +458,9 @@ private:
 			}
 			
 			// create shifted box for the child
-			ShiftedBox newBox = baseSBox.getShifted(Eigen::Translation3d(traslation));
+			ShiftedBox newBox = baseSBox.getShifted(Eigen::Translation3f(traslation));
 			
-			LeafPtr child = new LeafNode< DataT >(
+			LeafPtr child = new LeafType(
 					toRet.newBranch,
 					i,
 					boost::make_shared< ShiftedBox >(newBox),

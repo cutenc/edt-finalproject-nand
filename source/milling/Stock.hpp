@@ -29,7 +29,7 @@ struct IntersectionResult {
 	 * Gives an estimation of how much volume has been removed during the
 	 * milling operation
 	 */
-	double waste;
+	float waste;
 	
 	u_long analyzed_leaves;
 	u_long purged_leaves;
@@ -56,7 +56,7 @@ struct IntersectionResult {
 	
 	u_long intersection_approx_skips;
 	
-	boost::chrono::milliseconds elapsedTime;
+	boost::chrono::microseconds elapsedTime;
 	
 	IntersectionResult() :
 		waste(0), analyzed_leaves(0), purged_leaves(0), lazy_purged_leaves(0), 
@@ -82,7 +82,7 @@ struct IntersectionResult {
 				<< "\t#pushed"
 				<< "\t#approx_error"
 				<< "\t#approx_skips"
-				<< "\t#elapsed time (s)"
+				<< "\t#elapsed time (ms)"
 				<< "\t#mean time per leaf (us)";
 		return ss.str();
 	}
@@ -104,6 +104,23 @@ struct IntersectionResult {
 	}
 };
 
+/**
+ * Define a DataTraits specialization for the VoxelInfo class
+ */
+template<>
+struct DataTraits< VoxelInfo > {
+	typedef boost::shared_ptr< VoxelInfo > type;
+	typedef boost::shared_ptr< const VoxelInfo > const_type;
+	typedef const_type & reference;
+	typedef const const_type & const_reference;
+	
+	static const_reference DEFAULT_DATA() {
+		static const_type DATA = boost::make_shared< 
+				const VoxelInfo >(VoxelInfo::DEFAULT_INSIDENESS());
+		return DATA;
+	}
+};
+
 
 class Stock : public Model3D {
 	
@@ -111,20 +128,21 @@ public:
 	typedef boost::shared_ptr< Stock > Ptr;
 	typedef boost::shared_ptr< const Stock > ConstPtr;
 	
-	typedef typename Octree< VoxelInfo >::DataView DataView;
+	typedef Octree< VoxelInfo, DataTraits< VoxelInfo > > OctreeType;
+	typedef typename OctreeType::DataView DataView;
 	typedef Mesher< DataView > MesherType;
 	
 private:
-	typedef Octree< VoxelInfo > _Octree;
-	typedef Octree< VoxelInfo >::DataPtr VoxelInfoPtr;
-	typedef Octree< VoxelInfo >::DataConstPtr VoxelInfoConstPtr;
+	typedef DataTraits< VoxelInfo >::type VoxInfoPtr;
+	typedef DataTraits< VoxelInfo >::const_type VoxInfoCPtr;
+	typedef DataTraits< VoxelInfo >::reference VoxInfoCPtrRef;
+	typedef DataTraits< VoxelInfo >::const_reference VoxInfoCPtrCRef;
 	
 private:
 	const u_int MAX_DEPTH;
-	const Eigen::Vector3d EXTENT;
-	const Eigen::Translation3d STOCK_MODEL_TRASLATION;
-	const VoxelInfoConstPtr DEFAULT_DATA;
-	_Octree MODEL;
+	const Eigen::Vector3f EXTENT;
+	const Eigen::Translation3f STOCK_MODEL_TRASLATION;
+	OctreeType MODEL;
 	mutable MesherType::Ptr MESHER;
 	
 public:
@@ -138,9 +156,9 @@ public:
 	 * stock basis
 	 * @return
 	 */
-	IntersectionResult intersect(const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &rototrasl);
+	IntersectionResult intersect(const Cutter::ConstPtr &cutter, const Eigen::Isometry3f &rototrasl);
 	
-	Eigen::Vector3d getResolution() const;
+	Eigen::Vector3f getResolution() const;
 	
 	virtual Mesh::Ptr getMeshing();
 	
@@ -153,8 +171,9 @@ private:
 	 * @param rototras cutter (not the bounding box) rototraslation in terms of model basis
 	 * @return
 	 */
-	VoxelInfoPtr buildInfos(const _Octree::LeafConstPtr &leaf, 
-			const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &isometry);
+	void buildInfos(const OctreeType::LeafConstPtr &leaf, 
+			const Cutter::ConstPtr &cutter, const Eigen::Isometry3f &isometry,
+			SimpleBox::CornerMatrix &cachedMatrix, VoxelInfo &info);
 	
 	/**
 	 * Calculate new waste produced by milling of given \c leaf according to
@@ -166,8 +185,7 @@ private:
 	 * @param newInfo
 	 * @return
 	 */
-	double calculateWaste(const _Octree::LeafConstPtr &leaf,
-			const VoxelInfoPtr &newInfo) const;
+	float calculateWaste(const OctreeType::LeafConstPtr &leaf, VoxelInfo &newInfo) const;
 	
 	/**
 	 * 
@@ -177,11 +195,11 @@ private:
 	 * with new ones
 	 * @return
 	 */
-	double getApproxWaste(const SimpleBox &box, const VoxelInfoConstPtr &oldInfo, const VoxelInfoConstPtr &updatedInfo) const;
+	float getApproxWaste(const SimpleBox &box, const VoxelInfo &oldInfo, const VoxelInfo &updatedInfo) const;
 	
-	double intersectedVolume(const SimpleBox &box, const VoxelInfoConstPtr &info) const;
+	float intersectedVolume(const SimpleBox &box, const VoxelInfo &info) const;
 	
-	bool canPushLevel(const _Octree::LeafPtr &leaf) const;
+	bool canPushLevel(const OctreeType::LeafPtr &leaf) const;
 	
 	friend std::ostream & operator<<(std::ostream &os, const Stock &stock);
 };

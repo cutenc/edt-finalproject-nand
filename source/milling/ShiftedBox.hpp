@@ -28,11 +28,11 @@ public:
 private:
 	
 	const SimpleBox::ConstPtr simpleBox;
-	const Eigen::Translation3d shift;
+	const Eigen::Translation3f shift;
 	
 public:
 	ShiftedBox(const SimpleBox::ConstPtr &box,
-			const Eigen::Translation3d &tras = Eigen::Translation3d::Identity()) :
+			const Eigen::Translation3f &tras = Eigen::Translation3f::Identity()) :
 			simpleBox(box), shift(tras)
 	{ }
 	
@@ -44,8 +44,8 @@ public:
 	 * @return another box shifted from current one according to given
 	 * translation
 	 */
-	ShiftedBox getShifted(const Eigen::Translation3d &tras) const {
-		Eigen::Translation3d newTrans(this->shift.translation() + tras.translation());
+	ShiftedBox getShifted(const Eigen::Translation3f &tras) const {
+		Eigen::Translation3f newTrans(this->shift.translation() + tras.translation());
 		return ShiftedBox(this->simpleBox, newTrans);
 	}
 	
@@ -54,9 +54,9 @@ public:
 	}
 	
 
-	Voxel::Ptr getVoxel(const Eigen::Isometry3d &rototras = Eigen::Isometry3d::Identity()) const {
+	Voxel::Ptr getVoxel(const Eigen::Isometry3f &rototras = Eigen::Isometry3f::Identity()) const {
 		SimpleBox::CornerMatrixPtr corners = getCornerMatrix(rototras);
-		return boost::make_shared< Voxel >(corners);
+		return boost::make_shared< Voxel >(corners, false);
 	}
 	
 	/**
@@ -70,15 +70,23 @@ public:
 	 * given isometry.
 	 * @return
 	 */
-	SimpleBox::CornerMatrixPtr getCornerMatrix(const Eigen::Isometry3d &rototras = Eigen::Isometry3d::Identity()) const {
+	SimpleBox::CornerMatrixPtr getCornerMatrix(const Eigen::Isometry3f &rototras) const {
 		/* total isometry equals given one plus this box translation
 		 */
-		Eigen::Isometry3d totIsometry; totIsometry = rototras * this->shift;
+		Eigen::Isometry3f totIsometry; totIsometry = rototras * this->shift;
 		
 		return this->simpleBox->getCorners(totIsometry);
 	}
 	
-	const Eigen::Translation3d & getShift() const {
+	void buildCornerMatrix(const Eigen::Isometry3f &rototras, SimpleBox::CornerMatrix &out) const {
+		/* total isometry equals given one plus this box translation
+		 */
+		Eigen::Isometry3f totIsometry; totIsometry = rototras * this->shift;
+		
+		this->simpleBox->buildCorners(totIsometry, out);
+	}
+	
+	const Eigen::Translation3f & getShift() const {
 		return this->shift;
 	}
 	
@@ -96,7 +104,7 @@ public:
 	 * @return
 	 */
 	bool isIntersecting(const SimpleBox &otherBox,
-			const Eigen::Isometry3d &rototras,
+			const Eigen::Isometry3f &rototras,
 			bool accurate) const {
 		
 		// thanks to http://www.gamasutra.com/view/feature/131790/simple_intersection_tests_for_games.php
@@ -105,32 +113,32 @@ public:
 		separating axes. If a separating axis could not be found, the two
 		boxes overlap. */
 		
-		double ra, rb, t;
-		const Eigen::Vector3d &a = this->simpleBox->getHalfExtent(),
+		float ra, rb, t;
+		const Eigen::Vector3f &a = this->simpleBox->getHalfExtent(),
 				&b = otherBox.getHalfExtent();
 		
-		const Eigen::Matrix3d &rotation = rototras.linear();
-		const Eigen::Vector3d traslation = rototras.translation() - 
+		const Eigen::Matrix3f &rotation = rototras.linear();
+		const Eigen::Vector3f traslation = rototras.translation() - 
 				this->shift.translation();
 		
 		//A's basis vectors
 		for(int i = 0; i < 3; i++ ) {
 			ra = a[i];
-			rb = b[0] * fabs((double)rotation(i, 0)) 
-					+ b[1] * fabs((double)rotation(i, 1)) 
-					+ b[2] * fabs((double)rotation(i, 2)) ;
-			t = fabs((double) traslation[i]);
+			rb = b[0] * fabs((float)rotation(i, 0)) 
+					+ b[1] * fabs((float)rotation(i, 1)) 
+					+ b[2] * fabs((float)rotation(i, 2)) ;
+			t = fabs((float) traslation[i]);
 			if( t > ra + rb )
 				return false;
 		}
 
 		//B's basis vectors
 		for(int i = 0; i<3 ; i++ ) {
-			ra = a[0] * fabs((double)rotation(0, i))
-					+ a[1] * fabs((double)rotation(1, i))
-					+ a[2] * fabs((double)rotation(2, i)); 
+			ra = a[0] * fabs((float)rotation(0, i))
+					+ a[1] * fabs((float)rotation(1, i))
+					+ a[2] * fabs((float)rotation(2, i)); 
 			rb = b[i];
-			t = fabs((double)(
+			t = fabs((float)(
 					traslation[0] * rotation(0, i)
 					+ traslation[1] * rotation(1, i)
 					+ traslation[2] * rotation(2, i)
@@ -143,65 +151,65 @@ public:
 			//9 cross products
 	
 			//L = A0 x B0
-			ra = a[1]*fabs((double)rotation(2, 0)) + a[2]*fabs((double)rotation(1, 0));
-			rb = b[1]*fabs((double)rotation(0, 2)) + b[2]*fabs((double)rotation(0, 1));
-			t = fabs((double)(traslation[2]*rotation(1, 0) - traslation[1]*rotation(2, 0)));
+			ra = a[1]*fabs((float)rotation(2, 0)) + a[2]*fabs((float)rotation(1, 0));
+			rb = b[1]*fabs((float)rotation(0, 2)) + b[2]*fabs((float)rotation(0, 1));
+			t = fabs((float)(traslation[2]*rotation(1, 0) - traslation[1]*rotation(2, 0)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A0 x B1
-			ra = a[1]*fabs((double)rotation(2, 1)) + a[2]*fabs((double)rotation(1, 1));
-			rb = b[0]*fabs((double)rotation(0, 2)) + b[2]*fabs((double)rotation(0, 0));
-			t = fabs((double)(traslation[2]*rotation(1, 1) - traslation[1]*rotation(2, 1)));
+			ra = a[1]*fabs((float)rotation(2, 1)) + a[2]*fabs((float)rotation(1, 1));
+			rb = b[0]*fabs((float)rotation(0, 2)) + b[2]*fabs((float)rotation(0, 0));
+			t = fabs((float)(traslation[2]*rotation(1, 1) - traslation[1]*rotation(2, 1)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A0 x B2
-			ra = a[1]*fabs((double)rotation(2, 2)) + a[2]*fabs((double)rotation(1, 2));
-			rb = b[0]*fabs((double)rotation(0, 1)) + b[1]*fabs((double)rotation(0, 0));
-			t = fabs((double)(traslation[2]*rotation(1, 2) - traslation[1]*rotation(2, 2)));
+			ra = a[1]*fabs((float)rotation(2, 2)) + a[2]*fabs((float)rotation(1, 2));
+			rb = b[0]*fabs((float)rotation(0, 1)) + b[1]*fabs((float)rotation(0, 0));
+			t = fabs((float)(traslation[2]*rotation(1, 2) - traslation[1]*rotation(2, 2)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A1 x B0
-			ra = a[0]*fabs((double)rotation(2, 0)) + a[2]*fabs((double)rotation(0, 0));
-			rb = b[1]*fabs((double)rotation(1, 2)) + b[2]*fabs((double)rotation(1, 1));
-			t = fabs((double)(traslation[0]*rotation(2, 0) - traslation[2]*rotation(0, 0)));
+			ra = a[0]*fabs((float)rotation(2, 0)) + a[2]*fabs((float)rotation(0, 0));
+			rb = b[1]*fabs((float)rotation(1, 2)) + b[2]*fabs((float)rotation(1, 1));
+			t = fabs((float)(traslation[0]*rotation(2, 0) - traslation[2]*rotation(0, 0)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A1 x B1
-			ra = a[0]*fabs((double)rotation(2, 1)) + a[2]*fabs((double)rotation(0, 1));
-			rb = b[0]*fabs((double)rotation(1, 2)) + b[2]*fabs((double)rotation(1, 0));
-			t = fabs((double)(traslation[0]*rotation(2, 1) - traslation[2]*rotation(0, 1)));
+			ra = a[0]*fabs((float)rotation(2, 1)) + a[2]*fabs((float)rotation(0, 1));
+			rb = b[0]*fabs((float)rotation(1, 2)) + b[2]*fabs((float)rotation(1, 0));
+			t = fabs((float)(traslation[0]*rotation(2, 1) - traslation[2]*rotation(0, 1)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A1 x B2
-			ra = a[0]*fabs((double)rotation(2, 2)) + a[2]*fabs((double)rotation(0, 2));
-			rb = b[0]*fabs((double)rotation(1, 1)) + b[1]*fabs((double)rotation(1, 0));
-			t = fabs((double)(traslation[0]*rotation(2, 2) - traslation[2]*rotation(0, 2)));
+			ra = a[0]*fabs((float)rotation(2, 2)) + a[2]*fabs((float)rotation(0, 2));
+			rb = b[0]*fabs((float)rotation(1, 1)) + b[1]*fabs((float)rotation(1, 0));
+			t = fabs((float)(traslation[0]*rotation(2, 2) - traslation[2]*rotation(0, 2)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A2 x B0
-			ra = a[0]*fabs((double)rotation(1, 0)) + a[1]*fabs((double)rotation(0, 0));
-			rb = b[1]*fabs((double)rotation(2, 2)) + b[2]*fabs((double)rotation(2, 1));
-			t = fabs((double)(traslation[1]*rotation(0, 0) - traslation[0]*rotation(1, 0)));
+			ra = a[0]*fabs((float)rotation(1, 0)) + a[1]*fabs((float)rotation(0, 0));
+			rb = b[1]*fabs((float)rotation(2, 2)) + b[2]*fabs((float)rotation(2, 1));
+			t = fabs((float)(traslation[1]*rotation(0, 0) - traslation[0]*rotation(1, 0)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A2 x B1
-			ra = a[0]*fabs((double)rotation(1, 1)) + a[1]*fabs((double)rotation(0, 1));
-			rb = b[0] *fabs((double)rotation(2, 2)) + b[2]*fabs((double)rotation(2, 0));
-			t = fabs((double)(traslation[1]*rotation(0, 1) - traslation[0]*rotation(1, 1)));
+			ra = a[0]*fabs((float)rotation(1, 1)) + a[1]*fabs((float)rotation(0, 1));
+			rb = b[0] *fabs((float)rotation(2, 2)) + b[2]*fabs((float)rotation(2, 0));
+			t = fabs((float)(traslation[1]*rotation(0, 1) - traslation[0]*rotation(1, 1)));
 			if( t > ra + rb )
 				return false;
 	
 			//L = A2 x B2
-			ra = a[0]*fabs((double)rotation(1, 2)) + a[1]*fabs((double)rotation(0, 2));
-			rb = b[0]*fabs((double)rotation(2, 1)) + b[1]*fabs((double)rotation(2, 0));
-			t = fabs((double)(traslation[1]*rotation(0, 2) - traslation[0]*rotation(1, 2)));
+			ra = a[0]*fabs((float)rotation(1, 2)) + a[1]*fabs((float)rotation(0, 2));
+			rb = b[0]*fabs((float)rotation(2, 1)) + b[1]*fabs((float)rotation(2, 0));
+			t = fabs((float)(traslation[1]*rotation(0, 2) - traslation[0]*rotation(1, 2)));
 			if( t > ra + rb )
 				return false;
 			

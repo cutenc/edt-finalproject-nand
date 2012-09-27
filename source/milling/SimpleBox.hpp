@@ -32,7 +32,7 @@ public:
 	typedef boost::shared_ptr< SimpleBox > Ptr;
 	typedef boost::shared_ptr< const SimpleBox > ConstPtr;
 	
-	typedef Eigen::Matrix<double, 3, Corner::N_CORNERS> CornerMatrix;
+	typedef Eigen::Matrix<float, 3, Corner::N_CORNERS> CornerMatrix;
 	typedef boost::shared_ptr< CornerMatrix > CornerMatrixPtr;
 	typedef boost::shared_ptr< const CornerMatrix > CornerMatrixConstPtr;
 	
@@ -42,55 +42,59 @@ private:
 	/**
 	 * Half dimensions
 	 */
-	const Eigen::Vector3d EXTENT;
-	const double VOLUME;
+	const Eigen::Vector3f EXTENT;
+	const float VOLUME;
 	const CornerMatrixConstPtr CORNERS;
 	
 public:
-	SimpleBox(const Eigen::Vector3d &extent) :
+	SimpleBox(const Eigen::Vector3f &extent) :
 			EXTENT(extent / 2.0),
 			VOLUME(extent[0] * extent[1] * extent[2]),
 			CORNERS(SimpleBox::buildCornerMatrix(EXTENT)) {
 		
 		GeometryUtils::checkExtent(EXTENT);
-		if (VOLUME < std::numeric_limits<double>::epsilon()) {
+		if (VOLUME < std::numeric_limits<float>::epsilon()) {
 			throw std::invalid_argument("Volume is too small or negative");
 		}
 	}
 	
 	virtual ~SimpleBox() { }
 	
-	const Eigen::Vector3d &getHalfExtent() const { return this->EXTENT; }
-	Eigen::Vector3d getExtent() const { return this->EXTENT * 2.0; }
+	const Eigen::Vector3f &getHalfExtent() const { return this->EXTENT; }
+	Eigen::Vector3f getExtent() const { return this->EXTENT * 2.0; }
 	
 	friend std::ostream& operator<<(std::ostream &os, const SimpleBox &sb) {
 		os << "BOX[" << sb.getExtent().transpose() << "]";
 		return os;
 	}
 	
-	Eigen::Vector3d getCorner(Corner::CornerType type, 
-			const Eigen::Isometry3d &isometry = Eigen::Isometry3d::Identity()) {
+	Eigen::Vector3f getCorner(Corner::CornerType type, 
+			const Eigen::Isometry3f &isometry = Eigen::Isometry3f::Identity()) {
 		return isometry * getSimpleCorner(type);
 	}
 	
-	CornerMatrixPtr getCorners(const Eigen::Isometry3d &isometry = Eigen::Isometry3d::Identity()) const {
+	CornerMatrixPtr getCorners(const Eigen::Isometry3f &isometry = Eigen::Isometry3f::Identity()) const {
 		
 		CornerMatrixPtr corners = boost::allocate_shared< CornerMatrix,
 				CornerMatrixAllocator >( CornerMatrixAllocator() );
 		
-		corners->noalias() = isometry * (*this->CORNERS);
+		buildCorners(isometry, *corners);
 		
 		return corners;
 	}
 	
-	double getVolume() const {
+	void buildCorners(const Eigen::Isometry3f &isometry, CornerMatrix &out) const {
+		out.noalias() = isometry * (*this->CORNERS);
+	}
+	
+	float getVolume() const {
 		return this->VOLUME;
 	}
 	
 	
 protected:
 	
-	Eigen::Vector3d getSimpleCorner(Corner::CornerType type) const {
+	Eigen::Vector3f getSimpleCorner(Corner::CornerType type) const {
 		u_char nCorner = static_cast<u_char>(type);
 		
 		return CORNERS->col(nCorner);
@@ -99,14 +103,14 @@ protected:
 	
 private:
 	
-	static CornerMatrixPtr buildCornerMatrix(const Eigen::Vector3d &halfSizes) {
+	static CornerMatrixPtr buildCornerMatrix(const Eigen::Vector3f &halfSizes) {
 		
 		CornerMatrixPtr corners = boost::allocate_shared< CornerMatrix, 
 				CornerMatrixAllocator >(CornerMatrixAllocator());
 		
 		CornerIterator cit = CornerIterator::begin();
 		for (; cit != CornerIterator::end(); ++cit) {
-			Eigen::Vector3d corner = SimpleBox::getSimpleCorner(*cit, halfSizes);
+			Eigen::Vector3f corner = SimpleBox::getSimpleCorner(*cit, halfSizes);
 			u_char nCorner = static_cast<u_char>(*cit);
 			
 			corners->col(nCorner) = corner;
@@ -115,10 +119,10 @@ private:
 		return corners;
 	}
 	
-	static Eigen::Vector3d getSimpleCorner(Corner::CornerType type, 
-			const Eigen::Vector3d &halfSizes) {
+	static Eigen::Vector3f getSimpleCorner(Corner::CornerType type, 
+			const Eigen::Vector3f &halfSizes) {
 			
-		Eigen::Vector3d corner = halfSizes;
+		Eigen::Vector3f corner = halfSizes;
 		
 		switch (type) {
 			case Corner::BottomFrontLeft:

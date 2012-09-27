@@ -11,7 +11,7 @@ EulerAngles::EulerAngles() :
 	ALPHA(0), BETA(0), GAMMA(0) {
 }
 
-EulerAngles::EulerAngles(double alpha, double beta, double gamma) :
+EulerAngles::EulerAngles(float alpha, float beta, float gamma) :
 	ALPHA(alpha), BETA(beta), GAMMA(gamma) {
 }
 

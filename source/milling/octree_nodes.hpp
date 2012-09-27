@@ -57,15 +57,15 @@ public:
 	bool isRoot() const { return (this->father == NULL); }
 	
 	OctreeNode::Ptr getFather() const {
-		if (isRoot())
-			throw std::runtime_error("cannot ask root's father");
+		assert(!isRoot());
+			// throw std::runtime_error("cannot ask root's father");
 		
 		return this->father;
 	}
 	
 	u_char getChildIdx() const {
-		if (isRoot())
-			throw std::runtime_error("cannot ask root's childIdx");
+		assert(!isRoot());
+			// throw std::runtime_error("cannot ask root's childIdx");
 		
 		return this->childIdx;
 	}
@@ -220,17 +220,32 @@ private:
 	}
 };
 
-template <typename DataT>
+template < typename DataT >
+struct DataTraits {
+	typedef DataT type;
+	typedef const DataT const_type;
+	typedef DataT & reference;
+	typedef const DataT & const_reference;
+	
+	static const_reference DEFAULT_DATA() {
+		static const_type DATA;
+		return DATA;
+	}
+};
+
+template <typename DataT, typename data_traits = DataTraits< DataT> >
 class LeafNode : public OctreeNode {
 	
 public:
-	typedef boost::shared_ptr< DataT > DataPtr;
-	typedef boost::shared_ptr< const DataT > DataConstPtr;
+	typedef LeafNode< DataT, data_traits > * Ptr;
+	typedef const LeafNode< DataT, data_traits > * ConstPtr;
 	
-	typedef LeafNode< DataT > * Ptr;
-	typedef const LeafNode< DataT > * ConstPtr;
+	typedef typename data_traits::const_type DataConst;
+	typedef typename data_traits::reference DataRef;
+	typedef typename data_traits::const_reference DataConstRef;
 	
-	typedef LeafNode< DataT >::Ptr LeafPtr;
+private:
+	typedef LeafNode< DataT, data_traits >::Ptr LeafPtr;
 	
 private:
 	
@@ -238,7 +253,7 @@ private:
 	const u_int VERSION;
 	
 	LeafPtr prev, next;
-	DataConstPtr data;
+	DataConst data;
 	
 public:
 	LeafNode(const ShiftedBox::ConstPtr &box) :
@@ -262,10 +277,7 @@ public:
 		return LEAF_NODE;
 	}
 	
-	DataConstPtr getData() const {
-		if(!hasData())
-			throw std::runtime_error("There's no data yet, you have to set it first");
-		
+	DataConstRef getData() const {
 		return this->data;
 	}
 	
@@ -273,11 +285,7 @@ public:
 		return this->VERSION;
 	}
 	
-	bool hasData() const {
-		return this->data.get() != 0;
-	}
-	
-	void setData(const DataConstPtr &data) {
+	void setData(DataConstRef data) {
 		this->data = data;
 	}
 	
@@ -304,11 +312,7 @@ public:
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const {
 		os << "Leaf@" << getDepth() << ":";
-		if (this->data.get() == NULL) {
-			os << "NO_DATA";
-		} else {
-			os << *(this->data);
-		}
+		os << this->data;
 		
 		return os;
 	}
@@ -317,6 +321,7 @@ private:
 	
 	void initVariables() {
 		prev = next = NULL;
+		data = data_traits::DEFAULT_DATA();
 	}
 	
 };

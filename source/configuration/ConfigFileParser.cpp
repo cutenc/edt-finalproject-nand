@@ -132,8 +132,8 @@ void ConfigFileParser::sectionParser_tool(std::ifstream& ifs) {
 		line = FileUtils::readNextValidLine(ifs).validLine;
 		std::string diameterStr = StringUtils::extractProperty(line, "Diameter", "[\\d\\.]+", true);
 		
-		double height = boost::lexical_cast<double>(heightStr);
-		double diameter = boost::lexical_cast<double>(diameterStr);
+		float height = boost::lexical_cast<float>(heightStr);
+		float diameter = boost::lexical_cast<float>(diameterStr);
 		
 		geometry = boost::make_shared<Cylinder>(Cylinder(diameter / 2.0, height));
 		
@@ -142,7 +142,7 @@ void ConfigFileParser::sectionParser_tool(std::ifstream& ifs) {
 		line = FileUtils::readNextValidLine(ifs).validLine;
 		std::string diameterStr = StringUtils::extractProperty(line, "Diameter", "[\\d\\.]+", true);
 		
-		double diameter = boost::lexical_cast<double>(diameterStr);
+		float diameter = boost::lexical_cast<float>(diameterStr);
 		
 		geometry = boost::make_shared<Sphere>(Sphere(diameter / 2.0));
 		

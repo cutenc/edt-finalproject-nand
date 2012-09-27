@@ -41,9 +41,9 @@ public:
 private:
 	static Point3D buildTraslation(std::vector< std::string >::iterator it) {
 		
-		double X = boost::lexical_cast<double>(*it++);
-		double Y = boost::lexical_cast<double>(*it++);
-		double Z = boost::lexical_cast<double>(*it++);
+		double X = boost::lexical_cast<float>(*it++);
+		double Y = boost::lexical_cast<float>(*it++);
+		double Z = boost::lexical_cast<float>(*it++);
 		
 		return Point3D(X, Y, Z);
 		
@@ -51,9 +51,9 @@ private:
 
 	static EulerAngles buildRotation(std::vector< std::string >::iterator it) {
 		
-		double ALPHA = boost::lexical_cast<double>(*it++);
-		double BETA = boost::lexical_cast<double>(*it++);
-		double GAMMA = boost::lexical_cast<double>(*it++);
+		double ALPHA = boost::lexical_cast<float>(*it++);
+		double BETA = boost::lexical_cast<float>(*it++);
+		double GAMMA = boost::lexical_cast<float>(*it++);
 		
 		return EulerAngles(ALPHA, BETA, GAMMA);
 		

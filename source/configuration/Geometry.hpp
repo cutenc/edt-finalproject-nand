@@ -42,33 +42,33 @@ public:
 
 class Cylinder : public Geometry {
 public:
-	Cylinder(const double r, const double h) : RADIUS(r), HEIGHT(h) { }
+	Cylinder(const float r, const float h) : RADIUS(r), HEIGHT(h) { }
 	virtual ~Cylinder() { }
 	
 	virtual GeometryType getType() const { return CYLINDER; }
 	
-	const double RADIUS, HEIGHT;
+	const float RADIUS, HEIGHT;
 };
 
 class Sphere : public Geometry {
 public:
-	Sphere(const double r) : RADIUS(r) { }
+	Sphere(const float r) : RADIUS(r) { }
 	virtual ~Sphere() { }
 	
 	virtual GeometryType getType() const { return SPHERE; }
 	
-	const double RADIUS;
+	const float RADIUS;
 };
 
 class RectCuboid : public Geometry {
 public:
-	RectCuboid(const double x, const double y, const double z) :
+	RectCuboid(const float x, const float y, const float z) :
 		X(x), Y(y), Z(z) { }
 	virtual ~RectCuboid() { }
 	
 	virtual GeometryType getType() const { return RECTANGULAR_CUBOID; }
 	
-	const double X, Y, Z;
+	const float X, Y, Z;
 };
 
 class MeshGeometry : public Geometry {

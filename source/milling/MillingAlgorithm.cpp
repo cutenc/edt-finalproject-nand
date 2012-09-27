@@ -41,7 +41,7 @@ MillingAlgorithm::StepInfo MillingAlgorithm::step() {
 	bool water = false;
 	this->waterFluxWasteCount += infos.waste;
 	if (this->waterFluxWasteCount > ALG_WATER_THRESHOLD) {
-		this->waterFluxWasteCount = std::max< double >(0, 
+		this->waterFluxWasteCount = std::max< float >(0, 
 				this->waterFluxWasteCount - ALG_WATER_REMOTION_RATE);
 		water = true;
 	}
@@ -58,7 +58,7 @@ u_int MillingAlgorithm::getStepNumber() {
 	return this->stepNumber;
 }
 
-Eigen::Vector3d MillingAlgorithm::getResolution() const {
+Eigen::Vector3f MillingAlgorithm::getResolution() const {
 	return CONFIG.STOCK->getResolution();
 }
 
@@ -80,7 +80,7 @@ IntersectionResult MillingAlgorithm::doIntersection(const CNCMove &move) {
 	 * 
 	 * P3_stock = inverse(StockIsom_world) * CutterIsom_world * P3_cutter
 	 */
-	Eigen::Isometry3d cutterIsom_stock = move.STOCK.asEigen().inverse() * move.CUTTER.asEigen();
+	Eigen::Isometry3f cutterIsom_stock = move.STOCK.asEigen().inverse() * move.CUTTER.asEigen();
 	
 	return CONFIG.STOCK->intersect(CONFIG.CUTTER, cutterIsom_stock);
 }

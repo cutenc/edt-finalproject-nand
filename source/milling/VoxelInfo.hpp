@@ -19,9 +19,9 @@
 class VoxelInfo {
 	
 private:
-	// updated by updateInsideness(u_char, double) function
+	// updated by updateInsideness(u_char, float) function
 	u_char insideCornerNumber;
-	double insideness[Corner::N_CORNERS];
+	float insideness[Corner::N_CORNERS];
 	
 public:
 	
@@ -34,7 +34,7 @@ public:
 		insideCornerNumber = 0;
 	}
 	
-	VoxelInfo(double val) {
+	VoxelInfo(float val) {
 		insideCornerNumber = 0;
 		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
 			setInsideness(i, val);
@@ -58,11 +58,13 @@ public:
 		return isInside(static_cast<u_char>(c));
 	}
 	
+	inline
 	u_char getInsideCornersNumber() const {
 		return insideCornerNumber;
 	}
 	
-	double getInsideness(Corner::CornerType c) const {
+	inline
+	float getInsideness(Corner::CornerType c) const {
 		return getInsideness(static_cast<u_char>(c));
 	}
 	
@@ -78,14 +80,28 @@ public:
 	 * 
 	 * @see #updateInsideness
 	 */
-	void setInsideness(Corner::CornerType c, double insideness) {
+	void setInsideness(Corner::CornerType c, float insideness) {
 		return setInsideness(static_cast<u_char>(c), insideness);
 	}
 	
-	void updateInsideness(Corner::CornerType c, double insideness) {
+	/**
+	 * Resets the number of inside corners to 0; you should call this
+	 * method only if you are going to call #setInsideness on each corner
+	 * after that.
+	 * 
+	 * @see #updateInsideness
+	 */
+	inline
+	void reset() {
+		this->insideCornerNumber = 0;
+	}
+	
+	inline
+	void updateInsideness(Corner::CornerType c, float insideness) {
 		return updateInsideness(static_cast<u_char>(c), insideness);
 	}
 	
+	inline
 	VoxelInfo & operator+=(const VoxelInfo &v) {
 		for (int i = 0; i < Corner::N_CORNERS; ++i) {
 			this->updateInsideness(i, v.getInsideness(i));
@@ -94,6 +110,7 @@ public:
 		return *this;
 	}
 	
+	inline
 	const VoxelInfo operator+(const VoxelInfo &v) {
 		return VoxelInfo(*this) += v;
 	}
@@ -109,8 +126,8 @@ public:
 	}
 	
 	inline
-	static double DEFAULT_INSIDENESS() {
-		static const double DEF_INSIDENESS = -CommonUtils::INFINITE();
+	static float DEFAULT_INSIDENESS() {
+		static const float DEF_INSIDENESS = -CommonUtils::INFINITE();
 		return DEF_INSIDENESS;
 	}
 	
@@ -121,21 +138,24 @@ private:
 		return insideness[i] >= 0;
 	}
 	
-	double getInsideness(u_char i) const {
+	inline
+	float getInsideness(u_char i) const {
 		return insideness[i];
 	}
 	
-	void setInsideness(u_char i, double val) {
+	inline
+	void setInsideness(u_char i, float val) {
 		insideness[i] = val;
 		if (isInside(i)) {
 			++insideCornerNumber;
 		}
 	}
 	
-	void updateInsideness(u_char i, double newInsideness) {
+	inline
+	void updateInsideness(u_char i, float newInsideness) {
 		bool prevInside = isInside(i);
 		
-		insideness[i] = std::max< double >(insideness[i], newInsideness);
+		insideness[i] = std::max< float >(insideness[i], newInsideness);
 		
 		if (!prevInside && isInside(i)) {
 			++insideCornerNumber;
@@ -143,7 +163,6 @@ private:
 		 * so previously inside corners cannot fall outside
 		*/ 
 	}
-	
 };
 
 #endif /* VOXELINFO_HPP_ */

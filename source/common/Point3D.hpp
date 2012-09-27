@@ -14,32 +14,32 @@
 
 class Point3D {
 	
-	Eigen::Vector3d point;
+	Eigen::Vector3f point;
 	
 public:
 	Point3D();
-	Point3D(Eigen::Vector3d p);
-	Point3D(double x, double y, double z);
+	Point3D(const Eigen::Vector3f &p);
+	Point3D(float x, float y, float z);
 	
 	virtual ~Point3D();
 	
-	Eigen::Vector3d asVector() const {
+	Eigen::Vector3f asVector() const {
 		return point;
 	}
 	
-	Eigen::Translation3d asTranslation() const {
-		return Eigen::Translation3d(this->point);
+	Eigen::Translation3f asTranslation() const {
+		return Eigen::Translation3f(this->point);
 	}
 	
-	double getX() const {
+	float getX() const {
 		return point[0];
 	}
 	
-	double getY() const {
+	float getY() const {
 		return point[1];
 	}
 	
-	double getZ() const {
+	float getZ() const {
 		return point[2];
 	}
 	
