@@ -12,7 +12,7 @@
 
 #include "milling/MillingAlgorithm.hpp"
 #include "milling/MillingAlgorithmConf.hpp"
-#include "SteppableRunnable.hpp"
+#include "threading/SteppableRunnable.hpp"
 #include "MillingSignaler.hpp"
 
 class MillerRunnable: public SteppableRunnable {

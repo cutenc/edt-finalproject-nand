@@ -31,37 +31,56 @@
 class SimpleBoxCache {
 	
 private:
-	const Eigen::Vector3f EXTENT;
-	std::map<u_int, SimpleBox::ConstPtr> CACHE;
+	typedef std::map<u_int, SimpleBox::ConstPtr> CacheMap;
+	typedef boost::shared_ptr< CacheMap > CacheMapPtr;
+	typedef boost::shared_ptr< const CacheMap > CacheMapConstPtr;
+	
+	const u_int MAX_DEPTH;
+	const CacheMapConstPtr CACHE;
 	
 public:
-	SimpleBoxCache(Eigen::Vector3f extent) : EXTENT(extent), CACHE() {
-		GeometryUtils::checkExtent(EXTENT);
+	SimpleBoxCache(const Eigen::Vector3f &extent, u_int maxDepth) :
+		MAX_DEPTH(maxDepth), CACHE(buildCache(extent, maxDepth))
+	{
+		GeometryUtils::checkExtent(extent);
 	}
 	
 	virtual ~SimpleBoxCache() { }
 	
-	SimpleBox::ConstPtr getSimpleBox(u_int depth) {
-		std::map<u_int, SimpleBox::ConstPtr>::const_iterator elm = CACHE.find(depth);
+	SimpleBox::ConstPtr getSimpleBox(u_int depth) const {
+		assert(depth <= MAX_DEPTH);
 		
-		SimpleBox::ConstPtr sbp;
-		if(elm == CACHE.end()) {
-			// element not found, build, insert & return
-			float rate = std::pow((float)2.0, (float)depth);
-			sbp = boost::make_shared< SimpleBox >(EXTENT / rate);
-			
-			CACHE[depth] = sbp;
-		} else {
-			sbp = elm->second;
-		}
-		
-		return sbp;
+		std::map<u_int, SimpleBox::ConstPtr>::const_iterator elm = CACHE->find(depth);
+		return elm->second;
 	}
 	
 	ShiftedBox::ConstPtr getShiftedBox(u_int depth,
-			const Eigen::Translation3f &shift = Eigen::Translation3f::Identity()) {
+			const Eigen::Translation3f &shift = Eigen::Translation3f::Identity()) const {
 		
 		return boost::make_shared< ShiftedBox >(getSimpleBox(depth), shift);
+	}
+	
+private:
+	static CacheMapPtr buildCache(const Eigen::Vector3f &extent, u_int maxDepth) {
+		
+		CacheMapPtr cache = boost::make_shared< CacheMap >();
+		/* build cache: it should not use too much memory because
+		 * usually max depths are some tens, moreover we cannot afford a lazy
+		 * initialization of each simple-box due to problems in the C++
+		 * memory model (in fact there's no memory model in current C++
+		 * specification) that can cause a lot of troubles and unespected
+		 * behaviours. For more informations see
+		 * http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
+		 */
+		for (u_int i = 0; i <= maxDepth; ++i) {
+			/* used pow function and not bit shift operator because this way
+			 * i may go beyond maxDepth = 32 or 64.
+			 */
+			float rate = std::pow(2.0f, (float)i);
+			(*cache)[i] = boost::make_shared< SimpleBox >(extent / rate);
+		}
+		
+		return cache;
 	}
 };
 
@@ -103,7 +122,8 @@ public:
 	typedef typename LeafType::DataRef DataRef;
 	typedef typename LeafType::DataConstRef DataConstRef;
 	
-	typedef BranchNode* BranchPtr;
+	typedef BranchNode::Ptr BranchPtr;
+	typedef BranchNode::ConstPtr BranchConstPtr;
 	
 	typedef typename SimpleBox::ConstPtr SimpleBoxPtr;
 	
@@ -128,7 +148,8 @@ private:
 private:
 	
 	const Eigen::Vector3f EXTENT;
-	mutable SimpleBoxCache BOX_CACHE;
+	const u_int MAX_DEPTH;
+	const SimpleBoxCache BOX_CACHE;
 	const boost::shared_ptr< LeafType > LEAVES_LIST;
 	BranchPtr ROOT;
 	
@@ -140,9 +161,10 @@ private:
 	
 public:
 	
-	Octree(Eigen::Vector3f extent) :
+	Octree(Eigen::Vector3f extent, u_int maxDepth) :
 			EXTENT(extent),
-			BOX_CACHE(extent),
+			MAX_DEPTH(maxDepth),
+			BOX_CACHE(extent, maxDepth),
 			LEAVES_LIST(
 					boost::make_shared< LeafType >(
 							BOX_CACHE.getShiftedBox(0)
@@ -208,6 +230,7 @@ public:
 	 * @return
 	 */
 	LeavesArrayPtr pushLevel(LeafPtr leaf) {
+		assert(leaf->getDepth() < MAX_DEPTH);
 		
 		SharedLock _(mutex);
 		
@@ -276,54 +299,12 @@ public:
 	LeavesDequePtr getIntersectingLeaves(const SimpleBox &obb,
 			const Eigen::Isometry3f &isom, bool accurate) {
 		
-		SharedLock _(mutex);
-		
-		typedef std::deque< OctreeNode::Ptr > NodeQueue;
-		typedef boost::shared_ptr< NodeQueue > NodeQueuePtr;
-		
-		NodeQueuePtr currLvlNodes = boost::make_shared< NodeQueue >();
-		for (int i = 0; i < BranchNode::N_CHILDREN; i++) {
-			if (getRoot()->hasChild(i))
-				currLvlNodes->push_back(getRoot()->getChild(i));
-		}
-		
 		LeavesDequePtr intersectingLeaves = boost::make_shared< LeavesDeque >();
 		
-		while (!currLvlNodes->empty()) {
-			OctreeNode::Ptr currNode = currLvlNodes->back();
-			currLvlNodes->pop_back();
-			
-			const ShiftedBox::ConstPtr &currBox = currNode->getBox();
-			
-			// checks for intersection
-			if (currBox->isIntersecting(obb, isom, accurate)) {
-				
-				/* currNode is intersecting given box so now we have to
-				 * try to expand it or save it as an intersecting leaf
-				 */
-				
-				switch (currNode->getType()) {
-					case OctreeNode::LEAF_NODE: {
-						LeafPtr lnp = static_cast<LeafPtr>(currNode);
-						intersectingLeaves->push_back(lnp);
-						break;
-					}
-					case OctreeNode::BRANCH_NODE: {
-						BranchPtr bnp = static_cast<BranchPtr>(currNode);
-						// add children to nextLvlNodes
-						for (int i = 0; i < BranchNode::N_CHILDREN; i++) {
-							if (bnp->hasChild(i))
-								currLvlNodes->push_back(bnp->getChild(i));
-						}
-						break;
-					}
-					default:
-						throw std::runtime_error("invalid node type");
-						break;
-				}
-			}
-			
-		}
+		SharedLock _(mutex);
+		
+		findIntersectingRecursive(getRoot(), *intersectingLeaves,
+				obb, isom, accurate);
 		
 		return intersectingLeaves;
 	}
@@ -382,6 +363,67 @@ private:
 		BranchPtr newBranch;
 		LeavesArrayPtr newLeaves;
 	};
+	
+	void findIntersectingRecursive(
+			const BranchConstPtr &node, LeavesDeque &intersectingLeaves,
+			const SimpleBox &obb, const Eigen::Isometry3f &isom, bool accurate) const {
+		
+		const ShiftedBox::ConstPtr &currBox = node->getBox();
+		const bool nodeIntersects = currBox->isIntersecting(obb, isom, accurate);
+		
+		if (!nodeIntersects) {
+			return;
+		}
+		
+		/* we reach this point only if given branch node is intersecting!!
+		 * Now we loop through all its children: if a children is a leaf we
+		 * check for intersection and according to the result, add it to the
+		 * intersectingLeaves or not. If a children is another branch we just
+		 * call this function recursively. Acting this way we avoid
+		 * a level of recursive calls.
+		 */
+		
+		for (u_char i = 0; i < BranchNode::N_CHILDREN; ++i) {
+			if (!node->hasChild(i)) {
+				continue;
+			}
+			
+			OctreeNode::Ptr child = node->getChild(i);
+			
+			switch (child->getType()) {
+				case OctreeNode::LEAF_NODE:
+				{
+					const ShiftedBox::ConstPtr &childBox = child->getBox();
+					// intersection test to avoid another recursive call
+					if (childBox->isIntersecting(obb, isom, accurate)) {
+						/* in this case we have just to push the node inside the
+						 * deque
+						 */
+						intersectingLeaves.push_back(
+								static_cast< LeafPtr >(child)
+						);
+					}
+					break;
+				}
+				
+				case OctreeNode::BRANCH_NODE:
+				{
+					// in this case we have just to go recursive
+					findIntersectingRecursive(
+							static_cast< BranchPtr >(child),
+							intersectingLeaves,
+							obb, isom, accurate);
+					break;
+				}
+				
+				default:
+					throw std::runtime_error("Leaf type not registered");
+					break;
+			}
+			
+		}
+		
+	}
 	
 	/**
 	 * Create a one-level tree detached from the main one; the new tree will

@@ -10,6 +10,7 @@
 
 #include <iostream>
 
+#include "threading/CyclicRunnable.hpp"
 #include "MillingSignaler.hpp"
 
 class MesherStub : public CyclicRunnable {

@@ -61,6 +61,7 @@ common
 configuration
 meshing
 milling
+threading
 visualizer
 )
 FOREACH(dir ${MY_FOLDERS})

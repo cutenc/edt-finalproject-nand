@@ -102,6 +102,24 @@ struct IntersectionResult {
 		
 		return os;
 	}
+	
+	IntersectionResult & operator+=(const IntersectionResult &other) {
+		waste += other.waste;
+		analyzed_leaves += other.analyzed_leaves;
+		purged_leaves += other.purged_leaves;
+		lazy_purged_leaves += other.lazy_purged_leaves;
+		pushed_leaves += other.pushed_leaves;
+		updated_data_leaves += other.updated_data_leaves;
+		intersection_approx_errors += other.intersection_approx_errors; 
+		intersection_approx_skips += other.intersection_approx_skips;
+		elapsedTime += other.elapsedTime;
+		
+		return *this;
+	}
+	
+	const IntersectionResult operator+(const IntersectionResult &other) const {
+		return IntersectionResult(*this) += other;
+	}
 };
 
 /**
@@ -142,11 +160,12 @@ private:
 	const u_int MAX_DEPTH;
 	const Eigen::Vector3f EXTENT;
 	const Eigen::Translation3f STOCK_MODEL_TRASLATION;
+	const u_int MAX_THREADS;
 	OctreeType MODEL;
 	mutable MesherType::Ptr MESHER;
 	
 public:
-	Stock(const StockDescription &desc, u_int maxDepth, MesherType::Ptr mesher);
+	Stock(const StockDescription &desc, u_int maxDepth, u_int maxThreads, MesherType::Ptr mesher);
 	virtual ~Stock();
 	
 	/**
@@ -164,6 +183,35 @@ public:
 	
 private:
 	
+	struct CutterInfos {
+		typedef boost::shared_ptr< CutterInfos > Ptr;
+		typedef boost::shared_ptr< const CutterInfos > ConstPtr;
+		
+		const Cutter::ConstPtr cutter;
+		const SimpleBox bbox;
+		const boost::shared_ptr< Eigen::Isometry3f > cutterIsom_model, bboxIsom_model;
+		
+		CutterInfos(const Cutter::ConstPtr &cutter,
+				const Eigen::Vector3f &bboxExtents,
+				const Eigen::Isometry3f &cutterIsom_model,
+				const Eigen::Isometry3f &bboxIsom_model) :
+					cutter(cutter), bbox(bboxExtents),
+					cutterIsom_model(boost::allocate_shared< Eigen::Isometry3f, Eigen::aligned_allocator< Eigen::Isometry3f > >(Eigen::aligned_allocator< Eigen::Isometry3f >(), cutterIsom_model)),
+					bboxIsom_model(boost::allocate_shared< Eigen::Isometry3f, Eigen::aligned_allocator< Eigen::Isometry3f > >(Eigen::aligned_allocator< Eigen::Isometry3f >(), bboxIsom_model))
+		{
+		}
+		
+		virtual ~CutterInfos() { }
+	};
+	
+	void analyzeLeaves(OctreeType::LeavesDeque::iterator begin,
+			OctreeType::LeavesDeque::iterator end,
+			CutterInfos::ConstPtr cutterInfo,
+			IntersectionResult &results);
+	
+	void analyzeLeafRecursive(const OctreeType::LeafPtr &currLeaf, 
+			const CutterInfos &cutterInfo, IntersectionResult &results);
+	
 	/**
 	 * 
 	 * @param leaf
@@ -173,7 +221,7 @@ private:
 	 */
 	void buildInfos(const OctreeType::LeafConstPtr &leaf, 
 			const Cutter::ConstPtr &cutter, const Eigen::Isometry3f &isometry,
-			SimpleBox::CornerMatrix &cachedMatrix, VoxelInfo &info);
+			VoxelInfo &info);
 	
 	/**
 	 * Calculate new waste produced by milling of given \c leaf according to

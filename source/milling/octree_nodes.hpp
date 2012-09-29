@@ -54,8 +54,10 @@ public:
 	
 	virtual OctreeNodeType getType() const =0;
 	
+	inline
 	bool isRoot() const { return (this->father == NULL); }
 	
+	inline
 	OctreeNode::Ptr getFather() const {
 		assert(!isRoot());
 			// throw std::runtime_error("cannot ask root's father");
@@ -63,6 +65,7 @@ public:
 		return this->father;
 	}
 	
+	inline
 	u_char getChildIdx() const {
 		assert(!isRoot());
 			// throw std::runtime_error("cannot ask root's childIdx");
@@ -70,10 +73,12 @@ public:
 		return this->childIdx;
 	}
 	
+	inline
 	const ShiftedBox::ConstPtr & getBox() const {
 		return this->sbox;
 	}
 	
+	inline
 	virtual u_int getDepth() const {
 		if (isRoot())
 			return 0;
@@ -114,14 +119,17 @@ public:
 		}
 	}
 	
+	inline
 	virtual OctreeNodeType getType() const {
 		return BRANCH_NODE;
 	}
 	
+	inline
 	bool hasChild(u_char i) const {
 		return children[i] != NULL;
 	}
 	
+	inline
 	OctreeNode::Ptr getChild(u_char i) const {
 		assert(hasChild(i));
 		
@@ -133,7 +141,8 @@ public:
 	 * children has been deleted)
 	 * @param i
 	 * @return
-	 */
+	 */	
+	inline
 	bool deleteChild(u_char i) {
 		assert(hasChild(i));
 		
@@ -143,6 +152,7 @@ public:
 		return removedChildren == N_CHILDREN;
 	}
 	
+	inline
 	void setChild(u_char i, const OctreeNode::Ptr &child) {
 		assert(!hasChild(i));
 		
@@ -273,39 +283,48 @@ public:
 	
 	virtual ~LeafNode() { }
 	
+	inline
 	virtual OctreeNodeType getType() const {
 		return LEAF_NODE;
 	}
 	
+	inline
 	DataConstRef getData() const {
 		return this->data;
 	}
 	
+	inline
 	u_int getVersion() const {
 		return this->VERSION;
 	}
 	
+	inline
 	void setData(DataConstRef data) {
 		this->data = data;
 	}
 	
+	inline
 	LeafPtr getPrevious() const {
 		return this->prev;
 	}
 	
+	inline
 	void setPrevious(const LeafPtr &prev) {
 		this->prev = prev;
 	}
 	
+	inline
 	LeafPtr getNext() const {
 		return this->next;
 	}
 	
+	inline
 	void setNext(const LeafPtr &next) {
 		// NULL next ptr must be allowed (last leaf)
 		this->next = next;
 	}
 	
+	inline
 	virtual u_int getDepth() const {
 		return this->DEPTH;
 	}

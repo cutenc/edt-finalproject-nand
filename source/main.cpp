@@ -399,7 +399,7 @@ int main(int argc, const char **argv) {
 	ConfigFileParser cfp(configFile);
 	
 	StockMesher::Ptr stockMesher = boost::make_shared< StockMesher >();
-	Stock::Ptr stock = boost::make_shared< Stock >(*cfp.getStockDescription(), max_depth, stockMesher);
+	Stock::Ptr stock = boost::make_shared< Stock >(*cfp.getStockDescription(), max_depth, 2, stockMesher);
 	Cutter::ConstPtr cutter = Cutter::buildCutter(*cfp.getCutterDescription());
 	
 	MillingAlgorithmConf millingConf(stock, cutter, cfp.CNCMoveBegin(), cfp.CNCMoveEnd());

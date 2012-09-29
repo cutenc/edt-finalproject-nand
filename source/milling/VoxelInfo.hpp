@@ -103,7 +103,7 @@ public:
 	
 	inline
 	VoxelInfo & operator+=(const VoxelInfo &v) {
-		for (int i = 0; i < Corner::N_CORNERS; ++i) {
+		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
 			this->updateInsideness(i, v.getInsideness(i));
 		}
 		
