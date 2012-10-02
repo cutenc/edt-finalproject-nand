@@ -17,20 +17,16 @@
 class EulerAngles {
 public:
 	EulerAngles();
-	EulerAngles(float, float, float);
+	EulerAngles(double, double, double);
 	
 	virtual ~EulerAngles();
 	
-	Eigen::Matrix3f asEigen() const {
-		Eigen::Matrix3f mat;
+	Eigen::Matrix3d asEigen() const {
+		Eigen::Matrix3d mat;
 		
-		mat = Eigen::AngleAxisf(GAMMA, Eigen::Vector3f::UnitZ())
-				* Eigen::AngleAxisf(BETA, Eigen::Vector3f::UnitY())
-				* Eigen::AngleAxisf(ALPHA, Eigen::Vector3f::UnitX());
-		
-//		mat = Eigen::AngleAxisd(ALPHA, Eigen::Vector3d::UnitX())
-//				* Eigen::AngleAxisd(BETA, Eigen::Vector3d::UnitY())
-//				* Eigen::AngleAxisd(GAMMA, Eigen::Vector3d::UnitZ());
+		mat = Eigen::AngleAxisd(GAMMA, Eigen::Vector3d::UnitZ())
+				* Eigen::AngleAxisd(BETA, Eigen::Vector3d::UnitY())
+				* Eigen::AngleAxisd(ALPHA, Eigen::Vector3d::UnitX());
 		
 		return mat;
 	}
@@ -40,7 +36,7 @@ public:
 		return os;
 	}
 	
-	float ALPHA, BETA, GAMMA;
+	double ALPHA, BETA, GAMMA;
 };
 
 #endif /* EULERANGLES_HPP_ */

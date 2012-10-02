@@ -28,7 +28,7 @@ public:
 private:
 	MillingAlgorithmConf CONFIG;
 	
-	float waterFluxWasteCount;
+	double waterFluxWasteCount;
 	u_int stepNumber;
 	
 	
@@ -47,7 +47,7 @@ public:
 	 * Returns dimensions of the smallest voxel in which STOCK will be divided.
 	 * @return
 	 */
-	Eigen::Vector3f getResolution() const;
+	Eigen::Vector3d getResolution() const;
 	
 	// MeshingInfo buildCurrentMeshingInfo();
 	

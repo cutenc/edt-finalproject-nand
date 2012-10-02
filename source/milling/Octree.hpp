@@ -19,6 +19,8 @@
 #include <boost/thread.hpp>
 #include <boost/ptr_container/ptr_deque.hpp>
 #include <boost/assign/ptr_list_inserter.hpp>
+#include <boost/math/special_functions.hpp>
+#include <boost/function.hpp>
 
 #include <Eigen/Geometry>
 
@@ -39,7 +41,7 @@ private:
 	const CacheMapConstPtr CACHE;
 	
 public:
-	SimpleBoxCache(const Eigen::Vector3f &extent, u_int maxDepth) :
+	SimpleBoxCache(const Eigen::Vector3d &extent, u_int maxDepth) :
 		MAX_DEPTH(maxDepth), CACHE(buildCache(extent, maxDepth))
 	{
 		GeometryUtils::checkExtent(extent);
@@ -55,13 +57,13 @@ public:
 	}
 	
 	ShiftedBox::ConstPtr getShiftedBox(u_int depth,
-			const Eigen::Translation3f &shift = Eigen::Translation3f::Identity()) const {
+			const Eigen::Translation3d &shift = Eigen::Translation3d::Identity()) const {
 		
 		return boost::make_shared< ShiftedBox >(getSimpleBox(depth), shift);
 	}
 	
 private:
-	static CacheMapPtr buildCache(const Eigen::Vector3f &extent, u_int maxDepth) {
+	static CacheMapPtr buildCache(const Eigen::Vector3d &extent, u_int maxDepth) {
 		
 		CacheMapPtr cache = boost::make_shared< CacheMap >();
 		/* build cache: it should not use too much memory because
@@ -76,7 +78,7 @@ private:
 			/* used pow function and not bit shift operator because this way
 			 * i may go beyond maxDepth = 32 or 64.
 			 */
-			float rate = std::pow(2.0f, (float)i);
+			double rate = pow(2.0, (double)i);
 			(*cache)[i] = boost::make_shared< SimpleBox >(extent / rate);
 		}
 		
@@ -109,7 +111,12 @@ public:
 
 
 /**
- * Thread-safe implementation of the Octree data structure
+ * Implementation of the Octree data structure.
+ * This implementation permits a bit of concurrency in that a thread polling
+ * #getStoredData(bool) method will always optain a consistent state of the
+ * Octree even if another thread is modifying it throug method
+ * #processIntersectingLeaves. After any change made to the tree the method
+ * #notifyChanges should be called
  */
 template <typename DataT, typename data_traits = DataTraits< DataT > >
 class Octree {
@@ -135,19 +142,21 @@ public:
 	
 	typedef StoredData< LeafType > DataView;
 	
+	typedef boost::function< bool (OctreeNode::ConstPtr) > BranchChoserFunction;
+	typedef boost::function< void (LeafPtr) > LeafProcesserFunction;
+	
 private:
 	typedef OctreeTicket Ticket;
 	typedef boost::ptr_deque< Ticket > TicketDeque;
 	
-	typedef boost::shared_lock< boost::shared_mutex > SharedLock;
-	typedef boost::unique_lock< boost::shared_mutex > UniqueLock;
+	typedef boost::lock_guard< boost::mutex > NotifyLock;
 	typedef boost::lock_guard< boost::mutex > TicketLock;
 	
 	typedef AtomicNumber<u_int> Versioner;
 	
 private:
 	
-	const Eigen::Vector3f EXTENT;
+	const Eigen::Vector3d EXTENT;
 	const u_int MAX_DEPTH;
 	const SimpleBoxCache BOX_CACHE;
 	const boost::shared_ptr< LeafType > LEAVES_LIST;
@@ -156,12 +165,12 @@ private:
 	boost::mutex ticketMutex;
 	TicketDeque ticketQueue;
 	
-	mutable boost::shared_mutex mutex;
+	mutable boost::mutex mutex;
 	Versioner versioner;
 	
 public:
 	
-	Octree(Eigen::Vector3f extent, u_int maxDepth) :
+	Octree(Eigen::Vector3d extent, u_int maxDepth) :
 			EXTENT(extent),
 			MAX_DEPTH(maxDepth),
 			BOX_CACHE(extent, maxDepth),
@@ -197,33 +206,6 @@ public:
 	}
 	
 	/**
-	 * Invoke this method every time you make some changes to the
-	 * data structure and want to persist them, that is make them available
-	 * to any subsequent call of ::getStoredData().
-	 */
-	void notifyChanges() {
-		
-		/* the defer_lock here is used just for "teaching" in fact until lock
-		 * acquisition order remains octree->ticket in the whole class, no
-		 * deadlock is possible
-		 * 
-		 * Edit: defer_lock removed in order to use a simpler lock_guard on
-		 * the ticketMutex; as stated before, DO NOT CHANGE locking order
-		 * in the whole class!!
-		 */
-		UniqueLock octreeLock(mutex);
-		TicketLock ticketLock(ticketMutex);
-		
-		while (!ticketQueue.empty()) {
-			TicketDeque::auto_type ticket = ticketQueue.pop_back();
-			ticket->performAction();
-		}
-		
-		versioner.incAndGet();
-	}
-	
-	
-	/**
 	 * Calling this method will invalidate given leaf pointer (the leaf
 	 * will be deleted)
 	 * @param leaf
@@ -231,8 +213,6 @@ public:
 	 */
 	LeavesArrayPtr pushLevel(LeafPtr leaf) {
 		assert(leaf->getDepth() < MAX_DEPTH);
-		
-		SharedLock _(mutex);
 		
 		u_int currVersion = versioner.get();
 		
@@ -257,8 +237,6 @@ public:
 	
 	void purgeLeaf(LeafPtr leaf) {
 		
-		SharedLock _(mutex);
-		
 		if (isNewlyCreated(leaf, versioner.get())) {
 			PurgeNodeTicket::DeletionInfo info = 
 					PurgeLeafTicket < LeafType >::purgeLeaf(leaf, false);
@@ -277,8 +255,6 @@ public:
 	
 	void updateLeafData(LeafPtr leaf, DataConstRef data) {
 		
-		SharedLock _(mutex);
-		
 		if(isNewlyCreated(leaf, versioner.get())) {
 			UpdateDataTicket< LeafType >::updateData(leaf, data);
 			
@@ -289,24 +265,19 @@ public:
 		
 	}
 	
-	/**
-	 * 
-	 * @param obb
-	 * @param isom isometry transformation from this box (the MODEL) to given one:
-	 * needed to transform \c obb coordinates in MODEL's basis
-	 * @return
-	 */
-	LeavesDequePtr getIntersectingLeaves(const SimpleBox &obb,
-			const Eigen::Isometry3f &isom, bool accurate) {
+	void processTree(BranchChoserFunction branchChoser,
+			LeafProcesserFunction leafProcesser,
+			bool testLeaves) {
 		
-		LeavesDequePtr intersectingLeaves = boost::make_shared< LeavesDeque >();
+		BranchConstPtr root = this->getRoot();
+		if (branchChoser(root)) {
+			processTreeRecursive(root, branchChoser, leafProcesser, testLeaves);
+		}
 		
-		SharedLock _(mutex);
-		
-		findIntersectingRecursive(getRoot(), *intersectingLeaves,
-				obb, isom, accurate);
-		
-		return intersectingLeaves;
+		/* notify even if root has not been chosen because
+		 * branchChoser may have created some tickets
+		 */ 
+		this->notifyChanges();
 	}
 	
 	/**
@@ -322,7 +293,7 @@ public:
 		
 		typename DataView::VoxelDataPtr data = boost::make_shared< typename DataView::VoxelData >();
 		
-		SharedLock _(mutex);
+		NotifyLock lock(mutex);
 		
 		if (onlyIfChanged) {
 			// TODO reset 'changed' flag with an atomic compare-exchange operation
@@ -364,66 +335,74 @@ private:
 		LeavesArrayPtr newLeaves;
 	};
 	
-	void findIntersectingRecursive(
-			const BranchConstPtr &node, LeavesDeque &intersectingLeaves,
-			const SimpleBox &obb, const Eigen::Isometry3f &isom, bool accurate) const {
+	
+	void processTreeRecursive(const BranchConstPtr &branch,
+			const BranchChoserFunction &branchChoser,
+			const LeafProcesserFunction &leafProcesser,
+			bool testLeaves) {
 		
-		const ShiftedBox::ConstPtr &currBox = node->getBox();
-		const bool nodeIntersects = currBox->isIntersecting(obb, isom, accurate);
-		
-		if (!nodeIntersects) {
-			return;
-		}
-		
-		/* we reach this point only if given branch node is intersecting!!
-		 * Now we loop through all its children: if a children is a leaf we
-		 * check for intersection and according to the result, add it to the
-		 * intersectingLeaves or not. If a children is another branch we just
-		 * call this function recursively. Acting this way we avoid
-		 * a level of recursive calls.
-		 */
-		
-		for (u_char i = 0; i < BranchNode::N_CHILDREN; ++i) {
-			if (!node->hasChild(i)) {
+		for(u_char c = 0; c < BranchNode::N_CHILDREN; ++c) {
+			if (!branch->hasChild(c)) {
 				continue;
 			}
 			
-			OctreeNode::Ptr child = node->getChild(i);
-			
+			OctreeNode::Ptr child = branch->getChild(c);
 			switch (child->getType()) {
-				case OctreeNode::LEAF_NODE:
-				{
-					const ShiftedBox::ConstPtr &childBox = child->getBox();
-					// intersection test to avoid another recursive call
-					if (childBox->isIntersecting(obb, isom, accurate)) {
-						/* in this case we have just to push the node inside the
-						 * deque
-						 */
-						intersectingLeaves.push_back(
-								static_cast< LeafPtr >(child)
-						);
-					}
-					break;
-				}
-				
 				case OctreeNode::BRANCH_NODE:
 				{
-					// in this case we have just to go recursive
-					findIntersectingRecursive(
-							static_cast< BranchPtr >(child),
-							intersectingLeaves,
-							obb, isom, accurate);
-					break;
+					BranchConstPtr bpt = static_cast< BranchConstPtr >(child);
+					if (branchChoser(bpt)) {
+						processTreeRecursive(bpt, branchChoser, leafProcesser, testLeaves);
+					}
 				}
-				
+					break;
+				case OctreeNode::LEAF_NODE:
+				{
+					if (testLeaves && !branchChoser(child)) {
+						/* i have to test leaf before performing processing,
+						 * but test result told us not to parse leaf -> skip
+						 * processing.
+						 */
+						continue;
+					}
+					
+					LeafPtr lpt = static_cast< LeafPtr >(child);
+					leafProcesser(lpt);
+				}
+					break;
 				default:
-					throw std::runtime_error("Leaf type not registered");
+					throw std::runtime_error("node type not registered");
 					break;
 			}
-			
+		}
+	}
+	
+	/**
+	 * Invoke this method every time you make some changes to the
+	 * data structure and want to persist them, that is make them available
+	 * to any subsequent call of ::getStoredData().
+	 */
+	void notifyChanges() {
+		
+		/* the defer_lock here is used just for "teaching" in fact until lock
+		 * acquisition order remains octree->ticket in the whole class, no
+		 * deadlock is possible
+		 * 
+		 * Edit: defer_lock removed in order to use a simpler lock_guard on
+		 * the ticketMutex; as stated before, DO NOT CHANGE locking order
+		 * in the whole class!!
+		 */
+		NotifyLock octreeLock(mutex);
+		TicketLock ticketLock(ticketMutex);
+		
+		while (!ticketQueue.empty()) {
+			TicketDeque::auto_type ticket = ticketQueue.pop_back();
+			ticket->performAction();
 		}
 		
+		versioner.incAndGet();
 	}
+
 	
 	/**
 	 * Create a one-level tree detached from the main one; the new tree will
@@ -459,33 +438,33 @@ private:
 		SimpleBox::ConstPtr thisLvlBox = BOX_CACHE.getSimpleBox(newDepth);
 		ShiftedBox baseSBox = leaf->getBox()->getResized(thisLvlBox);
 		// base translation needed to build all the others
-		Eigen::Vector3f baseTraslation(thisLvlBox->getHalfExtent());
+		Eigen::Vector3d baseTraslation(thisLvlBox->getHalfExtent());
 		
 		for (u_char i = 0; i < BranchNode::N_CHILDREN; i++) {
 			// calculate child traslation
-			Eigen::Vector3f traslation(baseTraslation);
+			Eigen::Vector3d traslation(baseTraslation);
 			
 			switch (i) {
 				case 0:
 					traslation *= -1;
 					break;
 				case 1:
-					traslation[1] *= -1;
-					traslation[2] *= -1;
+					traslation[1] = boost::math::changesign(traslation[1]);
+					traslation[2] = boost::math::changesign(traslation[2]);
 					break;
 				case 2:
-					traslation[2] *= -1;
+					traslation[2] = boost::math::changesign(traslation[2]);
 					break;
 				case 3:
-					traslation[0] *= -1;
-					traslation[2] *= -1;
+					traslation[0] = boost::math::changesign(traslation[0]);
+					traslation[2] = boost::math::changesign(traslation[2]);
 					break;
 				case 4:
-					traslation[0] *= -1;
-					traslation[1] *= -1;
+					traslation[0] = boost::math::changesign(traslation[0]);
+					traslation[1] = boost::math::changesign(traslation[1]);
 					break;
 				case 5:
-					traslation[1] *= -1;
+					traslation[1] = boost::math::changesign(traslation[1]);
 					break;
 				case 6:
 					// all positive
@@ -500,7 +479,7 @@ private:
 			}
 			
 			// create shifted box for the child
-			ShiftedBox newBox = baseSBox.getShifted(Eigen::Translation3f(traslation));
+			ShiftedBox newBox = baseSBox.getShifted(Eigen::Translation3d(traslation));
 			
 			LeafPtr child = new LeafType(
 					toRet.newBranch,

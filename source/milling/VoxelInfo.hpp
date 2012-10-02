@@ -12,6 +12,7 @@
 #include <limits>
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 
 #include "Corner.hpp"
 #include "common/Utilities.hpp"
@@ -19,9 +20,9 @@
 class VoxelInfo {
 	
 private:
-	// updated by updateInsideness(u_char, float) function
+	// updated by updateInsideness(u_char, double) function
 	u_char insideCornerNumber;
-	float insideness[Corner::N_CORNERS];
+	double insideness[Corner::N_CORNERS];
 	
 public:
 	
@@ -34,7 +35,7 @@ public:
 		insideCornerNumber = 0;
 	}
 	
-	VoxelInfo(float val) {
+	VoxelInfo(double val) {
 		insideCornerNumber = 0;
 		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
 			setInsideness(i, val);
@@ -64,7 +65,7 @@ public:
 	}
 	
 	inline
-	float getInsideness(Corner::CornerType c) const {
+	double getInsideness(Corner::CornerType c) const {
 		return getInsideness(static_cast<u_char>(c));
 	}
 	
@@ -80,7 +81,7 @@ public:
 	 * 
 	 * @see #updateInsideness
 	 */
-	void setInsideness(Corner::CornerType c, float insideness) {
+	void setInsideness(Corner::CornerType c, double insideness) {
 		return setInsideness(static_cast<u_char>(c), insideness);
 	}
 	
@@ -97,7 +98,7 @@ public:
 	}
 	
 	inline
-	void updateInsideness(Corner::CornerType c, float insideness) {
+	void updateInsideness(Corner::CornerType c, double insideness) {
 		return updateInsideness(static_cast<u_char>(c), insideness);
 	}
 	
@@ -126,8 +127,8 @@ public:
 	}
 	
 	inline
-	static float DEFAULT_INSIDENESS() {
-		static const float DEF_INSIDENESS = -CommonUtils::INFINITE();
+	static double DEFAULT_INSIDENESS() {
+		static const double DEF_INSIDENESS = -CommonUtils::INFINITE();
 		return DEF_INSIDENESS;
 	}
 	
@@ -139,12 +140,12 @@ private:
 	}
 	
 	inline
-	float getInsideness(u_char i) const {
+	double getInsideness(u_char i) const {
 		return insideness[i];
 	}
 	
 	inline
-	void setInsideness(u_char i, float val) {
+	void setInsideness(u_char i, double val) {
 		insideness[i] = val;
 		if (isInside(i)) {
 			++insideCornerNumber;
@@ -152,10 +153,10 @@ private:
 	}
 	
 	inline
-	void updateInsideness(u_char i, float newInsideness) {
+	void updateInsideness(u_char i, double newInsideness) {
 		bool prevInside = isInside(i);
 		
-		insideness[i] = std::max< float >(insideness[i], newInsideness);
+		insideness[i] = fmax(insideness[i], newInsideness);
 		
 		if (!prevInside && isInside(i)) {
 			++insideCornerNumber;

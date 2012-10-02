@@ -33,16 +33,26 @@ public:
 	};
 	
 private:
+	struct NodeIDs {
+		static u_long getNodeID() {
+			static AtomicNumber< u_long > IDs;
+			return IDs.getAndInc();
+		}
+	};
 	
 	const OctreeNode::Ptr father;
 	const u_char childIdx;
 	const ShiftedBox::ConstPtr sbox;
+	const u_long NODE_ID;
 	
 public:
-	OctreeNode(const ShiftedBox::ConstPtr &box) : father(), childIdx(255), sbox(box) { }
+	OctreeNode(const ShiftedBox::ConstPtr &box) : father(), childIdx(255), sbox(box),
+			NODE_ID(NodeIDs::getNodeID())
+	{ }
 	
 	OctreeNode(const OctreeNode::Ptr &father, u_char childIdx, const ShiftedBox::ConstPtr &sbox) :
-			father(father), childIdx(childIdx), sbox(sbox) {
+			father(father), childIdx(childIdx), sbox(sbox), NODE_ID(NodeIDs::getNodeID())
+	{
 		
 		if (father == NULL)
 			throw std::invalid_argument("Given father cannot be null");
@@ -84,6 +94,11 @@ public:
 			return 0;
 		else
 			return 1 + getFather()->getDepth();
+	}
+	
+	inline
+	u_long getID() const {
+		return this->NODE_ID;
 	}
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const =0;
@@ -207,16 +222,29 @@ public:
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const {
 		u_int depth = this->getDepth();
+		
+		std::cout << "depth calculated" << std::endl;
+		
 		std::string tabs = StringUtils::repeat("\t", depth);
 		
-		os << "Branch@" << depth;
+		std::cout << "tabs ok " << std::endl;
+		
+		os << "Branch-" << this->getID() << "@" << depth;
+		
+		std::cout << "branch signature" << std::endl;
+		
 		for (u_char i = 0; i < this->N_CHILDREN; i++) {
 			os << std::endl << tabs << "|->" << (int)i << "-";
-			if (this->children[i] != NULL) {
-				os << *(this->children[i]);
+			
+			std::cout << "first line ok" << std::endl;
+			
+			if (hasChild(i)) {
+				os << *(getChild(i));
 			} else {
 				os << "DELETED";
 			}
+			
+			std::cout << "if ok" << std::endl;
 		}
 		return os;
 	}
@@ -330,7 +358,7 @@ public:
 	}
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const {
-		os << "Leaf@" << getDepth() << ":";
+		os << "Leaf-" << this->getID() << "@" << getDepth() << ":";
 		os << this->data;
 		
 		return os;

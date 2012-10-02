@@ -29,7 +29,7 @@ struct IntersectionResult {
 	 * Gives an estimation of how much volume has been removed during the
 	 * milling operation
 	 */
-	float waste;
+	double waste;
 	
 	u_long analyzed_leaves;
 	u_long purged_leaves;
@@ -64,12 +64,12 @@ struct IntersectionResult {
 		intersection_approx_skips(0), elapsedTime(0)
 	{ }
 	
-	boost::chrono::microseconds meanTimePerLeaf() const {
+	boost::chrono::nanoseconds meanTimePerLeaf() const {
 		if (this->analyzed_leaves == 0)
-			return boost::chrono::microseconds(0);
+			return boost::chrono::nanoseconds(0);
 		
-		boost::chrono::microseconds us = elapsedTime;
-		return boost::chrono::microseconds(us.count() / this->analyzed_leaves);
+		boost::chrono::nanoseconds us = elapsedTime;
+		return boost::chrono::nanoseconds(us.count() / this->analyzed_leaves);
 	}
 	
 	static std::string getPrintHeader() {
@@ -97,7 +97,7 @@ struct IntersectionResult {
 				<< "\t" << res.intersection_approx_errors
 				<< "\t" << res.intersection_approx_skips
 				<< "\t" << res.elapsedTime.count() / 1000.0
-				<< "\t" << res.meanTimePerLeaf().count()
+				<< "\t" << res.meanTimePerLeaf().count() / 1000.0
 		;
 		
 		return os;
@@ -137,8 +137,11 @@ struct DataTraits< VoxelInfo > {
 				const VoxelInfo >(VoxelInfo::DEFAULT_INSIDENESS());
 		return DATA;
 	}
+	
+	friend std::ostream & operator<<(std::ostream &os, const_reference vinfo) {
+		return os << *vinfo;
+	}
 };
-
 
 class Stock : public Model3D {
 	
@@ -158,8 +161,8 @@ private:
 	
 private:
 	const u_int MAX_DEPTH;
-	const Eigen::Vector3f EXTENT;
-	const Eigen::Translation3f STOCK_MODEL_TRASLATION;
+	const Eigen::Vector3d EXTENT;
+	const Eigen::Translation3d STOCK_MODEL_TRASLATION;
 	const u_int MAX_THREADS;
 	OctreeType MODEL;
 	mutable MesherType::Ptr MESHER;
@@ -175,9 +178,9 @@ public:
 	 * stock basis
 	 * @return
 	 */
-	IntersectionResult intersect(const Cutter::ConstPtr &cutter, const Eigen::Isometry3f &rototrasl);
+	IntersectionResult intersect(const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &rototrasl);
 	
-	Eigen::Vector3f getResolution() const;
+	Eigen::Vector3d getResolution() const;
 	
 	virtual Mesh::Ptr getMeshing();
 	
@@ -189,15 +192,15 @@ private:
 		
 		const Cutter::ConstPtr cutter;
 		const SimpleBox bbox;
-		const boost::shared_ptr< Eigen::Isometry3f > cutterIsom_model, bboxIsom_model;
+		const boost::shared_ptr< Eigen::Isometry3d > cutterIsom_model, bboxIsom_model;
 		
 		CutterInfos(const Cutter::ConstPtr &cutter,
-				const Eigen::Vector3f &bboxExtents,
-				const Eigen::Isometry3f &cutterIsom_model,
-				const Eigen::Isometry3f &bboxIsom_model) :
+				const Eigen::Vector3d &bboxExtents,
+				const Eigen::Isometry3d &cutterIsom_model,
+				const Eigen::Isometry3d &bboxIsom_model) :
 					cutter(cutter), bbox(bboxExtents),
-					cutterIsom_model(boost::allocate_shared< Eigen::Isometry3f, Eigen::aligned_allocator< Eigen::Isometry3f > >(Eigen::aligned_allocator< Eigen::Isometry3f >(), cutterIsom_model)),
-					bboxIsom_model(boost::allocate_shared< Eigen::Isometry3f, Eigen::aligned_allocator< Eigen::Isometry3f > >(Eigen::aligned_allocator< Eigen::Isometry3f >(), bboxIsom_model))
+					cutterIsom_model(boost::allocate_shared< Eigen::Isometry3d, Eigen::aligned_allocator< Eigen::Isometry3d > >(Eigen::aligned_allocator< Eigen::Isometry3d >(), cutterIsom_model)),
+					bboxIsom_model(boost::allocate_shared< Eigen::Isometry3d, Eigen::aligned_allocator< Eigen::Isometry3d > >(Eigen::aligned_allocator< Eigen::Isometry3d >(), bboxIsom_model))
 		{
 		}
 		
@@ -220,7 +223,7 @@ private:
 	 * @return
 	 */
 	void buildInfos(const OctreeType::LeafConstPtr &leaf, 
-			const Cutter::ConstPtr &cutter, const Eigen::Isometry3f &isometry,
+			const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &isometry,
 			VoxelInfo &info);
 	
 	/**
@@ -233,7 +236,7 @@ private:
 	 * @param newInfo
 	 * @return
 	 */
-	float calculateWaste(const OctreeType::LeafConstPtr &leaf, VoxelInfo &newInfo) const;
+	double calculateWaste(const OctreeType::LeafConstPtr &leaf, VoxelInfo &newInfo) const;
 	
 	/**
 	 * 
@@ -243,9 +246,9 @@ private:
 	 * with new ones
 	 * @return
 	 */
-	float getApproxWaste(const SimpleBox &box, const VoxelInfo &oldInfo, const VoxelInfo &updatedInfo) const;
+	double getApproxWaste(const SimpleBox &box, const VoxelInfo &oldInfo, const VoxelInfo &updatedInfo) const;
 	
-	float intersectedVolume(const SimpleBox &box, const VoxelInfo &info) const;
+	double intersectedVolume(const SimpleBox &box, const VoxelInfo &info) const;
 	
 	bool canPushLevel(const OctreeType::LeafPtr &leaf) const;
 	

@@ -80,8 +80,8 @@ class GeometryUtils {
 public:
 	
 	inline
-	static void checkExtent(const Eigen::Vector3f extent) throw(std::invalid_argument) {
-		double eps = std::numeric_limits<float>::epsilon();
+	static void checkExtent(const Eigen::Vector3d extent) throw(std::invalid_argument) {
+		double eps = std::numeric_limits<double>::epsilon();
 		if (extent[0] < eps || extent[1] < eps || extent[2] < eps) {
 			std::stringstream ss;
 			ss << "some dimensions are too small or negative: [" << extent[0] <<
@@ -110,9 +110,9 @@ public:
 	}
 	
 	inline
-	static float INFINITE() {
-		static const double INF = (std::numeric_limits<float>::has_infinity) ? 
-				std::numeric_limits<float>::infinity() : std::numeric_limits<float>::max();
+	static double INFINITE() {
+		static const double INF = (std::numeric_limits<double>::has_infinity) ? 
+				std::numeric_limits<double>::infinity() : std::numeric_limits<double>::max();
 		
 		return INF;
 	}

@@ -29,8 +29,8 @@ public:
 	typedef boost::shared_ptr< Voxel > Ptr;
 	typedef boost::shared_ptr< const Voxel > ConstPtr;
 	
-	typedef boost::array< Eigen::Vector3f, Corner::N_CORNERS > CornerArray;
-	typedef boost::array< const Eigen::Vector3f, Corner::N_CORNERS > CornerConstArray;
+	typedef boost::array< Eigen::Vector3d, Corner::N_CORNERS > CornerArray;
+	typedef boost::array< const Eigen::Vector3d, Corner::N_CORNERS > CornerConstArray;
 	typedef boost::array< Corner::CornerType, Corner::N_CORNERS > CornerTypeArray;
 	
 private:
@@ -55,7 +55,7 @@ public:
 	
 	virtual ~Voxel() { }
 	
-	Eigen::Vector3f getCorner(Corner::CornerType c) const {
+	Eigen::Vector3d getCorner(Corner::CornerType c) const {
 		return getCorner(static_cast<u_char>(c));
 	}
 	
@@ -83,7 +83,7 @@ public:
 	
 private:
 	
-	Eigen::Vector3f getCorner(u_char i) const {
+	Eigen::Vector3d getCorner(u_char i) const {
 		return POINTS->col(i);
 	}
 	

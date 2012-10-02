@@ -44,25 +44,25 @@ public:
 	/**
 	 * 
 	 * @param point in cutter basis (not its bounding box ones)
-	 * @return >=0 => inside, <0 => outside
+	 * @return >=0 => inside, <0 => outside, =0 PAY A LOT OF ATTENTION
 	 */
-	virtual float getDistance(const Point3D &point) const =0;
+	virtual double getDistance(const Point3D &point) const =0;
 	
 	struct BoundingBoxInfo {
-		BoundingBoxInfo(const Eigen::Vector3f &extents, const Eigen::Isometry3f &rototrasl) :
+		BoundingBoxInfo(const Eigen::Vector3d &extents, const Eigen::Isometry3d &rototrasl) :
 			extents(extents), rototraslation(rototrasl)
 		{ }
 		
 		/**
 		 * Extents of the bounding box (full extents not half ones)
 		 */
-		Eigen::Vector3f extents;
+		Eigen::Vector3d extents;
 		
 		/**
 		 * Gives the rototraslation between Cutter origin (used as reference
 		 * in each CNCMove) and SimpleBox centroid, in Cutter basis
 		 */
-		Eigen::Isometry3f rototraslation;
+		Eigen::Isometry3d rototraslation;
 	};
 	virtual BoundingBoxInfo getBoundingBox() const =0;
 	

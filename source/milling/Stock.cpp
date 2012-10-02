@@ -43,7 +43,7 @@ Stock::Stock(const StockDescription &desc, u_int maxDepth, u_int maxThreads, Mes
 Stock::~Stock() { }
 
 IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
-		const Eigen::Isometry3f &rototras) {
+		const Eigen::Isometry3d &rototras) {
 	
 	boost::chrono::thread_clock::time_point startTime = boost::chrono::thread_clock::now();
 	
@@ -55,97 +55,55 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 	 * cutter=>stock basis using rototras. So the multiplication order should
 	 * be the following (remember that the point is multiplied on the right):
 	 * 
-	 * Eigen::Isometry3f bboxIsom_stock = rototras * bboxInfo.rototraslation;
+	 * Eigen::Isometry3d bboxIsom_stock = rototras * bboxInfo.rototraslation;
 	 * 
 	 * Now we have bboxIsom in respect to stock basis but we also need it
 	 * in respect of MODEL basis: from stock to model there is only a
 	 * translation (no rotation at all) and it is "additive" (in fact we have
 	 * to perform a subtraction) to given rototras so...
 	 * 
-	 * Eigen::Isometry3f bboxIsom_model = STOCK_MODEL_TRASLATION.inverse() * bboxIsom_stock;
+	 * Eigen::Isometry3d bboxIsom_model = STOCK_MODEL_TRASLATION.inverse() * bboxIsom_stock;
 	 * 
 	 * all summed up:
 	 */
 	
-	Eigen::Isometry3f cutterIsom_model = STOCK_MODEL_TRASLATION.inverse() * rototras;
+	Eigen::Isometry3d cutterIsom_model = STOCK_MODEL_TRASLATION.inverse() * rototras;
 	
-	Eigen::Isometry3f bboxIsom_model = cutterIsom_model * bboxInfo.rototraslation;
+	Eigen::Isometry3d bboxIsom_model = cutterIsom_model * bboxInfo.rototraslation;
 	
 	CutterInfos::ConstPtr cutterInfo = boost::make_shared< const CutterInfos >(
 			cutter, bboxInfo.extents, cutterIsom_model, bboxIsom_model);
 	
-	OctreeType::LeavesDequePtr leaves = MODEL.getIntersectingLeaves(
-				(cutterInfo->bbox),
-				*(cutterInfo->bboxIsom_model),
-				true);
+	struct BranchChoser {
+		static bool isIntersecting(OctreeNode::ConstPtr node,
+				const SimpleBox &obb,
+				const Eigen::Isometry3d &isom,
+				bool accurate) {
+			
+			const ShiftedBox::ConstPtr &currBox = node->getBox();
+			return currBox->isIntersecting(obb, isom, accurate);
+		}
+	};
+	
+	OctreeType::BranchChoserFunction branchFunc =
+			boost::bind(&BranchChoser::isIntersecting, _1,
+					boost::cref(cutterInfo->bbox),
+					boost::cref(*(cutterInfo->bboxIsom_model)),
+					true);
 	
 	IntersectionResult results;
-	if (!leaves->empty()) {
-		// calculate how many thread we should start
-		/* TODO: qui magari si potrebbe ipotizzare che ci siano un numero minimo
-		 * di foglie per thread, altrimenti non li facci nemmeno partire
-		 */
-		size_t nLeaves = leaves->size();
-		size_t leavesPerThread = nLeaves / MAX_THREADS;
-		
-		u_int startThreads = MAX_THREADS - 1;
-		
-		OctreeType::LeavesDeque::iterator leavesBegin = leaves->begin();
-		
-		boost::thread_group analyzersGroup;
-		boost::ptr_vector< IntersectionResult > analyzersResults;
-		for (u_int i = 0; i < startThreads; ++i) {
-			size_t startLeafIdx = leavesPerThread * i,
-					endLeafIdx = leavesPerThread * (i + 1) - 1;
-			
-			boost::assign::ptr_push_back< IntersectionResult >(analyzersResults)();
-			
-			analyzersGroup.create_thread(boost::bind(
-					&Stock::analyzeLeaves, this,
-					leavesBegin + startLeafIdx,
-					leavesBegin + endLeafIdx,
-					cutterInfo,
-					boost::ref(analyzersResults[i])
-					)
-			);
-		}
-		
-		// do current thread job (that is, analyze remaining leaves)
-		analyzeLeaves(
-				leavesBegin + (leavesPerThread * startThreads),
-				leaves->end(),
-				cutterInfo,
-				results
-		);
-		
-		// join other threads
-		analyzersGroup.join_all();
-		
-		// merge results
-		boost::ptr_vector< IntersectionResult >::const_iterator resultsIt;
-		for (resultsIt = analyzersResults.begin(); resultsIt != analyzersResults.end(); ++resultsIt) {
-			results += *resultsIt;
-		}
-	}
 	
-	MODEL.notifyChanges();
+	OctreeType::LeafProcesserFunction leafFunc = 
+			boost::bind(&Stock::analyzeLeafRecursive,
+					this, _1,
+					boost::cref(*cutterInfo),
+					boost::ref(results));
+	
+	MODEL.processTree(branchFunc, leafFunc, true);
 	
 	results.elapsedTime = boost::chrono::duration_cast<boost::chrono::microseconds>(boost::chrono::thread_clock::now() - startTime);
 	
 	return results;
-}
-
-void Stock::analyzeLeaves(OctreeType::LeavesDeque::iterator begin,
-			const OctreeType::LeavesDeque::iterator end,
-			const CutterInfos::ConstPtr cutterInfo,
-			IntersectionResult &results) {
-	
-	for (; begin != end; ++begin) {
-		
-		analyzeLeafRecursive(*begin, *cutterInfo, results);
-
-	}
-	
 }
 
 void Stock::analyzeLeafRecursive(const OctreeType::LeafPtr &currLeaf, 
@@ -254,7 +212,7 @@ void Stock::analyzeLeafRecursive(const OctreeType::LeafPtr &currLeaf,
 
 
 void Stock::buildInfos(const OctreeType::LeafConstPtr &leaf, 
-		const Cutter::ConstPtr &cutter, const Eigen::Isometry3f &isometry,
+		const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &isometry,
 		VoxelInfo &info) {
 	
 	/* we have to convert stockPoint in cutter basis: given isometry
@@ -268,16 +226,16 @@ void Stock::buildInfos(const OctreeType::LeafConstPtr &leaf,
 	
 	info.reset();
 	for (CornerIterator cit = CornerIterator::begin(); cit != CornerIterator::end(); ++cit) {
-		const Eigen::Vector3f point = cachedMatrix.col(static_cast<u_char>(*cit));
+		const Eigen::Vector3d point = cachedMatrix.col(static_cast<u_char>(*cit));
 		
-		float distance = cutter->getDistance(Point3D(point));
+		double distance = cutter->getDistance(Point3D(point));
 		
 		info.setInsideness(*cit, distance);
 	}
 	
 }
 
-float Stock::calculateWaste(const OctreeType::LeafConstPtr & leaf,
+double Stock::calculateWaste(const OctreeType::LeafConstPtr & leaf,
 		VoxelInfo &newInfo) const {
 	
 	VoxInfoCPtrCRef leafData = leaf->getData();
@@ -288,13 +246,13 @@ float Stock::calculateWaste(const OctreeType::LeafConstPtr & leaf,
 	
 }
 
-float Stock::getApproxWaste(const SimpleBox &box, 
+double Stock::getApproxWaste(const SimpleBox &box, 
 		const VoxelInfo &oldInfo, const VoxelInfo &updatedInfo) const {
 	
 	return intersectedVolume(box, updatedInfo) - intersectedVolume(box, oldInfo);
 }
 
-float Stock::intersectedVolume(const SimpleBox &box, const VoxelInfo &info) const {
+double Stock::intersectedVolume(const SimpleBox &box, const VoxelInfo &info) const {
 	u_char nInsideCorners = info.getInsideCornersNumber();
 	
 	if (nInsideCorners == 0)
@@ -306,15 +264,15 @@ float Stock::intersectedVolume(const SimpleBox &box, const VoxelInfo &info) cons
 	// some corners are inside and some are outside
 	
 	// TODO maybe we should implement something more accurate
-	return box.getVolume() * nInsideCorners / (float) Corner::N_CORNERS;
+	return box.getVolume() * nInsideCorners / (double) Corner::N_CORNERS;
 }
 
 bool Stock::canPushLevel(const OctreeType::LeafPtr &leaf) const {
 	return leaf->getDepth() < this->MAX_DEPTH;
 }
 
-Eigen::Vector3f Stock::getResolution() const {
-	return (this->EXTENT / std::pow(2.0f, (float)this->MAX_DEPTH));
+Eigen::Vector3d Stock::getResolution() const {
+	return (this->EXTENT / std::pow(2.0, (double)this->MAX_DEPTH));
 }
 
 std::ostream & operator<<(std::ostream &os, const Stock &stock) {

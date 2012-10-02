@@ -19,11 +19,12 @@ private:
 	
 private:
 	
-	T number;
 	mutable boost::shared_mutex mutex;
+	volatile T number;
 	
 public:
 	AtomicNumber() : number(0) { }
+	AtomicNumber(T val) : number(val) { }
 	virtual ~AtomicNumber() { }
 	
 	T get() const {

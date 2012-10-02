@@ -15,6 +15,12 @@ class OctreeTicket {
 public:
 	virtual ~OctreeTicket() { }
 	
+	/* TODO: fra i tipi di ticket ci sono vari accrocchi per far eseguire un
+	 * altro ticket quando il corrente conclude: ipotizzare che performAction
+	 * restituisca una lista di altri ticket da portare a termine una volta
+	 * terminato quello corrente
+	 */
+	
 	virtual void performAction() const =0;
 	
 protected:
@@ -44,6 +50,89 @@ public:
 	
 };
 
+
+
+
+class PurgeNodeTicket : public OctreeTicket {
+
+public:
+	struct DeletionInfo {
+		DeletionInfo(bool b, const OctreeNode::Ptr &p) :
+			shouldDelete(b), reference(p)
+		{ }
+		
+		bool shouldDelete;
+		OctreeNode::Ptr reference;
+	};
+	
+private:
+	const OctreeNode::Ptr node;
+	
+public:
+	PurgeNodeTicket(const OctreeNode::Ptr &node) : node(node) { }
+	virtual ~PurgeNodeTicket() { }
+	
+	virtual void performAction() const {
+		purgeNode(node, true);
+	}
+	
+	static DeletionInfo purgeNode(OctreeNode::Ptr node, bool recursive) {
+		
+		// tells father to forget her...
+		bool deleteBranch = false;
+		do {
+			BranchNode::Ptr bnp = static_cast< BranchNode::Ptr >(node->getFather());
+			deleteBranch = bnp->deleteChild(node->getChildIdx());
+			
+			// then free leaf's memory (no longer needed)
+			delete node;
+			
+			// and prepare for upper level deletion (if needed)
+			node = bnp;
+		} while (deleteBranch && recursive && (!node->isRoot()));
+		
+		return DeletionInfo( deleteBranch && (!node->isRoot()),
+				node
+		);
+	}
+};
+
+
+
+
+template < typename LeafType >
+class PurgeLeafTicket : public OctreeLeafTicket< LeafType > {
+	
+private:
+	typedef typename OctreeLeafTicket< LeafType >::LeafPtr LeafPtr;
+	
+public:
+	PurgeLeafTicket(const LeafPtr leaf) : OctreeLeafTicket< LeafType >(leaf) { }
+	
+	virtual ~PurgeLeafTicket() { }
+	
+	virtual void performAction() const {
+		purgeLeaf(OctreeLeafTicket< LeafType >::getTarget(), true);
+	}
+	
+	static PurgeNodeTicket::DeletionInfo purgeLeaf(LeafPtr leaf, bool recursive) {
+		
+		// adjust previous & next pointers
+		if (leaf->getPrevious() != NULL) {
+			leaf->getPrevious()->setNext(leaf->getNext());
+		}
+		if (leaf->getNext() != NULL) {
+			leaf->getNext()->setPrevious(leaf->getPrevious());
+		}
+		
+		return PurgeNodeTicket::purgeNode(leaf, recursive);
+	}
+	
+};
+
+
+
+
 template < typename LeafType >
 class PushLevelTicket : public OctreeLeafTicket< LeafType > {
 	
@@ -62,9 +151,17 @@ public:
 	virtual ~PushLevelTicket() { }
 	
 	virtual void performAction() const {
-		attachBranch(OctreeLeafTicket< LeafType >::getTarget(), newBranch);
+		LeafPtr target = OctreeLeafTicket< LeafType >::getTarget();
+		attachBranch(target, newBranch);
 	}
 	
+	/**
+	 * 
+	 * @param leaf
+	 * @param newBranch
+	 * @return \c true if given \c leaf should be deleted because floating
+	 * point approximation error cause all \c newBranch children to be deleted
+	 */
 	static void attachBranch(LeafPtr leaf, const BranchNode::Ptr newBranch) {
 		OctreeTicket::checkNull(newBranch);
 		
@@ -74,7 +171,17 @@ public:
 		LeafPtr firstLeaf = static_cast< LeafPtr >(newBranch->getFirst(OctreeNode::LEAF_NODE)),
 				lastLeaf = static_cast< LeafPtr >(newBranch->getLast(OctreeNode::LEAF_NODE));
 		
+		// sanity check assertion
 		assert(firstLeaf != NULL && lastLeaf != NULL);
+		/* failing this assertion means that a voxel has been split because
+		 * it was intersecting-not-contained but children processing
+		 * discovers that they are all inside. From a mathematical point
+		 * of view this is an absurd but it may happen due to float/double
+		 * approximation errors. To take into account such errors we
+		 * introduce a "truncation" in distance calculation trying to make
+		 * impossible that such an event happens.
+		 */
+		
 		
 		u_char leafIdx = leaf->getChildIdx();
 		
@@ -108,78 +215,8 @@ public:
 	
 };
 
-class PurgeNodeTicket : public OctreeTicket {
 
-public:
-	struct DeletionInfo {
-		DeletionInfo(bool b, const OctreeNode::Ptr &p) :
-			shouldDelete(b), reference(p)
-		{ }
-		
-		bool shouldDelete;
-		OctreeNode::Ptr reference;
-	};
-	
-private:
-	const OctreeNode::Ptr node;
-	
-public:
-	PurgeNodeTicket(const OctreeNode::Ptr &node) : node(node) { }
-	virtual ~PurgeNodeTicket() { }
-	
-	virtual void performAction() const {
-		purgeNode(node, true);
-	}
-	
-	static DeletionInfo purgeNode(OctreeNode::Ptr node, bool recursive) {
-		// tells father to forget her...
-		bool deleteBranch = false;
-		do {
-			BranchNode::Ptr bnp = static_cast< BranchNode::Ptr >(node->getFather());
-			deleteBranch = bnp->deleteChild(node->getChildIdx());
-			
-			// then free leaf's memory (no longer needed)
-			delete node;
-			
-			// and prepare for upper level deletion (if needed)
-			node = bnp;
-		} while (deleteBranch && recursive && (!node->isRoot()));
-		
-		return DeletionInfo( deleteBranch && (!node->isRoot()),
-				node
-		);
-	}
-};
 
-template < typename LeafType >
-class PurgeLeafTicket : public OctreeLeafTicket< LeafType > {
-	
-private:
-	typedef typename OctreeLeafTicket< LeafType >::LeafPtr LeafPtr;
-	
-public:
-	PurgeLeafTicket(const LeafPtr leaf) : OctreeLeafTicket< LeafType >(leaf) { }
-	
-	virtual ~PurgeLeafTicket() { }
-	
-	virtual void performAction() const {
-		purgeLeaf(OctreeLeafTicket< LeafType >::getTarget(), true);
-	}
-	
-	static PurgeNodeTicket::DeletionInfo purgeLeaf(LeafPtr leaf, bool recursive) {
-		
-		// adjust previous & next pointers
-		if (leaf->getPrevious() != NULL) {
-			leaf->getPrevious()->setNext(leaf->getNext());
-		}
-		if (leaf->getNext() != NULL) {
-			leaf->getNext()->setPrevious(leaf->getPrevious());
-		}
-		
-		return PurgeNodeTicket::purgeNode(leaf, recursive);
-	}
-	
-};
 
 template < typename LeafType >
 class UpdateDataTicket : public OctreeLeafTicket< LeafType > {
