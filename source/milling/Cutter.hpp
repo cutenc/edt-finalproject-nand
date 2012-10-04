@@ -41,12 +41,16 @@ public:
 		this->color = color;
 	}
 	
+	virtual double getDistance(const Point3D &point) const {
+		return getDistance(point.asVector());
+	}
+	
 	/**
 	 * 
 	 * @param point in cutter basis (not its bounding box ones)
 	 * @return >=0 => inside, <0 => outside, =0 PAY A LOT OF ATTENTION
 	 */
-	virtual double getDistance(const Point3D &point) const =0;
+	virtual double getDistance(const Eigen::Vector3d &point) const =0;
 	
 	struct BoundingBoxInfo {
 		BoundingBoxInfo(const Eigen::Vector3d &extents, const Eigen::Isometry3d &rototrasl) :

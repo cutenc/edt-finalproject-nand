@@ -14,12 +14,14 @@ template < typename T >
 class AtomicNumber {
 	
 private:
-	typedef boost::shared_lock< boost::shared_mutex > SharedLock;
-	typedef boost::unique_lock< boost::shared_mutex > UniqueLock;
+	/* there's no need to use a shared lock because it is more expensive than
+	 * a lock guard and here operations are very fast
+	 */
+	typedef boost::lock_guard< boost::mutex > LockGuard;
 	
 private:
 	
-	mutable boost::shared_mutex mutex;
+	mutable boost::mutex mutex;
 	volatile T number;
 	
 public:
@@ -28,13 +30,13 @@ public:
 	virtual ~AtomicNumber() { }
 	
 	T get() const {
-		SharedLock _(mutex);
+		LockGuard _(mutex);
 		
 		return this->number;
 	}
 	
 	T set(const T n)  {
-		UniqueLock _(mutex);
+		LockGuard _(mutex);
 		
 		T copy(number);
 		number = n;
@@ -43,7 +45,7 @@ public:
 	}
 
 	T addAndGet(const T n) {
-		UniqueLock _(mutex);
+		LockGuard _(mutex);
 		
 		number += n;
 		
@@ -51,7 +53,7 @@ public:
 	}
 	
 	T getAndAdd(const T n) {
-		UniqueLock _(mutex);
+		LockGuard _(mutex);
 		
 		T copy(number);
 		number += n;

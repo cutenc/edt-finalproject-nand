@@ -228,7 +228,7 @@ void Stock::buildInfos(const OctreeType::LeafConstPtr &leaf,
 	for (CornerIterator cit = CornerIterator::begin(); cit != CornerIterator::end(); ++cit) {
 		const Eigen::Vector3d point = cachedMatrix.col(static_cast<u_char>(*cit));
 		
-		double distance = cutter->getDistance(Point3D(point));
+		double distance = cutter->getDistance(point);
 		
 		info.setInsideness(*cit, distance);
 	}

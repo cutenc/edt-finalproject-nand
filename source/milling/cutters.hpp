@@ -50,7 +50,7 @@ public:
 	CylinderCutter(const Cylinder &geom, const Color &color) :
 		Cutter(color),
 		RADIUS(geom.RADIUS), LENGTH(geom.HEIGHT),
-		HALF_LENGTH(geom.HEIGHT / 2.0), DIAMETER(geom.RADIUS * 2)
+		HALF_LENGTH(geom.HEIGHT * 0.5), DIAMETER(geom.RADIUS * 2)
 	{
 		
 		if (RADIUS <= std::numeric_limits<double>::epsilon())
@@ -68,15 +68,15 @@ public:
 		return BoundingBoxInfo(extents, Eigen::Isometry3d(originTraslation));
 	}
 	
-	virtual double getDistance(const Point3D &point) const {
-		if (point.getZ() < 0)
+	virtual double getDistance(const Eigen::Vector3d &point) const {
+		if (point[2] < 0)
 			return boost::math::changesign(CommonUtils::INFINITE());
 		
 		/* following implicit function given in "Adaptive NC Simulation 
 		 * for Multi-axis Solid Machining" for a flat endmill aligned with
 		 * Z-axis we can write:
 		 */
-		double firstTerm = fabs(point.getZ() - HALF_LENGTH) - HALF_LENGTH;
+		double firstTerm = fabs((double)point[2] - HALF_LENGTH) - HALF_LENGTH;
 		
 		/* in order to reduce floating point approximation errors we will
 		 * rewrite
@@ -85,8 +85,8 @@ public:
 		 * 
 		 * http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
 		 */
-		double secondTerm = boost::math::pow<2>(point.getX()) 
-				+ (point.getY() + RADIUS) * (point.getZ() - RADIUS);
+		double secondTerm = boost::math::pow< 2 >((double)point[0]) 
+				+ (point[1] + RADIUS) * (point[2] - RADIUS);
 		
 		double distance = fmax(firstTerm, secondTerm);
 		
