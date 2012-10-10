@@ -42,15 +42,25 @@ private:
 	 */
 	const Translation3ld shift;
 	
+	
+//	const Eigen::Vector3d thisMin;
+//	const Eigen::Vector3d thisMax;
+	
 public:
 	ShiftedBox(const SimpleBox::ConstPtr &box,
 			const Eigen::Translation3d &tras = Eigen::Translation3d::Identity()) :
 			simpleBox(box), shift(tras.cast< long double >())
+	
+//			,thisMin(simpleBox->getCorner(Corner::BottomFrontLeft) + shift.cast< double >().translation()),
+//			thisMax(simpleBox->getCorner(Corner::UpperRearRight) + shift.cast< double >().translation())
 	{ }
 	
 	explicit
 	ShiftedBox(const SimpleBox::ConstPtr &box, const Translation3ld &tras) :
 			simpleBox(box), shift(tras)
+	
+//			,thisMin(simpleBox->getCorner(Corner::BottomFrontLeft) + shift.cast< double >().translation()),
+//			thisMax(simpleBox->getCorner(Corner::UpperRearRight) + shift.cast< double >().translation())
 	{ }
 	
 	virtual ~ShiftedBox() { }
@@ -72,12 +82,6 @@ public:
 	
 	ShiftedBox getResized(const SimpleBox::ConstPtr &newSize) const {
 		return ShiftedBox(newSize, this->shift);
-	}
-	
-
-	Voxel::Ptr getVoxel(const Eigen::Isometry3d &rototras = Eigen::Isometry3d::Identity()) const {
-		SimpleBox::CornerMatrixPtr corners = getCornerMatrix(rototras);
-		return boost::make_shared< Voxel >(corners, false);
 	}
 	
 	/**
@@ -241,6 +245,20 @@ public:
 
 		return true;
 	}
+	
+//	typedef std::pair<Eigen::Vector3d, Eigen::Vector3d> MinMaxVector;
+//	bool isIntersecting(const MinMaxVector &minMax) const {
+//		
+//		if (thisMax[0] < minMax.first[0] || thisMin[0] > minMax.second[0])
+//			return false;
+//		if (thisMax[1] < minMax.first[1] || thisMin[1] > minMax.second[1])
+//			return false;
+//		if (thisMax[2] < minMax.first[2] || thisMin[2] > minMax.second[2])
+//			return false;
+//		return true;
+//		
+//	}
+	
 	
 	friend std::ostream & operator<<(std::ostream &os, const ShiftedBox &sbox) {
 		os << "SBOX[" << *sbox.simpleBox << "@(" 

@@ -31,43 +31,21 @@ public:
 	 * used only in conjunction with the #setInsideness method. It is
 	 * provided just to increase performance avoiding useless initializations.
 	 */
-	VoxelInfo() {
-		insideCornerNumber = 0;
-	}
+	VoxelInfo();
 	
-	VoxelInfo(double val) {
-		insideCornerNumber = 0;
-		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
-			setInsideness(i, val);
-		}
-	}
+	VoxelInfo(double val);
 	
-	virtual ~VoxelInfo() { }
+	virtual ~VoxelInfo();
 	
-	inline
-	bool isIntersecting() const {
-		return insideCornerNumber > 0;
-	}
+	bool isIntersecting() const;
 	
-	inline
-	bool isContained() const {
-		return insideCornerNumber == Corner::N_CORNERS;
-	}
+	bool isContained() const;
 	
-	inline
-	bool isInside(Corner::CornerType c) const {
-		return isInside(static_cast<u_char>(c));
-	}
+	bool isInside(Corner::CornerType c) const;
+
+	u_char getInsideCornersNumber() const;
 	
-	inline
-	u_char getInsideCornersNumber() const {
-		return insideCornerNumber;
-	}
-	
-	inline
-	double getInsideness(Corner::CornerType c) const {
-		return getInsideness(static_cast<u_char>(c));
-	}
+	double getInsideness(Corner::CornerType c) const;
 	
 	/**
 	 * You should use this method only in combination with the empty constructor
@@ -78,12 +56,26 @@ public:
 	 * 
 	 * @param c
 	 * @param insideness
+	 * @return \c true if the carner fall inside (according to #isInside)
 	 * 
 	 * @see #updateInsideness
 	 */
-	void setInsideness(Corner::CornerType c, double insideness) {
-		return setInsideness(static_cast<u_char>(c), insideness);
-	}
+	bool setInsideness(Corner::CornerType c, double insideness);
+	
+	/**
+	 * You should use this method only in combination with the empty constructor
+	 * to initialize all corners of this object, but not for future
+	 * manipulation. Wrong usage of this method may result in current object
+	 * misbehaviour (in particular inside corner count may be incorrect,
+	 * affecting also methods like #isContained and #isIntersecting)
+	 * 
+	 * @param c
+	 * @param insideness
+	 * @return \c true if the carner fall inside (according to #isInside)
+	 * 
+	 * @see #updateInsideness
+	 */
+	bool setInsideness(Corner::CornerType c, double oldInsideness, double newInsideness);
 	
 	/**
 	 * Resets the number of inside corners to 0; you should call this
@@ -92,78 +84,39 @@ public:
 	 * 
 	 * @see #updateInsideness
 	 */
-	inline
-	void reset() {
-		this->insideCornerNumber = 0;
-	}
+	void reset();
 	
-	inline
-	void updateInsideness(Corner::CornerType c, double insideness) {
-		return updateInsideness(static_cast<u_char>(c), insideness);
-	}
+	/**
+	 * 
+	 * @param c
+	 * @param insideness
+	 * @return \c true if the carner was previously outside but now is inside,
+	 * \c false otherwise.
+	 */
+	bool updateInsideness(Corner::CornerType c, double insideness);
 	
-	inline
-	VoxelInfo & operator+=(const VoxelInfo &v) {
-		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
-			this->updateInsideness(i, v.getInsideness(i));
-		}
-		
-		return *this;
-	}
+	VoxelInfo & operator+=(const VoxelInfo &v);
 	
-	inline
-	const VoxelInfo operator+(const VoxelInfo &v) {
-		return VoxelInfo(*this) += v;
-	}
+	const VoxelInfo operator+(const VoxelInfo &v);
 	
-	friend std::ostream & operator<<(std::ostream &os, const VoxelInfo &vinfo) {
-		os << "[";
-		for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
-			os << vinfo.isInside(i); 
-		}
-		os << "]";
-		
-		return os;
-	}
+	friend std::ostream & operator<<(std::ostream &os, const VoxelInfo &vinfo);
 	
-	inline
-	static double DEFAULT_INSIDENESS() {
-		static const double DEF_INSIDENESS = -CommonUtils::INFINITE();
-		return DEF_INSIDENESS;
-	}
+	static double DEFAULT_INSIDENESS();
+	
+	static bool isInside(double d);
 	
 private:
 	
-	inline
-	bool isInside(u_char i) const {
-		return insideness[i] >= 0;
-	}
+	double getInsideness(u_char i) const;
 	
-	inline
-	double getInsideness(u_char i) const {
-		return insideness[i];
-	}
+	bool setInsideness(u_char i, double newInsideness);
 	
-	inline
-	void setInsideness(u_char i, double val) {
-		insideness[i] = val;
-		if (isInside(i)) {
-			++insideCornerNumber;
-		}
-	}
+	bool setInsideness(u_char i, double oldInsideness, double newInsideness);
 	
-	inline
-	void updateInsideness(u_char i, double newInsideness) {
-		bool prevInside = isInside(i);
-		
-		insideness[i] = fmax(insideness[i], newInsideness);
-		
-		if (!prevInside && isInside(i)) {
-			++insideCornerNumber;
-		} /* there is no else clause because function used for update is a MAX
-		 * so previously inside corners cannot fall outside
-		*/ 
-	}
+	bool updateInsideness(u_char i, double newInsideness);
+
+	bool updateInsideness(u_char i, double oldInsideness, double newInsideness);
+	
 };
 
 #endif /* VOXELINFO_HPP_ */

@@ -55,16 +55,6 @@ public:
 
 class PurgeNodeTicket : public OctreeTicket {
 
-public:
-	struct DeletionInfo {
-		DeletionInfo(bool b, const OctreeNode::Ptr &p) :
-			shouldDelete(b), reference(p)
-		{ }
-		
-		bool shouldDelete;
-		OctreeNode::Ptr reference;
-	};
-	
 private:
 	const OctreeNode::Ptr node;
 	
@@ -73,61 +63,19 @@ public:
 	virtual ~PurgeNodeTicket() { }
 	
 	virtual void performAction() const {
-		purgeNode(node, true);
+		purgeNode(node);
 	}
 	
-	static DeletionInfo purgeNode(OctreeNode::Ptr node, bool recursive) {
+	static void purgeNode(OctreeNode::Ptr node) {
 		
 		// tells father to forget her...
-		bool deleteBranch = false;
-		do {
-			BranchNode::Ptr bnp = static_cast< BranchNode::Ptr >(node->getFather());
-			deleteBranch = bnp->deleteChild(node->getChildIdx());
+		BranchNode::Ptr bnp = static_cast< BranchNode::Ptr >(node->getFather());
+		bnp->deleteChild(node->getChildIdx());
+		
+		// then free leaf's memory (no longer needed)
+		delete node;
 			
-			// then free leaf's memory (no longer needed)
-			delete node;
-			
-			// and prepare for upper level deletion (if needed)
-			node = bnp;
-		} while (deleteBranch && recursive && (!node->isRoot()));
-		
-		return DeletionInfo( deleteBranch && (!node->isRoot()),
-				node
-		);
 	}
-};
-
-
-
-
-template < typename LeafType >
-class PurgeLeafTicket : public OctreeLeafTicket< LeafType > {
-	
-private:
-	typedef typename OctreeLeafTicket< LeafType >::LeafPtr LeafPtr;
-	
-public:
-	PurgeLeafTicket(const LeafPtr leaf) : OctreeLeafTicket< LeafType >(leaf) { }
-	
-	virtual ~PurgeLeafTicket() { }
-	
-	virtual void performAction() const {
-		purgeLeaf(OctreeLeafTicket< LeafType >::getTarget(), true);
-	}
-	
-	static PurgeNodeTicket::DeletionInfo purgeLeaf(LeafPtr leaf, bool recursive) {
-		
-		// adjust previous & next pointers
-		if (leaf->getPrevious() != NULL) {
-			leaf->getPrevious()->setNext(leaf->getNext());
-		}
-		if (leaf->getNext() != NULL) {
-			leaf->getNext()->setPrevious(leaf->getPrevious());
-		}
-		
-		return PurgeNodeTicket::purgeNode(leaf, recursive);
-	}
-	
 };
 
 
@@ -168,40 +116,7 @@ public:
 		BranchNode::Ptr father = static_cast< BranchNode::Ptr >(leaf->getFather());
 		assert(father == newBranch->getFather());
 		
-		LeafPtr firstLeaf = static_cast< LeafPtr >(newBranch->getFirst(OctreeNode::LEAF_NODE)),
-				lastLeaf = static_cast< LeafPtr >(newBranch->getLast(OctreeNode::LEAF_NODE));
-		
-		// sanity check assertion
-		assert(firstLeaf != NULL && lastLeaf != NULL);
-		/* failing this assertion means that a voxel has been split because
-		 * it was intersecting-not-contained but children processing
-		 * discovers that they are all inside. From a mathematical point
-		 * of view this is an absurd but it may happen due to float/double
-		 * approximation errors. To take into account such errors we
-		 * introduce a "truncation" in distance calculation trying to make
-		 * impossible that such an event happens.
-		 */
-		
-		
 		u_char leafIdx = leaf->getChildIdx();
-		
-		// first of all, update leaves list's pointers
-		if (leaf->getPrevious() != NULL) {
-			leaf->getPrevious()->setNext(firstLeaf);
-			firstLeaf->setPrevious(leaf->getPrevious());
-		} else {
-			/* this can occur if we push a newly created first-leaf (it has
-			 * not been attached to the rest of the tree yet) otherwise it
-			 * MUST not occur because due to the presence of a starting fake
-			 * leaf there should be always a "previous"
-			 */
-			assert(leaf->getVersion() == firstLeaf->getVersion());
-		}
-		
-		if (leaf->getNext() != NULL) {
-			leaf->getNext()->setPrevious(lastLeaf);
-			lastLeaf->setNext(leaf->getNext());
-		}
 		
 		// then delete leaf from father
 		father->deleteChild(leafIdx);

@@ -36,8 +36,8 @@ struct IntersectionResult {
 	
 	/**
 	 * counts the number of times a leaf has been deleted after more than
-	 * one partial erosions (that is it has never been found totally inside
-	 * the cutter).
+	 * one partial erosions (that is it has been deleted before beeing found
+	 * totally inside the cutter).
 	 */
 	u_long lazy_purged_leaves;
 	u_long pushed_leaves;
@@ -207,48 +207,22 @@ private:
 		virtual ~CutterInfos() { }
 	};
 	
-	void analyzeLeaves(OctreeType::LeavesDeque::iterator begin,
-			OctreeType::LeavesDeque::iterator end,
-			CutterInfos::ConstPtr cutterInfo,
-			IntersectionResult &results);
-	
-	void analyzeLeafRecursive(const OctreeType::LeafPtr &currLeaf, 
+	OctreeType::OperationType analyzeLeaf(const OctreeType::LeafPtr &currLeaf, 
 			const CutterInfos &cutterInfo, IntersectionResult &results);
 	
-	/**
-	 * 
-	 * @param leaf
-	 * @param cutter
-	 * @param rototras cutter (not the bounding box) rototraslation in terms of model basis
-	 * @return
-	 */
-	void buildInfos(const OctreeType::LeafConstPtr &leaf, 
-			const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &isometry,
-			VoxelInfo &info);
 	
-	/**
-	 * Calculate new waste produced by milling of given \c leaf according to
-	 * erosion information contained in \c newInfo. \c newInfo will be updated
-	 * inside the method in order to reflect all erosion happened so far to
-	 * given \c leaf.
-	 * 
-	 * @param leaf
-	 * @param newInfo
-	 * @return
-	 */
-	double calculateWaste(const OctreeType::LeafConstPtr &leaf, VoxelInfo &newInfo) const;
+	struct WasteInfo {
+		u_char newInsideCorners;
+		u_char totInserted;
+		
+		void reset() {
+			newInsideCorners = totInserted = 0;
+		}
+	};
+	void cutVoxel(const OctreeType::LeafConstPtr &leaf, const CutterInfos &cutterInfo,
+			VoxelInfo &voxelInfo, WasteInfo &wasteInfo) const;
 	
-	/**
-	 * 
-	 * @param voxel
-	 * @param oldInfo
-	 * @param updatedInfo that is old VoxelInfo after they have been updated
-	 * with new ones
-	 * @return
-	 */
-	double getApproxWaste(const SimpleBox &box, const VoxelInfo &oldInfo, const VoxelInfo &updatedInfo) const;
-	
-	double intersectedVolume(const SimpleBox &box, const VoxelInfo &info) const;
+	double calculateNewWaste(const OctreeType::LeafPtr &currLeaf, const WasteInfo &info);
 	
 	bool canPushLevel(const OctreeType::LeafPtr &leaf) const;
 	

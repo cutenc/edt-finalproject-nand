@@ -142,17 +142,19 @@ public:
 	
 	typedef StoredData< LeafType > DataView;
 	
+	enum OperationType {
+		NO_OP,
+		PUSH_LEAF,
+		DELETE_LEAF
+	};
+	
 	typedef boost::function< bool (OctreeNode::ConstPtr) > BranchChoserFunction;
-	typedef boost::function< void (LeafPtr) > LeafProcesserFunction;
+	typedef boost::function< bool (LeafConstPtr) > LeafChoserFunction;
+	typedef boost::function< OperationType (LeafPtr) > LeafProcesserFunction;
 	
 private:
-	typedef OctreeTicket Ticket;
-	typedef boost::ptr_deque< Ticket > TicketDeque;
-	
-	typedef boost::lock_guard< boost::mutex > NotifyLock;
-	typedef boost::lock_guard< boost::mutex > TicketLock;
-	
 	typedef AtomicNumber<u_int> Versioner;
+	typedef boost::lock_guard< boost::mutex > LockGuard;
 	
 private:
 	
@@ -162,10 +164,7 @@ private:
 	const boost::shared_ptr< LeafType > LEAVES_LIST;
 	BranchPtr ROOT;
 	
-	boost::mutex ticketMutex;
-	TicketDeque ticketQueue;
-	
-	mutable boost::mutex mutex;
+	mutable boost::mutex treeTotalMutex;
 	Versioner versioner;
 	
 public:
@@ -193,91 +192,24 @@ public:
 		
 		// then set the REAL root pointer & link it in the leaves list
 		ROOT = level.newBranch;
-		LEAVES_LIST->setNext(level.newLeaves->front());
-		level.newLeaves->front()->setPrevious(LEAVES_LIST.get());
-		
-		notifyChanges();
 	}
 	
 	virtual ~Octree() {
-		notifyChanges();
-		
 		delete ROOT;
-	}
-	
-	/**
-	 * Calling this method will invalidate given leaf pointer (the leaf
-	 * will be deleted)
-	 * @param leaf
-	 * @return
-	 */
-	LeavesArrayPtr pushLevel(LeafPtr leaf) {
-		assert(leaf->getDepth() < MAX_DEPTH);
-		
-		u_int currVersion = versioner.get();
-		
-		PushedLevel newLevel = createLevel(leaf, currVersion);
-		
-		if (isNewlyCreated(leaf, currVersion)) {
-			/* this is a newly created leaf, so, we can make changes directly
-			 * on it
-			 */
-			PushLevelTicket< LeafType >::attachBranch(leaf, newLevel.newBranch);
-			
-		} else {
-			/* this is a leaf attached to the tree, so we have to create a
-			 * ticket in order to perform required action
-			 */
-			TicketLock l(ticketMutex);
-			boost::assign::ptr_push_back< PushLevelTicket < LeafType > >( ticketQueue )(leaf, newLevel.newBranch);
-		}
-		
-		return newLevel.newLeaves;
-	}
-	
-	void purgeLeaf(LeafPtr leaf) {
-		
-		if (isNewlyCreated(leaf, versioner.get())) {
-			PurgeNodeTicket::DeletionInfo info = 
-					PurgeLeafTicket < LeafType >::purgeLeaf(leaf, false);
-			
-			if (info.shouldDelete) {
-				TicketLock l(ticketMutex);
-				boost::assign::ptr_push_back< PurgeNodeTicket >( ticketQueue )(info.reference);
-			}
-			
-		} else {
-			TicketLock l(ticketMutex);
-			boost::assign::ptr_push_back< PurgeLeafTicket< LeafType > >( ticketQueue )(leaf);
-		}
-		
-	}
-	
-	void updateLeafData(LeafPtr leaf, DataConstRef data) {
-		
-		if(isNewlyCreated(leaf, versioner.get())) {
-			UpdateDataTicket< LeafType >::updateData(leaf, data);
-			
-		} else {
-			TicketLock l(ticketMutex);
-			boost::assign::ptr_push_back< UpdateDataTicket< LeafType > >( ticketQueue )(leaf, data);
-		}
-		
 	}
 	
 	void processTree(BranchChoserFunction branchChoser,
 			LeafProcesserFunction leafProcesser,
-			bool testLeaves) {
+			LeafChoserFunction leafChoser) {
 		
-		BranchConstPtr root = this->getRoot();
+		LockGuard l(treeTotalMutex);
+		
+		BranchPtr root = this->getRoot();
 		if (branchChoser(root)) {
-			processTreeRecursive(root, branchChoser, leafProcesser, testLeaves);
+			processTreeRecursive(root, branchChoser, leafProcesser, leafChoser);
 		}
 		
-		/* notify even if root has not been chosen because
-		 * branchChoser may have created some tickets
-		 */ 
-		this->notifyChanges();
+		versioner.incAndGet();
 	}
 	
 	/**
@@ -291,22 +223,14 @@ public:
 	 */
 	DataView getStoredData(bool onlyIfChanged = false) const {
 		
-		typename DataView::VoxelDataPtr data = boost::make_shared< typename DataView::VoxelData >();
-		
-		NotifyLock lock(mutex);
+		LockGuard l(treeTotalMutex);
 		
 		if (onlyIfChanged) {
-			// TODO reset 'changed' flag with an atomic compare-exchange operation
+			// TODO
 		}
 		
-		LeafPtr currLeaf = getLeavesListHead();
-		
-		while((currLeaf = currLeaf->getNext()) != NULL) {
-			typename DataView::VoxelPair vp(currLeaf->getBox(), currLeaf->getData());
-			data->push_back(vp);
-		}
-		
-		return data;
+		// TODO
+		throw std::runtime_error("NOT IMPLEMENTED YET");
 	}
 	
 	
@@ -322,12 +246,6 @@ private:
 		return LEAVES_LIST.get();
 	}
 	
-	inline
-	bool isNewlyCreated(const LeafPtr &leaf, u_int currVersion) const {
-		return leaf->getVersion() >= currVersion;
-	}
-	
-	
 	struct PushedLevel {
 		PushedLevel() : newLeaves(boost::make_shared< LeavesArray >()) { }
 		
@@ -336,10 +254,12 @@ private:
 	};
 	
 	
-	void processTreeRecursive(const BranchConstPtr &branch,
+	void processTreeRecursive(BranchPtr branch,
 			const BranchChoserFunction &branchChoser,
 			const LeafProcesserFunction &leafProcesser,
-			bool testLeaves) {
+			const LeafChoserFunction &leafChoser) {
+		
+		assert(!branch->isEmpty());
 		
 		for(u_char c = 0; c < BranchNode::N_CHILDREN; ++c) {
 			if (!branch->hasChild(c)) {
@@ -350,26 +270,68 @@ private:
 			switch (child->getType()) {
 				case OctreeNode::BRANCH_NODE:
 				{
-					BranchConstPtr bpt = static_cast< BranchConstPtr >(child);
+					BranchPtr bpt = static_cast< BranchPtr >(child);
 					if (branchChoser(bpt)) {
-						processTreeRecursive(bpt, branchChoser, leafProcesser, testLeaves);
+						processTreeRecursive(bpt, branchChoser, leafProcesser, leafChoser);
+						
+						if (bpt->isEmpty()) {
+							PurgeNodeTicket::purgeNode(bpt);
+						}
 					}
 				}
 					break;
 				case OctreeNode::LEAF_NODE:
 				{
-					if (testLeaves && !branchChoser(child)) {
-						/* i have to test leaf before performing processing,
-						 * but test result told us not to parse leaf -> skip
-						 * processing.
-						 */
+					LeafPtr lpt = static_cast< LeafPtr >(child);
+					
+					if (!leafChoser(lpt)) {
 						continue;
 					}
 					
-					LeafPtr lpt = static_cast< LeafPtr >(child);
-					leafProcesser(lpt);
+					OperationType op = leafProcesser(lpt);
+					
+					switch (op) {
+						case NO_OP:
+							// nothing to do
+							break;
+							
+						case DELETE_LEAF:
+							PurgeNodeTicket::purgeNode(lpt);
+							break;
+							
+						case PUSH_LEAF: {
+							PushedLevel newLevel = createLevel(lpt, versioner.get());
+							PushLevelTicket< LeafType >::attachBranch(lpt, newLevel.newBranch);
+							
+							processTreeRecursive(newLevel.newBranch,
+									branchChoser,
+									leafProcesser,
+									leafChoser);
+							
+							if (newLevel.newBranch->isEmpty()) {
+								/* entering here means that a voxel has been split because
+								 * it was intersecting-not-contained but children processing
+								 * discovers that they are all inside. From a mathematical point
+								 * of view this is an absurd but it may happen due to float/double
+								 * approximation errors. To take into account such errors we
+								 * introduce a "truncation" in distance calculation trying to make
+								 * impossible that such an event happens.
+								 */
+								std::cerr << "Floating point approximation error" << std::endl;
+								
+								PurgeNodeTicket::purgeNode(newLevel.newBranch);
+							}
+							
+							break;
+						}
+							
+						default:
+							throw std::runtime_error("operation unknown");
+					}
+					
 				}
 					break;
+					
 				default:
 					throw std::runtime_error("node type not registered");
 					break;
@@ -377,32 +339,6 @@ private:
 		}
 	}
 	
-	/**
-	 * Invoke this method every time you make some changes to the
-	 * data structure and want to persist them, that is make them available
-	 * to any subsequent call of ::getStoredData().
-	 */
-	void notifyChanges() {
-		
-		/* the defer_lock here is used just for "teaching" in fact until lock
-		 * acquisition order remains octree->ticket in the whole class, no
-		 * deadlock is possible
-		 * 
-		 * Edit: defer_lock removed in order to use a simpler lock_guard on
-		 * the ticketMutex; as stated before, DO NOT CHANGE locking order
-		 * in the whole class!!
-		 */
-		NotifyLock octreeLock(mutex);
-		TicketLock ticketLock(ticketMutex);
-		
-		while (!ticketQueue.empty()) {
-			TicketDeque::auto_type ticket = ticketQueue.pop_back();
-			ticket->performAction();
-		}
-		
-		versioner.incAndGet();
-	}
-
 	
 	/**
 	 * Create a one-level tree detached from the main one; the new tree will
@@ -433,7 +369,6 @@ private:
 		
 		// create some variables needed in the following leaves-generation loop
 		u_int newDepth = leaf->getDepth() + 1;
-		LeafPtr prevNode = NULL;
 		
 		SimpleBox::ConstPtr thisLvlBox = BOX_CACHE.getSimpleBox(newDepth);
 		ShiftedBox baseSBox = leaf->getBox()->getResized(thisLvlBox);
@@ -470,7 +405,7 @@ private:
 					// all positive
 					break;
 				case 7:
-					traslation[0] *= -1;
+					traslation[0] = boost::math::changesign(traslation[0]);
 					break;
 					
 				default:
@@ -486,13 +421,6 @@ private:
 					i,
 					boost::make_shared< ShiftedBox >(newBox),
 					newDepth, leafVersion);
-			
-			// set previous & next pointers
-			child->setPrevious(prevNode);
-			if (prevNode != NULL)
-				prevNode->setNext(child);
-			
-			prevNode = child;
 			
 			toRet.newBranch->setChild(i, child);
 			

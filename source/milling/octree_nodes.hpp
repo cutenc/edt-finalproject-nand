@@ -152,6 +152,15 @@ public:
 	}
 	
 	/**
+	 * 
+	 * @return \c true if this branch has no more children
+	 */
+	inline
+	bool isEmpty() const {
+		return removedChildren == N_CHILDREN;
+	}
+	
+	/**
 	 * Returns true if this branch should be deleted (because all its
 	 * children has been deleted)
 	 * @param i
@@ -164,7 +173,7 @@ public:
 		removedChildren++;
 		
 		children[i] = NULL;
-		return removedChildren == N_CHILDREN;
+		return isEmpty();
 	}
 	
 	inline
@@ -290,7 +299,6 @@ private:
 	const u_int DEPTH;
 	const u_int VERSION;
 	
-	LeafPtr prev, next;
 	DataConst data;
 	
 public:
@@ -332,27 +340,6 @@ public:
 	}
 	
 	inline
-	LeafPtr getPrevious() const {
-		return this->prev;
-	}
-	
-	inline
-	void setPrevious(const LeafPtr &prev) {
-		this->prev = prev;
-	}
-	
-	inline
-	LeafPtr getNext() const {
-		return this->next;
-	}
-	
-	inline
-	void setNext(const LeafPtr &next) {
-		// NULL next ptr must be allowed (last leaf)
-		this->next = next;
-	}
-	
-	inline
 	virtual u_int getDepth() const {
 		return this->DEPTH;
 	}
@@ -367,7 +354,6 @@ public:
 private:
 	
 	void initVariables() {
-		prev = next = NULL;
 		data = data_traits::DEFAULT_DATA();
 	}
 	

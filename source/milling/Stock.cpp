@@ -83,7 +83,53 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 			const ShiftedBox::ConstPtr &currBox = node->getBox();
 			return currBox->isIntersecting(obb, isom, accurate);
 		}
+		
+		static bool isLeafIntersecting(OctreeNode::ConstPtr node,
+				const SimpleBox &obb,
+				const Eigen::Isometry3d &isom,
+				bool accurate,
+				IntersectionResult &results) {
+			
+			const ShiftedBox::ConstPtr &currBox = node->getBox();
+			if (!currBox->isIntersecting(obb, isom, accurate)) {
+				results.intersection_approx_skips++;
+				return false;
+			}
+			
+			return true;
+		}
+		
+//		static ShiftedBox::MinMaxVector getBoundingBoxMinMax(
+//				const SimpleBox &obb,
+//				const Eigen::Isometry3d &isom)
+//				{
+//			
+//			SimpleBox::CornerMatrixConstPtr matrix = obb.getCorners(isom);
+//			Eigen::Vector3d min = matrix->rowwise().minCoeff();
+//			Eigen::Vector3d max = matrix->rowwise().maxCoeff();
+//			return ShiftedBox::MinMaxVector(min, max);
+//		}
+//		
+//		static bool isIntersecting(OctreeNode::ConstPtr node,
+//				const ShiftedBox::MinMaxVector &boxMinMax) {
+//			
+//			const ShiftedBox::ConstPtr &currBox = node->getBox();
+//			return currBox->isIntersecting(boxMinMax);
+//		}
+		
 	};
+	
+	
+	/* TODO ho creato la nuova funzione che controlla l'intersezione
+	 * sfruttando min-max invece che la oriented box
+	 */
+//	ShiftedBox::MinMaxVector minMax = BranchChoser::getBoundingBoxMinMax(cutterInfo->bbox,
+//			*(cutterInfo->bboxIsom_model));
+//	OctreeType::BranchChoserFunction branchFunc =
+//			boost::bind(&BranchChoser::isIntersecting, _1,
+//					boost::cref(minMax)
+//					);
+	
 	
 	OctreeType::BranchChoserFunction branchFunc =
 			boost::bind(&BranchChoser::isIntersecting, _1,
@@ -91,22 +137,31 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 					boost::cref(*(cutterInfo->bboxIsom_model)),
 					true);
 	
+	
+	
 	IntersectionResult results;
 	
 	OctreeType::LeafProcesserFunction leafFunc = 
-			boost::bind(&Stock::analyzeLeafRecursive,
+			boost::bind(&Stock::analyzeLeaf,
 					this, _1,
 					boost::cref(*cutterInfo),
 					boost::ref(results));
 	
-	MODEL.processTree(branchFunc, leafFunc, true);
+	OctreeType::LeafChoserFunction leafChoserFunc = 
+			boost::bind(&BranchChoser::isLeafIntersecting, _1,
+				boost::cref(cutterInfo->bbox),
+				boost::cref(*(cutterInfo->bboxIsom_model)),
+				false,
+				boost::ref(results));
+	
+	MODEL.processTree(branchFunc, leafFunc, leafChoserFunc);
 	
 	results.elapsedTime = boost::chrono::duration_cast<boost::chrono::microseconds>(boost::chrono::thread_clock::now() - startTime);
 	
 	return results;
 }
 
-void Stock::analyzeLeafRecursive(const OctreeType::LeafPtr &currLeaf, 
+Stock::OctreeType::OperationType Stock::analyzeLeaf(const OctreeType::LeafPtr &currLeaf, 
 		const CutterInfos &cutterInfo, IntersectionResult &results) {
 	
 	results.analyzed_leaves++;
@@ -125,18 +180,27 @@ void Stock::analyzeLeafRecursive(const OctreeType::LeafPtr &currLeaf,
 	 * la foglia è completamente contenuta in modo da cancellarla subito
 	 * e non farne il push
 	 */
-	VoxelInfo currInfo;
-	buildInfos(currLeaf, cutterInfo.cutter, *(cutterInfo.cutterIsom_model), currInfo);
+	VoxelInfo currInfo; WasteInfo waste;
+	cutVoxel(currLeaf, cutterInfo, currInfo, waste);
 	
 	if (currInfo.isContained()) {
 		
-		results.purged_leaves++;
+		if (waste.totInserted == Corner::N_CORNERS) {
+			results.purged_leaves++;
+			
+		} else {
+			/* it may happen that after a bunch of partial erosions given
+			 * leaf should be deleted (all corners have crossed cutter's
+			 * limits at least once). Such a case is due to lack of
+			 * resolution in model voxels.
+			 */
+			results.lazy_purged_leaves++;
+		}
 		
-		// update waste sum
-		results.waste += calculateWaste(currLeaf, currInfo);
+		results.waste += calculateNewWaste(currLeaf, waste);
 		
 		// then delete currLeaf from the model
-		MODEL.purgeLeaf(currLeaf);
+		return OctreeType::DELETE_LEAF;
 		
 	} else {
 		
@@ -147,28 +211,7 @@ void Stock::analyzeLeafRecursive(const OctreeType::LeafPtr &currLeaf,
 			results.pushed_leaves++;
 			
 			// we can push another level so let's do it
-			OctreeType::LeavesArrayPtr newLeaves = MODEL.pushLevel(currLeaf);
-			
-			/* now we have to check wether returned leaves intersect
-			 * or not: we cannot simply check for each corner distance
-			 * because all corners may be outside cutter but butter itself
-			 * is intersecting the voxel
-			 */
-			OctreeType::LeavesArray::iterator newLeavesIt;
-			for (newLeavesIt = newLeaves->begin(); newLeavesIt != newLeaves->end(); ++newLeavesIt) {
-				
-				const ShiftedBox::ConstPtr &sbp = (*newLeavesIt)->getBox();
-				
-				if (sbp->isIntersecting((cutterInfo.bbox), *(cutterInfo.bboxIsom_model), false)) {
-					/* this leaf is intersecting, so we have to make a
-					 * recursive call to analyze it.
-					 */
-					analyzeLeafRecursive(*newLeavesIt, cutterInfo, results);
-					
-				} else {
-					results.intersection_approx_skips++;
-				}
-			}
+			return OctreeType::PUSH_LEAF;
 			
 		} else {
 			
@@ -186,34 +229,26 @@ void Stock::analyzeLeafRecursive(const OctreeType::LeafPtr &currLeaf,
 				results.intersection_approx_errors++;
 				
 				// ...i don't even update data (waste of time)
-				return;
+				return OctreeType::NO_OP;
 			}
 			
-			results.waste += calculateWaste(currLeaf, currInfo);
+			results.updated_data_leaves++;
+			results.waste += calculateNewWaste(currLeaf, waste);
 			
-			/* it may happen that after a bunch of partial erosions given
-			 * leaf should be deleted (all corners have crossed cutter's
-			 * limits at least once). Such a case is due to lack of
-			 * resolution in model voxels.
-			 */
-			if (currInfo.isContained()) {
-				results.lazy_purged_leaves++;
-				
-				MODEL.purgeLeaf(currLeaf);
-			} else {
-				results.updated_data_leaves++;
-				
-				MODEL.updateLeafData(currLeaf, boost::make_shared< VoxelInfo >(currInfo));
-			}
+			currLeaf->setData(
+					boost::make_shared< VoxelInfo >(currInfo)
+					);
+			
+			return OctreeType::NO_OP;
+			
 		} // if (canPushLevel)
 	} // if (isContained)	
 	
 }
 
 
-void Stock::buildInfos(const OctreeType::LeafConstPtr &leaf, 
-		const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &isometry,
-		VoxelInfo &info) {
+void Stock::cutVoxel(const OctreeType::LeafConstPtr &leaf,
+		const CutterInfos &cutterInfo, VoxelInfo &info, WasteInfo &waste) const {
 	
 	/* we have to convert stockPoint in cutter basis: given isometry
 	 * is for the cutter in respect of model basis, so we
@@ -222,58 +257,58 @@ void Stock::buildInfos(const OctreeType::LeafConstPtr &leaf,
 	 * cutter points.
 	 */
 	SimpleBox::CornerMatrix cachedMatrix;
-	leaf->getBox()->buildCornerMatrix(isometry.inverse(), cachedMatrix);
+	const ShiftedBox::ConstPtr &box = leaf->getBox();
+	box->buildCornerMatrix(
+			cutterInfo.cutterIsom_model->inverse(), cachedMatrix
+	);
 	
-	info.reset();
+	waste.reset(); info.reset();
 	for (CornerIterator cit = CornerIterator::begin(); cit != CornerIterator::end(); ++cit) {
 		const Eigen::Vector3d point = cachedMatrix.col(static_cast<u_char>(*cit));
 		
-		double distance = cutter->getDistance(point);
+		double distance = cutterInfo.cutter->getDistance(point);
 		
-		info.setInsideness(*cit, distance);
+		double oldDistance = leaf->getData()->getInsideness(*cit);
+		bool isInside = info.setInsideness(*cit,
+				oldDistance,
+				distance);
+		
+		if (isInside) {
+			if (!VoxelInfo::isInside(oldDistance)) {
+				++waste.newInsideCorners;
+			}
+			if (VoxelInfo::isInside(distance)) {
+				++waste.totInserted;
+			}
+		}
 	}
-	
 }
 
-double Stock::calculateWaste(const OctreeType::LeafConstPtr & leaf,
-		VoxelInfo &newInfo) const {
-	
-	VoxInfoCPtrCRef leafData = leaf->getData();
-	newInfo += *leafData;
-	return getApproxWaste(*leaf->getBox()->getSimpleBox(),
-			*leafData,
-			newInfo);
-	
-}
-
-double Stock::getApproxWaste(const SimpleBox &box, 
-		const VoxelInfo &oldInfo, const VoxelInfo &updatedInfo) const {
-	
-	return intersectedVolume(box, updatedInfo) - intersectedVolume(box, oldInfo);
-}
-
-double Stock::intersectedVolume(const SimpleBox &box, const VoxelInfo &info) const {
-	u_char nInsideCorners = info.getInsideCornersNumber();
-	
-	if (nInsideCorners == 0)
+double Stock::calculateNewWaste(const OctreeType::LeafPtr &currLeaf, const WasteInfo &info) {
+	// Calculate the amount of new waste
+	if (info.newInsideCorners == 0)
 		return 0;
 	
-	if (nInsideCorners == Corner::N_CORNERS)
-		return box.getVolume();
+	const SimpleBox::ConstPtr &box = currLeaf->getBox()->getSimpleBox();
+	if (info.newInsideCorners == Corner::N_CORNERS)
+		return box->getVolume();
 	
 	// some corners are inside and some are outside
 	
 	// TODO maybe we should implement something more accurate
-	return box.getVolume() * nInsideCorners / (double) Corner::N_CORNERS;
+	return box->getVolume() * info.newInsideCorners / (double) Corner::N_CORNERS;
 }
+
 
 bool Stock::canPushLevel(const OctreeType::LeafPtr &leaf) const {
 	return leaf->getDepth() < this->MAX_DEPTH;
 }
 
+
 Eigen::Vector3d Stock::getResolution() const {
 	return (this->EXTENT / std::pow(2.0, (double)this->MAX_DEPTH));
 }
+
 
 std::ostream & operator<<(std::ostream &os, const Stock &stock) {
 	os << "STOCK(extent=[" << stock.EXTENT.transpose()

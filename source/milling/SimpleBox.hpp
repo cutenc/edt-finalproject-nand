@@ -69,12 +69,15 @@ public:
 		return os;
 	}
 	
-	Eigen::Vector3d getCorner(Corner::CornerType type, 
-			const Eigen::Isometry3d &isometry = Eigen::Isometry3d::Identity()) {
+	Eigen::Vector3d getCorner(Corner::CornerType type, const Eigen::Isometry3d &isometry) const {
 		return isometry * getSimpleCorner(type);
 	}
 	
-	CornerMatrixPtr getCorners(const Eigen::Isometry3d &isometry = Eigen::Isometry3d::Identity()) const {
+	Eigen::Vector3d getCorner(Corner::CornerType type) const {
+		return getSimpleCorner(type);
+	}
+	
+	CornerMatrixPtr getCorners(const Eigen::Isometry3d &isometry) const {
 		
 		CornerMatrixPtr corners = boost::allocate_shared< CornerMatrix,
 				CornerMatrixAllocator >( CornerMatrixAllocator() );
@@ -82,6 +85,10 @@ public:
 		buildCorners(isometry, *corners);
 		
 		return corners;
+	}
+	
+	CornerMatrixConstPtr getCorners() const {
+		return this->CORNERS;
 	}
 	
 	void buildCorners(const Eigen::Isometry3d &isometry, CornerMatrix &out) const {
