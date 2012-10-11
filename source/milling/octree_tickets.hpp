@@ -23,12 +23,6 @@ public:
 	
 	virtual void performAction() const =0;
 	
-protected:
-	static void checkNull(const void * p) throw(std::invalid_argument) {
-		if (p == NULL)
-			throw std::invalid_argument("NULL pointer given");
-	}
-	
 };
 
 template < typename LeafType >
@@ -41,7 +35,7 @@ protected:
 	
 public:
 	OctreeLeafTicket(const LeafPtr &leaf) : targetLeaf(leaf) {
-		checkNull(targetLeaf);
+		assert(leaf != NULL);
 	}
 	
 	virtual ~OctreeLeafTicket() { }
@@ -67,14 +61,15 @@ public:
 	}
 	
 	static void purgeNode(OctreeNode::Ptr node) {
+		assert(node != NULL);
 		
-		// tells father to forget her...
+		// tells father to forget its children
 		BranchNode::Ptr bnp = static_cast< BranchNode::Ptr >(node->getFather());
 		bnp->deleteChild(node->getChildIdx());
 		
 		// then free leaf's memory (no longer needed)
 		delete node;
-			
+		node = NULL;
 	}
 };
 
@@ -92,8 +87,6 @@ private:
 public:
 	PushLevelTicket(const LeafPtr leaf, const BranchNode::Ptr &newBranch) :
 		OctreeLeafTicket< LeafType >(leaf), newBranch(newBranch) {
-		
-		OctreeTicket::checkNull(newBranch);
 	}
 	
 	virtual ~PushLevelTicket() { }
@@ -111,7 +104,7 @@ public:
 	 * point approximation error cause all \c newBranch children to be deleted
 	 */
 	static void attachBranch(LeafPtr leaf, const BranchNode::Ptr newBranch) {
-		OctreeTicket::checkNull(newBranch);
+		assert(newBranch != NULL);
 		
 		BranchNode::Ptr father = static_cast< BranchNode::Ptr >(leaf->getFather());
 		assert(father == newBranch->getFather());
@@ -126,6 +119,7 @@ public:
 		
 		// then free leaf's memory (no longer needed)
 		delete leaf;
+		leaf = NULL;
 	}
 	
 };
@@ -157,6 +151,8 @@ public:
 	}
 	
 	static void updateData(LeafPtr leaf, DataConstRef newData) {
+		assert(leaf != NULL);
+		
 		leaf->setData(newData);
 	}
 	

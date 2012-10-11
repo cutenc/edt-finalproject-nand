@@ -49,7 +49,7 @@ private:
 	
 public:
 	SimpleBox(const Eigen::Vector3d &extent) :
-			EXTENT(extent / 2.0),
+			EXTENT(extent * 0.5),
 			VOLUME(extent[0] * extent[1] * extent[2]),
 			CORNERS(SimpleBox::buildCornerMatrix(EXTENT)) {
 		

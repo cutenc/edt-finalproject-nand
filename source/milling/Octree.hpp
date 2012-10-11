@@ -97,16 +97,32 @@ public:
 	typedef boost::shared_ptr< VoxelData > VoxelDataPtr;
 	
 private:
-	const VoxelDataPtr data;
+	const VoxelDataPtr newData;
+	const VoxelDataPtr updatedData;
+	const VoxelDataPtr deletedData;
 	
 public:
-	StoredData(const VoxelDataPtr &data) : data(data) { }
-	virtual ~StoredData() { }
-	
-	VoxelDataPtr getStoredData() const {
-		return data;
+	StoredData(const VoxelDataPtr &newData,
+			const VoxelDataPtr &updatedData,
+			const VoxelDataPtr &deletedData) :
+		newData(newData), updatedData(updatedData), deletedData(deletedData)
+	{
+		
 	}
 	
+	virtual ~StoredData() { }
+	
+	VoxelDataPtr getNewData() const {
+		
+	}
+	
+	VoxelDataPtr getUpdatedData() const {
+		
+	}
+	
+	VoxelDataPtr getDeletedData() const {
+		
+	}
 };
 
 
@@ -145,7 +161,8 @@ public:
 	enum OperationType {
 		NO_OP,
 		PUSH_LEAF,
-		DELETE_LEAF
+		DELETE_LEAF,
+		UPDATED_DATA
 	};
 	
 	typedef boost::function< bool (OctreeNode::ConstPtr) > BranchChoserFunction;
@@ -166,6 +183,10 @@ private:
 	
 	mutable boost::mutex treeTotalMutex;
 	Versioner versioner;
+	
+	/* Guarded-by #treeTotalMutex
+	 */
+	u_int lastRetrievedDataVersion;
 	
 public:
 	
@@ -204,10 +225,7 @@ public:
 		
 		LockGuard l(treeTotalMutex);
 		
-		BranchPtr root = this->getRoot();
-		if (branchChoser(root)) {
-			processTreeRecursive(root, branchChoser, leafProcesser, leafChoser);
-		}
+		processTreeImpl(branchChoser, leafProcesser, leafChoser);
 		
 		versioner.incAndGet();
 	}
@@ -221,13 +239,17 @@ public:
 	 * @param onlyIfChanged
 	 * @return
 	 */
-	DataView getStoredData(bool onlyIfChanged = false) const {
+	DataView getModifiedData() {
 		
 		LockGuard l(treeTotalMutex);
 		
-		if (onlyIfChanged) {
-			// TODO
-		}
+		lastRetrievedDataVersion = versioner.get();
+		
+		/* TODO
+		 * define functions to parse tree and acquire modified data,
+		 * then call processTreeImp
+		 */
+		
 		
 		// TODO
 		throw std::runtime_error("NOT IMPLEMENTED YET");
@@ -246,13 +268,16 @@ private:
 		return LEAVES_LIST.get();
 	}
 	
-	struct PushedLevel {
-		PushedLevel() : newLeaves(boost::make_shared< LeavesArray >()) { }
+	void processTreeImpl(BranchChoserFunction branchChoser,
+			LeafProcesserFunction leafProcesser,
+			LeafChoserFunction leafChoser) {
 		
-		BranchPtr newBranch;
-		LeavesArrayPtr newLeaves;
-	};
-	
+		BranchPtr root = this->getRoot();
+		if (branchChoser(root)) {
+			processTreeRecursive(root, branchChoser, leafProcesser, leafChoser);
+		}
+		
+	}
 	
 	void processTreeRecursive(BranchPtr branch,
 			const BranchChoserFunction &branchChoser,
@@ -275,6 +300,7 @@ private:
 						processTreeRecursive(bpt, branchChoser, leafProcesser, leafChoser);
 						
 						if (bpt->isEmpty()) {
+							// I have to signal nothing when an internal node is deleted
 							PurgeNodeTicket::purgeNode(bpt);
 						}
 					}
@@ -295,11 +321,18 @@ private:
 							// nothing to do
 							break;
 							
+						case UPDATED_DATA:
+							// nothing to do even here, just update versioning
+							lpt->setFirstChangeVersion(lastRetrievedDataVersion, versioner.get());
+							break;
+							
 						case DELETE_LEAF:
+							// TODO implement change notification
 							PurgeNodeTicket::purgeNode(lpt);
 							break;
 							
 						case PUSH_LEAF: {
+							// TODO implement change notif
 							PushedLevel newLevel = createLevel(lpt, versioner.get());
 							PushLevelTicket< LeafType >::attachBranch(lpt, newLevel.newBranch);
 							
@@ -334,12 +367,18 @@ private:
 					
 				default:
 					throw std::runtime_error("node type not registered");
-					break;
 			}
 		}
 	}
 	
 	
+	
+	struct PushedLevel {
+		PushedLevel() : newLeaves(boost::make_shared< LeavesArray >()) { }
+		
+		BranchPtr newBranch;
+		LeavesArrayPtr newLeaves;
+	};
 	/**
 	 * Create a one-level tree detached from the main one; the new tree will
 	 * have:
@@ -347,14 +386,12 @@ private:
 	 * together;
 	 * \li father-consistent: that is new branch is linked also with
 	 * correct father;
-	 * \li leaves list-consistent meaning that first leaf's prev pointer and
-	 * last leaf next pointer are left pointing to NULL;
 	 * \li main tree isolation that is it will not modify main tree links, so
 	 * it is not reachable from it.
 	 * @param leaf
 	 * @return
 	 */
-	PushedLevel createLevel(const LeafConstPtr &leaf, u_int leafVersion) const {
+	PushedLevel createLevel(const LeafConstPtr &leaf, u_int currVersion) const {
 		
 		PushedLevel toRet;
 		
@@ -364,7 +401,8 @@ private:
 		} else {
 			toRet.newBranch = new BranchNode(leaf->getFather(),
 				leaf->getChildIdx(),
-				leaf->getBox());
+				leaf->getBox(),
+				currVersion);
 		}
 		
 		// create some variables needed in the following leaves-generation loop
@@ -420,7 +458,7 @@ private:
 					toRet.newBranch,
 					i,
 					boost::make_shared< ShiftedBox >(newBox),
-					newDepth, leafVersion);
+					newDepth, currVersion);
 			
 			toRet.newBranch->setChild(i, child);
 			

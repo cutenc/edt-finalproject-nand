@@ -14,7 +14,6 @@
 #include "common/Point3D.hpp"
 #include "common/Model3D.hpp"
 #include "configuration/CutterDescription.hpp"
-#include "SimpleBox.hpp"
 
 class Cutter;
 

@@ -20,7 +20,6 @@
 
 #include <Eigen/Geometry>
 
-#include "threading/Runnable.hpp"
 #include "SimpleBox.hpp"
 #include "Corner.hpp"
 
@@ -151,7 +150,7 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 			boost::bind(&BranchChoser::isLeafIntersecting, _1,
 				boost::cref(cutterInfo->bbox),
 				boost::cref(*(cutterInfo->bboxIsom_model)),
-				false,
+				true,
 				boost::ref(results));
 	
 	MODEL.processTree(branchFunc, leafFunc, leafChoserFunc);
@@ -163,6 +162,8 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 
 Stock::OctreeType::OperationType Stock::analyzeLeaf(const OctreeType::LeafPtr &currLeaf, 
 		const CutterInfos &cutterInfo, IntersectionResult &results) {
+	
+	assert(!currLeaf->getData()->isContained());
 	
 	results.analyzed_leaves++;
 	
@@ -239,7 +240,7 @@ Stock::OctreeType::OperationType Stock::analyzeLeaf(const OctreeType::LeafPtr &c
 					boost::make_shared< VoxelInfo >(currInfo)
 					);
 			
-			return OctreeType::NO_OP;
+			return OctreeType::UPDATED_DATA;
 			
 		} // if (canPushLevel)
 	} // if (isContained)	
@@ -258,6 +259,9 @@ void Stock::cutVoxel(const OctreeType::LeafConstPtr &leaf,
 	 */
 	SimpleBox::CornerMatrix cachedMatrix;
 	const ShiftedBox::ConstPtr &box = leaf->getBox();
+	
+//	const Eigen::Isometry3d modelIsom_cutter = cutterInfo.cutterIsom_model->inverse();
+	
 	box->buildCornerMatrix(
 			cutterInfo.cutterIsom_model->inverse(), cachedMatrix
 	);
@@ -265,6 +269,9 @@ void Stock::cutVoxel(const OctreeType::LeafConstPtr &leaf,
 	waste.reset(); info.reset();
 	for (CornerIterator cit = CornerIterator::begin(); cit != CornerIterator::end(); ++cit) {
 		const Eigen::Vector3d point = cachedMatrix.col(static_cast<u_char>(*cit));
+		
+//		VoxInfoCPtrCRef voxelinfo = leaf->getData();
+//		Eigen::Vector3d point = box->getCorner(*cit, modelIsom_cutter);
 		
 		double distance = cutterInfo.cutter->getDistance(point);
 		

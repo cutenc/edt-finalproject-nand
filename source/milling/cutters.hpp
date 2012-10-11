@@ -21,8 +21,8 @@
 #include <Eigen/Geometry>
 
 #include "configuration/CutterDescription.hpp"
+#include "common/Utilities.hpp"
 #include "common/meshes.hpp"
-#include "SimpleBox.hpp"
 
 class SphereCutter : public Cutter {
 

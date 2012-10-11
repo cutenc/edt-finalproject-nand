@@ -25,7 +25,7 @@ SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -ggdb -O0")
 
 # BOOST
 
-SET(BOOST_MIN_VERSION "1.46.0")
+SET(BOOST_MIN_VERSION "1.48.0")
 
 FIND_PACKAGE(Boost COMPONENTS regex program_options chrono system signals thread REQUIRED)
 

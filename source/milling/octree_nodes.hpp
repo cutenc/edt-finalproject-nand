@@ -44,14 +44,20 @@ private:
 	const u_char childIdx;
 	const ShiftedBox::ConstPtr sbox;
 	const u_long NODE_ID;
+	const u_int CREATION_VERSION;
+	
+	u_int firstChangeVersion;
 	
 public:
 	OctreeNode(const ShiftedBox::ConstPtr &box) : father(), childIdx(255), sbox(box),
 			NODE_ID(NodeIDs::getNodeID())
 	{ }
 	
-	OctreeNode(const OctreeNode::Ptr &father, u_char childIdx, const ShiftedBox::ConstPtr &sbox) :
-			father(father), childIdx(childIdx), sbox(sbox), NODE_ID(NodeIDs::getNodeID())
+	OctreeNode(const OctreeNode::Ptr &father, u_char childIdx,
+			const ShiftedBox::ConstPtr &sbox, u_int creationVersion) :
+			father(father), childIdx(childIdx), sbox(sbox),
+			NODE_ID(NodeIDs::getNodeID()), CREATION_VERSION(creationVersion),
+			firstChangeVersion(creationVersion)
 	{
 		
 		if (father == NULL)
@@ -101,6 +107,22 @@ public:
 		return this->NODE_ID;
 	}
 	
+	inline
+	void setFirstChangeVersion(u_long minVersion, u_long currVersion) {
+		if (firstChangeVersion > minVersion) {
+			// we already set our 'first change' version
+			return;
+		}
+		
+		firstChangeVersion = currVersion;
+		
+		if (isRoot()) {
+			return;
+		} else {
+			getFather()->setFirstChangeVersion(minVersion, currVersion);
+		}
+	}
+	
 	virtual std::ostream & toOutStream(std::ostream &os) const =0;
 	
 	friend std::ostream & operator<<(std::ostream & os, const OctreeNode& node) {
@@ -124,8 +146,8 @@ private:
 	
 public:
 	BranchNode(const ShiftedBox::ConstPtr &box) : OctreeNode(box) { initChildren(); }
-	BranchNode(OctreeNode::Ptr father, u_char childIdx, const ShiftedBox::ConstPtr &sbox) : 
-		OctreeNode(father, childIdx, sbox) { initChildren(); }
+	BranchNode(OctreeNode::Ptr father, u_char childIdx, const ShiftedBox::ConstPtr &sbox, u_int creationVersion) : 
+		OctreeNode(father, childIdx, sbox, creationVersion) { initChildren(); }
 	
 	virtual ~BranchNode() {
 		for (u_char i = 0; i < N_CHILDREN; i++) {
@@ -297,22 +319,21 @@ private:
 private:
 	
 	const u_int DEPTH;
-	const u_int VERSION;
 	
 	DataConst data;
 	
 public:
 	LeafNode(const ShiftedBox::ConstPtr &box) :
 			OctreeNode(box),
-			DEPTH(0), VERSION(-1) {
+			DEPTH(0) {
 		
 		initVariables();
 	}
 	
 	LeafNode(const OctreeNode::Ptr &father, u_char childIdx, 
 			const ShiftedBox::ConstPtr &sbox, u_int depth, u_int version) :
-				OctreeNode(father, childIdx, sbox),
-				DEPTH(depth), VERSION(version) {
+				OctreeNode(father, childIdx, sbox, version),
+				DEPTH(depth) {
 		
 		initVariables();
 	}
@@ -327,11 +348,6 @@ public:
 	inline
 	DataConstRef getData() const {
 		return this->data;
-	}
-	
-	inline
-	u_int getVersion() const {
-		return this->VERSION;
 	}
 	
 	inline

@@ -21,7 +21,7 @@ class VoxelInfo {
 	
 private:
 	// updated by updateInsideness(u_char, double) function
-	u_char insideCornerNumber;
+	u_char insideCorners;
 	double insideness[Corner::N_CORNERS];
 	
 public:
@@ -41,10 +41,8 @@ public:
 	
 	bool isContained() const;
 	
-	bool isInside(Corner::CornerType c) const;
+	bool isCornerCut(Corner::CornerType c) const;
 
-	u_char getInsideCornersNumber() const;
-	
 	double getInsideness(Corner::CornerType c) const;
 	
 	/**

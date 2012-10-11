@@ -8,11 +8,15 @@
 #include "VoxelInfo.hpp"
 
 VoxelInfo::VoxelInfo() {
-	insideCornerNumber = 0;
+	assert(Corner::N_CORNERS == 8); // this class is full of shift op on chars
+	
+	insideCorners = 0x00;
 }
 
 VoxelInfo::VoxelInfo(double val) {
-	insideCornerNumber = 0;
+	assert(Corner::N_CORNERS == 8); // this class is full of shift op on chars
+	
+	insideCorners = 0x00;
 	for (u_char i = 0; i < Corner::N_CORNERS; ++i) {
 		setInsideness(i, val);
 	}
@@ -21,19 +25,19 @@ VoxelInfo::VoxelInfo(double val) {
 VoxelInfo::~VoxelInfo() { }
 
 bool VoxelInfo::isIntersecting() const {
-	return insideCornerNumber > 0;
+	return insideCorners > 0;
 }
 
 bool VoxelInfo::isContained() const {
-	return insideCornerNumber == Corner::N_CORNERS;
+	return insideCorners == 0xff;
 }
 
-bool VoxelInfo::isInside(Corner::CornerType c) const {
-	return isInside(static_cast<u_char>(c));
-}
-
-u_char VoxelInfo::getInsideCornersNumber() const {
-	return insideCornerNumber;
+bool VoxelInfo::isCornerCut(Corner::CornerType c) const {
+	u_char i = static_cast<u_char>(c);
+	
+	assert(i < 8); // MUST be 8: see shift operation
+	
+	return insideCorners & (0x01 << i);
 }
 
 double VoxelInfo::getInsideness(Corner::CornerType c) const {
@@ -68,7 +72,7 @@ bool VoxelInfo::setInsideness(Corner::CornerType c, double oldInsideness, double
  * @see #updateInsideness
  */
 void VoxelInfo::reset() {
-	this->insideCornerNumber = 0;
+	this->insideCorners = 0x00;
 }
 
 bool VoxelInfo::updateInsideness(Corner::CornerType c, double insideness) {
@@ -111,10 +115,12 @@ double VoxelInfo::getInsideness(u_char i) const {
 }
 
 bool VoxelInfo::setInsideness(u_char i, double newInsideness) {
+	assert(i < 8); // MUST be less than 8 (strictly) due to shift op
+	
 	insideness[i] = newInsideness;
 	
 	if (isInside(newInsideness)) {
-		++insideCornerNumber;
+		insideCorners |= (0x01 << i);
 		return true;
 	}
 	
@@ -122,10 +128,11 @@ bool VoxelInfo::setInsideness(u_char i, double newInsideness) {
 }
 
 bool VoxelInfo::setInsideness(u_char i, double oldInsideness, double newInsideness) {
+	assert(i < 8); // MUST be less than 8 (strictly) due to shift op
 	insideness[i] = fmax(oldInsideness, newInsideness);
 	
 	if (isInside(insideness[i])) {
-		++insideCornerNumber;
+		insideCorners |= (0x01 << i);
 		return true;
 	}
 	
@@ -140,7 +147,7 @@ bool VoxelInfo::updateInsideness(u_char i, double oldInsideness, double newInsid
 	insideness[i] = fmax(oldInsideness, newInsideness);
 	
 	if ((!isInside(oldInsideness)) && isInside(newInsideness)) {
-		++insideCornerNumber;
+		insideCorners |= (0x01 << i);
 		return true;
 	} /* there is no else clause because function used for update is a MAX
 	 * so previously inside corners cannot fall outside

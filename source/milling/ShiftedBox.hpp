@@ -96,19 +96,28 @@ public:
 	 * @return
 	 */
 	SimpleBox::CornerMatrixPtr getCornerMatrix(const Eigen::Isometry3d &rototras) const {
-		/* total isometry equals given one plus this box translation
-		 */
-		Eigen::Isometry3d totIsometry; totIsometry = rototras * this->shift.cast< double >();
+		Eigen::Isometry3d totIsometry;
+		buildTotIsometry(rototras, totIsometry);
 		
 		return this->simpleBox->getCorners(totIsometry);
 	}
 	
 	void buildCornerMatrix(const Eigen::Isometry3d &rototras, SimpleBox::CornerMatrix &out) const {
-		/* total isometry equals given one plus this box translation
-		 */
-		Eigen::Isometry3d totIsometry; totIsometry = rototras * this->shift.cast< double >();
+		Eigen::Isometry3d totIsometry;
+		buildTotIsometry(rototras, totIsometry);
 		
 		this->simpleBox->buildCorners(totIsometry, out);
+	}
+	
+	Eigen::Vector3d getCorner(const Corner::CornerType &corner, const Eigen::Isometry3d &rototras) const {
+		Eigen::Isometry3d totIsometry;
+		buildTotIsometry(rototras, totIsometry);
+		
+		return this->simpleBox->getCorner(corner, totIsometry);
+	}
+	
+	Eigen::Vector3d getCorner(const Corner::CornerType &corner) {
+		return this->simpleBox->getCorner(corner);
 	}
 	
 	Eigen::Translation3d getShift() const {
@@ -265,6 +274,14 @@ public:
 				<< sbox.shift.translation().transpose() << ")]";
 		
 		return os;
+	}
+	
+private:
+	
+	void buildTotIsometry(const Eigen::Isometry3d &inIsom, Eigen::Isometry3d &totIsom) const {
+		/* total isometry equals given one plus this box translation
+		 */
+		totIsom = inIsom * this->shift.cast< double >();
 	}
 	
 };

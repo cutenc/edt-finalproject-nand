@@ -37,6 +37,8 @@ struct MyData {
 
 int main(int argc, const char **argv) {
 	
+	Eigen::initParallel();
+	
 	cout << "epsilon double: " << numeric_limits<double>::epsilon() << endl;
 	cout << "epsilon float: " << numeric_limits<float>::epsilon() << endl;
 //	double BOOST_PI = boost::math::constants::pi< double >();
