@@ -110,6 +110,14 @@ bool VoxelInfo::isInside(double d) {
 	return d >= 0;
 }
 
+void setMesh(OSGMesh m) {
+	mesh = m;
+}
+
+OSGMesh getMesh() {
+	return mesh;
+}
+
 double VoxelInfo::getInsideness(u_char i) const {
 	return insideness[i];
 }

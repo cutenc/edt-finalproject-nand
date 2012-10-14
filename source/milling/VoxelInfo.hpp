@@ -15,6 +15,7 @@
 #include <cmath>
 
 #include "Corner.hpp"
+#include "common/OSGMesh.hpp"
 #include "common/Utilities.hpp"
 
 class VoxelInfo {
@@ -23,6 +24,7 @@ private:
 	// updated by updateInsideness(u_char, double) function
 	u_char insideCorners;
 	double insideness[Corner::N_CORNERS];
+	OSGMesh mesh;
 	
 public:
 	
@@ -103,6 +105,10 @@ public:
 	
 	static bool isInside(double d);
 	
+	void setMesh(OSGMesh m);
+
+	OSGMesh getMesh();
+
 private:
 	
 	double getInsideness(u_char i) const;
