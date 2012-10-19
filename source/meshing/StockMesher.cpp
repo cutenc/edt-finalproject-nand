@@ -17,9 +17,9 @@ StockMesher::StockMesher() {
 StockMesher::~StockMesher() {
 }
 
-Mesh::Ptr StockMesher::buildMesh(const VoxelInfoDataView &data) {
+Mesh::Ptr StockMesher::buildMesh(const StoredData &data) {
 	std::stringstream ss;
-	ss << "# of leaves: " << data.getStoredData()->size();
+	ss << "# of data=" << data.getData()->size();
 	
 	return boost::make_shared< StockMesh >(ss.str());
 }

@@ -1,18 +1,20 @@
 
 SET (milling_SRC
 # add here both your sources (cpp) and header (hpp) files
+Adjacencies.cpp
+Adjacencies.hpp
 Corner.hpp
 Cutter.cpp
 Cutter.hpp
 cutters.hpp
+IntersectionResult.cpp
+IntersectionResult.hpp
 MillingAlgorithm.cpp
 MillingAlgorithm.hpp
 MillingAlgorithmConf.hpp
 MillingResult.hpp
 octree_nodes.hpp
-octree_tickets.hpp
 Octree.hpp
-# PtrVersioner.hpp
 ShiftedBox.hpp
 SimpleBox.hpp
 Stock.cpp

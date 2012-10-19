@@ -8,8 +8,10 @@
 #ifndef CORNER_HPP_
 #define CORNER_HPP_
 
+#include <sys/types.h>
 #include <iterator>
 #include <stdexcept>
+#include <cassert>
 
 class Corner {
 	

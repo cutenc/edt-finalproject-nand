@@ -26,7 +26,6 @@
 
 #include "common/AtomicNumber.hpp"
 #include "octree_nodes.hpp"
-#include "octree_tickets.hpp"
 #include "Voxel.hpp"
 
 
@@ -56,9 +55,7 @@ public:
 		return elm->second;
 	}
 	
-	ShiftedBox::ConstPtr getShiftedBox(u_int depth,
-			const Eigen::Translation3d &shift = Eigen::Translation3d::Identity()) const {
-		
+	ShiftedBox::ConstPtr getShiftedBox(u_int depth, const Eigen::Translation3d &shift) const {
 		return boost::make_shared< ShiftedBox >(getSimpleBox(depth), shift);
 	}
 	
@@ -86,64 +83,39 @@ private:
 	}
 };
 
-template < typename LeafType >
 class StoredData {
 	
 public:
-	typedef std::pair< 
-			ShiftedBox::ConstPtr,
-			typename LeafType::DataConst > VoxelPair;
+	typedef std::pair< ShiftedBox::Ptr, VoxelInfo > VoxelPair;
 	typedef std::deque< VoxelPair > VoxelData;
 	typedef boost::shared_ptr< VoxelData > VoxelDataPtr;
 	
-private:
-	const VoxelDataPtr newData;
-	const VoxelDataPtr updatedData;
-	const VoxelDataPtr deletedData;
-	
 public:
-	StoredData(const VoxelDataPtr &newData,
-			const VoxelDataPtr &updatedData,
-			const VoxelDataPtr &deletedData) :
-		newData(newData), updatedData(updatedData), deletedData(deletedData)
-	{
-		
-	}
+	VoxelDataPtr data;
+	
+	StoredData() :
+		data(boost::make_shared< VoxelData >())
+	{ }
+	
+	StoredData(const VoxelDataPtr &data) :
+		data(data)
+	{ }
 	
 	virtual ~StoredData() { }
 	
-	VoxelDataPtr getNewData() const {
-		
+	VoxelDataPtr getData() const {
+		return data;
 	}
 	
-	VoxelDataPtr getUpdatedData() const {
-		
-	}
-	
-	VoxelDataPtr getDeletedData() const {
-		
-	}
 };
 
 
-/**
- * Implementation of the Octree data structure.
- * This implementation permits a bit of concurrency in that a thread polling
- * #getStoredData(bool) method will always optain a consistent state of the
- * Octree even if another thread is modifying it throug method
- * #processIntersectingLeaves. After any change made to the tree the method
- * #notifyChanges should be called
- */
-template <typename DataT, typename data_traits = DataTraits< DataT > >
+
 class Octree {
 	
 public:
-	typedef LeafNode< DataT, data_traits > LeafType;
-	typedef typename LeafType::Ptr LeafPtr;
-	typedef typename LeafType::ConstPtr LeafConstPtr;
-	
-	typedef typename LeafType::DataRef DataRef;
-	typedef typename LeafType::DataConstRef DataConstRef;
+	typedef typename LeafNode::Ptr LeafPtr;
+	typedef typename LeafNode::ConstPtr LeafConstPtr;
 	
 	typedef BranchNode::Ptr BranchPtr;
 	typedef BranchNode::ConstPtr BranchConstPtr;
@@ -156,19 +128,6 @@ public:
 	typedef boost::array< LeafPtr, BranchNode::N_CHILDREN > LeavesArray;
 	typedef boost::shared_ptr< LeavesArray > LeavesArrayPtr;
 	
-	typedef StoredData< LeafType > DataView;
-	
-	enum OperationType {
-		NO_OP,
-		PUSH_LEAF,
-		DELETE_LEAF,
-		UPDATED_DATA
-	};
-	
-	typedef boost::function< bool (OctreeNode::ConstPtr) > BranchChoserFunction;
-	typedef boost::function< bool (LeafConstPtr) > LeafChoserFunction;
-	typedef boost::function< OperationType (LeafPtr) > LeafProcesserFunction;
-	
 private:
 	typedef AtomicNumber<u_int> Versioner;
 	typedef boost::lock_guard< boost::mutex > LockGuard;
@@ -178,15 +137,9 @@ private:
 	const Eigen::Vector3d EXTENT;
 	const u_int MAX_DEPTH;
 	const SimpleBoxCache BOX_CACHE;
-	const boost::shared_ptr< LeafType > LEAVES_LIST;
 	BranchPtr ROOT;
 	
-	mutable boost::mutex treeTotalMutex;
 	Versioner versioner;
-	
-	/* Guarded-by #treeTotalMutex
-	 */
-	u_int lastRetrievedDataVersion;
 	
 public:
 	
@@ -194,11 +147,7 @@ public:
 			EXTENT(extent),
 			MAX_DEPTH(maxDepth),
 			BOX_CACHE(extent, maxDepth),
-			LEAVES_LIST(
-					boost::make_shared< LeafType >(
-							BOX_CACHE.getShiftedBox(0)
-							)
-						)
+			versioner(1)
 	{
 		
 		GeometryUtils::checkExtent(EXTENT);
@@ -206,8 +155,9 @@ public:
 		/* create a FAKE root, link it with the leaves list and then "push"
 		 * it to get a branch (REAL root) and it's first children level
 		 */
-		boost::shared_ptr< LeafType > fakeRoot = 
-				boost::make_shared< LeafType >(BOX_CACHE.getShiftedBox(0));
+		boost::shared_ptr< LeafNode > fakeRoot = 
+				boost::make_shared< LeafNode >(BOX_CACHE.getShiftedBox(0,
+						Eigen::Translation3d::Identity()), versioner.get());
 		
 		PushedLevel level = createLevel(fakeRoot.get(), versioner.get());
 		
@@ -219,159 +169,61 @@ public:
 		delete ROOT;
 	}
 	
-	void processTree(BranchChoserFunction branchChoser,
-			LeafProcesserFunction leafProcesser,
-			LeafChoserFunction leafChoser) {
-		
-		LockGuard l(treeTotalMutex);
-		
-		processTreeImpl(branchChoser, leafProcesser, leafChoser);
-		
-		versioner.incAndGet();
-	}
-	
-	/**
-	 * Returns all data contained inside octree leafs: if you activate the
-	 * onlyIfChanged flag, data will be returned only if octree state changed
-	 * since last time the method was invoked with the flag on, otherwise
-	 * an empty collection is returned.
-	 * 
-	 * @param onlyIfChanged
-	 * @return
-	 */
-	DataView getModifiedData() {
-		
-		LockGuard l(treeTotalMutex);
-		
-		lastRetrievedDataVersion = versioner.get();
-		
-		/* TODO
-		 * define functions to parse tree and acquire modified data,
-		 * then call processTreeImp
-		 */
-		
-		
-		// TODO
-		throw std::runtime_error("NOT IMPLEMENTED YET");
-	}
-	
-	
-private:
 	
 	inline
 	BranchPtr getRoot() const {
 		return ROOT;
 	}
 	
-	inline
-	LeafPtr getLeavesListHead() const {
-		return LEAVES_LIST.get();
+	void updateData(LeafPtr lpt) {
+		// TODO
+//		lpt->setFirstChangeVersion(lastRetrievedDataVersion, versioner.get());
 	}
 	
-	void processTreeImpl(BranchChoserFunction branchChoser,
-			LeafProcesserFunction leafProcesser,
-			LeafChoserFunction leafChoser) {
-		
-		BranchPtr root = this->getRoot();
-		if (branchChoser(root)) {
-			processTreeRecursive(root, branchChoser, leafProcesser, leafChoser);
-		}
-		
+	void deleteLeaf(LeafPtr &lpt) {
+		// TODO lpt->delete callback
+		deleteNode(lpt);
 	}
 	
-	void processTreeRecursive(BranchPtr branch,
-			const BranchChoserFunction &branchChoser,
-			const LeafProcesserFunction &leafProcesser,
-			const LeafChoserFunction &leafChoser) {
-		
-		assert(!branch->isEmpty());
-		
-		for(u_char c = 0; c < BranchNode::N_CHILDREN; ++c) {
-			if (!branch->hasChild(c)) {
-				continue;
-			}
-			
-			OctreeNode::Ptr child = branch->getChild(c);
-			switch (child->getType()) {
-				case OctreeNode::BRANCH_NODE:
-				{
-					BranchPtr bpt = static_cast< BranchPtr >(child);
-					if (branchChoser(bpt)) {
-						processTreeRecursive(bpt, branchChoser, leafProcesser, leafChoser);
-						
-						if (bpt->isEmpty()) {
-							// I have to signal nothing when an internal node is deleted
-							PurgeNodeTicket::purgeNode(bpt);
-						}
-					}
-				}
-					break;
-				case OctreeNode::LEAF_NODE:
-				{
-					LeafPtr lpt = static_cast< LeafPtr >(child);
-					
-					if (!leafChoser(lpt)) {
-						continue;
-					}
-					
-					OperationType op = leafProcesser(lpt);
-					
-					switch (op) {
-						case NO_OP:
-							// nothing to do
-							break;
-							
-						case UPDATED_DATA:
-							// nothing to do even here, just update versioning
-							lpt->setFirstChangeVersion(lastRetrievedDataVersion, versioner.get());
-							break;
-							
-						case DELETE_LEAF:
-							// TODO implement change notification
-							PurgeNodeTicket::purgeNode(lpt);
-							break;
-							
-						case PUSH_LEAF: {
-							// TODO implement change notif
-							PushedLevel newLevel = createLevel(lpt, versioner.get());
-							PushLevelTicket< LeafType >::attachBranch(lpt, newLevel.newBranch);
-							
-							processTreeRecursive(newLevel.newBranch,
-									branchChoser,
-									leafProcesser,
-									leafChoser);
-							
-							if (newLevel.newBranch->isEmpty()) {
-								/* entering here means that a voxel has been split because
-								 * it was intersecting-not-contained but children processing
-								 * discovers that they are all inside. From a mathematical point
-								 * of view this is an absurd but it may happen due to float/double
-								 * approximation errors. To take into account such errors we
-								 * introduce a "truncation" in distance calculation trying to make
-								 * impossible that such an event happens.
-								 */
-								std::cerr << "Floating point approximation error" << std::endl;
-								
-								PurgeNodeTicket::purgeNode(newLevel.newBranch);
-							}
-							
-							break;
-						}
-							
-						default:
-							throw std::runtime_error("operation unknown");
-					}
-					
-				}
-					break;
-					
-				default:
-					throw std::runtime_error("node type not registered");
-			}
-		}
+	void deleteBranch(BranchPtr &bpt) {
+		// I have to signal nothing when an internal node is deleted
+		deleteNode(bpt);
 	}
 	
+	BranchNode::Ptr pushLeaf(LeafPtr &lpt) {
+		
+		// TODO
+//		lpt->getFather()->setFirstChangeVersion(lastRetrievedDataVersion, versioner.get());
+		
+		PushedLevel newLevel = createLevel(lpt, versioner.get());
+		
+		// now attach branch to the tree
+		BranchNode::Ptr father = static_cast< BranchNode::Ptr >(lpt->getFather());
+		assert(father == newLevel.newBranch->getFather());
+		
+		u_char leafIdx = lpt->getChildIdx();
+		
+		// then delete leaf from father
+		father->deleteChild(leafIdx);
+		
+		// then set newBranch as father's child
+		father->setChild(leafIdx, newLevel.newBranch);
+		
+		// then free leaf's memory (no longer needed)
+		delete lpt; lpt = NULL;
+		
+		return newLevel.newBranch;
+	}
 	
+private:
+	void deleteNode(OctreeNode::Ptr node) {
+		// tells father to forget its children
+		BranchNode::Ptr bnp = static_cast< BranchNode::Ptr >(node->getFather());
+		bnp->deleteChild(node->getChildIdx());
+		
+		// then free leaf's memory (no longer needed)
+		delete node;
+	}
 	
 	struct PushedLevel {
 		PushedLevel() : newLeaves(boost::make_shared< LeavesArray >()) { }
@@ -397,7 +249,7 @@ private:
 		
 		// first create new branch node that will replace given leaf
 		if (leaf->isRoot()) {
-			toRet.newBranch = new BranchNode(leaf->getBox());
+			toRet.newBranch = new BranchNode(leaf->getBox(), currVersion);
 		} else {
 			toRet.newBranch = new BranchNode(leaf->getFather(),
 				leaf->getChildIdx(),
@@ -422,28 +274,28 @@ private:
 					traslation *= -1;
 					break;
 				case 1:
-					traslation[1] = boost::math::changesign(traslation[1]);
-					traslation[2] = boost::math::changesign(traslation[2]);
+					traslation[1] *= -1;
+					traslation[2] *= -1;
 					break;
 				case 2:
-					traslation[2] = boost::math::changesign(traslation[2]);
+					traslation[2] *= -1;
 					break;
 				case 3:
-					traslation[0] = boost::math::changesign(traslation[0]);
-					traslation[2] = boost::math::changesign(traslation[2]);
+					traslation[0] *= -1;
+					traslation[2] *= -1;
 					break;
 				case 4:
-					traslation[0] = boost::math::changesign(traslation[0]);
-					traslation[1] = boost::math::changesign(traslation[1]);
+					traslation[0] *= -1;
+					traslation[1] *= -1;
 					break;
 				case 5:
-					traslation[1] = boost::math::changesign(traslation[1]);
+					traslation[1] *= -1;
 					break;
 				case 6:
 					// all positive
 					break;
 				case 7:
-					traslation[0] = boost::math::changesign(traslation[0]);
+					traslation[0] *= -1;
 					break;
 					
 				default:
@@ -454,11 +306,11 @@ private:
 			// create shifted box for the child
 			ShiftedBox newBox = baseSBox.getShifted(Eigen::Translation3d(traslation));
 			
-			LeafPtr child = new LeafType(
+			LeafPtr child = new LeafNode(
 					toRet.newBranch,
 					i,
 					boost::make_shared< ShiftedBox >(newBox),
-					newDepth, currVersion);
+					currVersion);
 			
 			toRet.newBranch->setChild(i, child);
 			

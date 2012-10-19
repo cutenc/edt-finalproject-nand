@@ -14,6 +14,7 @@
 #include <boost/math/constants/constants.hpp>
 #include <boost/thread.hpp>
 
+#include <Eigen/Core>
 #include <Eigen/Geometry>
 
 #include "configuration/ConfigFileParser.hpp"
@@ -28,16 +29,9 @@
 using namespace std;
 using namespace Eigen;
 
-void printA(ostream &c) { c << "a" << endl; }
-void printB(ostream &c) { c << "b" << endl; }
-
-struct MyData {
-	int value;
-};
-
 int main(int argc, const char **argv) {
 	
-	Eigen::initParallel();
+//	initParallel();
 	
 	cout << "epsilon double: " << numeric_limits<double>::epsilon() << endl;
 	cout << "epsilon float: " << numeric_limits<float>::epsilon() << endl;
@@ -423,32 +417,32 @@ int main(int argc, const char **argv) {
 	
 	boost::thread millerThrd(boost::ref(miller));
 	boost::thread mesherThrd(boost::ref(mesher));
-	char c;
-	do {
-		cin >> c;
-		switch (c) {
-			case 'q':
-				controller->stop();
-				break;
-			case 'n':
-				controller->stepOnce();
-				break;
-			case 'g':
-				controller->play();
-				break;
-			case 'p':
-				controller->pause();
-				break;
-			case 'r':
-				controller->resume();
-				break;
-			default:
-				cout << "key not registered" << endl;
-				break;
-		}
-	} while (c != 'q');
-	
-	cout << "exiting main & waiting for miller thread..." << endl;
+//	char c;
+//	do {
+//		cin >> c;
+//		switch (c) {
+//			case 'q':
+//				controller->stop();
+//				break;
+//			case 'n':
+//				controller->stepOnce();
+//				break;
+//			case 'g':
+//				controller->play();
+//				break;
+//			case 'p':
+//				controller->pause();
+//				break;
+//			case 'r':
+//				controller->resume();
+//				break;
+//			default:
+//				cout << "key not registered" << endl;
+//				break;
+//		}
+//	} while (c != 'q');
+//	
+//	cout << "exiting main & waiting for miller thread..." << endl;
 	millerThrd.join();
 	cout << "miller ended, now waiting for mesher..." << endl;
 	mesherThrd.join();

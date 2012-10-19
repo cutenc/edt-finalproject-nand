@@ -69,30 +69,13 @@ public:
 		return os;
 	}
 	
-	Eigen::Vector3d getCorner(Corner::CornerType type, const Eigen::Isometry3d &isometry) const {
-		return isometry * getSimpleCorner(type);
-	}
 	
-	Eigen::Vector3d getCorner(Corner::CornerType type) const {
+	CornerMatrix::ConstColXpr getCorner(Corner::CornerType type) const {
 		return getSimpleCorner(type);
-	}
-	
-	CornerMatrixPtr getCorners(const Eigen::Isometry3d &isometry) const {
-		
-		CornerMatrixPtr corners = boost::allocate_shared< CornerMatrix,
-				CornerMatrixAllocator >( CornerMatrixAllocator() );
-		
-		buildCorners(isometry, *corners);
-		
-		return corners;
 	}
 	
 	CornerMatrixConstPtr getCorners() const {
 		return this->CORNERS;
-	}
-	
-	void buildCorners(const Eigen::Isometry3d &isometry, CornerMatrix &out) const {
-		out.noalias() = isometry * (*this->CORNERS);
 	}
 	
 	double getVolume() const {
@@ -102,7 +85,7 @@ public:
 	
 protected:
 	
-	Eigen::Vector3d getSimpleCorner(Corner::CornerType type) const {
+	CornerMatrix::ConstColXpr getSimpleCorner(Corner::CornerType type) const {
 		u_char nCorner = static_cast<u_char>(type);
 		
 		return CORNERS->col(nCorner);
@@ -137,25 +120,25 @@ private:
 				corner *= -1;
 				break;
 			case Corner::BottomFrontRight:
-				corner[1] = boost::math::changesign(corner[1]);
-				corner[2] = boost::math::changesign(corner[2]);
+				corner[1] *= -1;
+				corner[2] *= -1;
 				break;
 			case Corner::BottomRearLeft:
-				corner[0] = boost::math::changesign(corner[0]);
-				corner[2] = boost::math::changesign(corner[2]);
+				corner[0] *= -1;
+				corner[2] *= -1;
 				break;
 			case Corner::BottomRearRight:
-				corner[2] = boost::math::changesign(corner[2]);
+				corner[2] *= -1;
 				break;
 			case Corner::UpperFrontLeft:
-				corner[0] = boost::math::changesign(corner[0]);
-				corner[1] = boost::math::changesign(corner[1]);
+				corner[0] *= -1;
+				corner[1] *= -1;
 				break;
 			case Corner::UpperFrontRight:
-				corner[1] = boost::math::changesign(corner[1]);
+				corner[1] *= -1;
 				break;
 			case Corner::UpperRearLeft:
-				corner[0] = boost::math::changesign(corner[0]);
+				corner[0] *= -1;
 				break;
 			case Corner::UpperRearRight:
 				// ok: all positive

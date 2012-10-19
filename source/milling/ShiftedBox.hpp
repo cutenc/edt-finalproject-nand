@@ -27,8 +27,10 @@ public:
 	typedef Eigen::Translation<long double, 3> Translation3ld;
 	typedef Eigen::Matrix<long double, 3, 1> Vector3ld;
 	
-private:
+//	typedef Eigen::Matrix<double, 3, 2> MinMaxMatrix;
+//	typedef boost::shared_ptr< const MinMaxMatrix > MinMaxMPtr;
 	
+private:
 	const SimpleBox::ConstPtr simpleBox;
 	
 	/* we decide to keep translation as a long double because the getShifted()
@@ -42,25 +44,21 @@ private:
 	 */
 	const Translation3ld shift;
 	
+//	const MinMaxMPtr minMax;
 	
-//	const Eigen::Vector3d thisMin;
-//	const Eigen::Vector3d thisMax;
 	
 public:
-	ShiftedBox(const SimpleBox::ConstPtr &box,
-			const Eigen::Translation3d &tras = Eigen::Translation3d::Identity()) :
+	ShiftedBox(const SimpleBox::ConstPtr &box, const Eigen::Translation3d &tras) :
 			simpleBox(box), shift(tras.cast< long double >())
-	
-//			,thisMin(simpleBox->getCorner(Corner::BottomFrontLeft) + shift.cast< double >().translation()),
-//			thisMax(simpleBox->getCorner(Corner::UpperRearRight) + shift.cast< double >().translation())
+			
+//			,minMax(buildMinMax(box, tras))
 	{ }
 	
 	explicit
 	ShiftedBox(const SimpleBox::ConstPtr &box, const Translation3ld &tras) :
 			simpleBox(box), shift(tras)
 	
-//			,thisMin(simpleBox->getCorner(Corner::BottomFrontLeft) + shift.cast< double >().translation()),
-//			thisMax(simpleBox->getCorner(Corner::UpperRearRight) + shift.cast< double >().translation())
+//			,minMax(buildMinMax(box, tras.cast< double >()))
 	{ }
 	
 	virtual ~ShiftedBox() { }
@@ -84,40 +82,8 @@ public:
 		return ShiftedBox(newSize, this->shift);
 	}
 	
-	/**
-	 * 
-	 * @param rototras isometric transformation expressed in this ShiftedBox
-	 * basis: pay attention that total isometry will be
-	 * \code
-	 * rototras * this->shift
-	 * \endcode
-	 * that is, it will convert corners from current basis, according to
-	 * given isometry.
-	 * @return
-	 */
-	SimpleBox::CornerMatrixPtr getCornerMatrix(const Eigen::Isometry3d &rototras) const {
-		Eigen::Isometry3d totIsometry;
-		buildTotIsometry(rototras, totIsometry);
-		
-		return this->simpleBox->getCorners(totIsometry);
-	}
-	
-	void buildCornerMatrix(const Eigen::Isometry3d &rototras, SimpleBox::CornerMatrix &out) const {
-		Eigen::Isometry3d totIsometry;
-		buildTotIsometry(rototras, totIsometry);
-		
-		this->simpleBox->buildCorners(totIsometry, out);
-	}
-	
 	Eigen::Vector3d getCorner(const Corner::CornerType &corner, const Eigen::Isometry3d &rototras) const {
-		Eigen::Isometry3d totIsometry;
-		buildTotIsometry(rototras, totIsometry);
-		
-		return this->simpleBox->getCorner(corner, totIsometry);
-	}
-	
-	Eigen::Vector3d getCorner(const Corner::CornerType &corner) {
-		return this->simpleBox->getCorner(corner);
+		return (rototras * shift.cast< double >()) * simpleBox->getCorner(corner);
 	}
 	
 	Eigen::Translation3d getShift() const {
@@ -278,11 +244,42 @@ public:
 	
 private:
 	
-	void buildTotIsometry(const Eigen::Isometry3d &inIsom, Eigen::Isometry3d &totIsom) const {
-		/* total isometry equals given one plus this box translation
-		 */
-		totIsom = inIsom * this->shift.cast< double >();
-	}
+//	static Eigen::Vector3d getCorner(const Corner::CornerType &c,
+//			const MinMaxMatrix &minMax) {
+//		
+//		// with this matrix i choose wether to use MIN or MAX columns
+//		static int minMaxLookupCol[][3] = {
+//			/*	 X  Y  Z	*/
+//		/*BFL*/	{0, 0, 0},
+//		/*BFR*/	{1, 0, 0},
+//		/*BRR*/	{1, 1, 0},
+//		/*BRL*/	{0, 1, 0},
+//		/*UFL*/	{0, 0, 1},
+//		/*UFR*/	{1, 0, 1},
+//		/*URR*/	{1, 1, 1},
+//		/*URL*/	{0, 1, 1}
+//		};
+//		
+//		int cIdx = static_cast< int >(c);
+//		return Eigen::Vector3d(
+//			minMax(0, minMaxLookupCol[cIdx][0]),
+//			minMax(1, minMaxLookupCol[cIdx][1]),
+//			minMax(2, minMaxLookupCol[cIdx][2])
+//		);
+//	}
+	
+//	inline
+//	static MinMaxMPtr buildMinMax(const SimpleBox::ConstPtr &box, const Eigen::Translation3d &tras) {
+//		
+//		boost::shared_ptr< MinMaxMatrix > m = boost::allocate_shared< MinMaxMatrix, Eigen::aligned_allocator < MinMaxMatrix > >(
+//					Eigen::aligned_allocator < MinMaxMatrix >()
+//				);
+//		
+//		m->col(0) = box->getCorner(Corner::BottomFrontLeft) + tras.translation();
+//		m->col(1) = box->getCorner(Corner::UpperRearRight) + tras.translation();
+//		
+//		return m;
+//	}
 	
 };
 

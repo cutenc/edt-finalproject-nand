@@ -85,8 +85,8 @@ public:
 		 * 
 		 * http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
 		 */
-		double secondTerm = boost::math::pow< 2 >((double)point[0]) 
-				+ (point[1] + RADIUS) * (point[2] - RADIUS);
+		double secondTerm = boost::math::pow< 2 >((double)point[0])
+				+ (point[1] + RADIUS) * (point[1] - RADIUS);
 		
 		double distance = fmax(firstTerm, secondTerm);
 		

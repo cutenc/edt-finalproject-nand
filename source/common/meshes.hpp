@@ -24,6 +24,15 @@ public:
 	}
 };
 
+class OSGMesh : public Mesh {
+public:
+	OSGMesh(osg::ref_ptr<osg::Geode> g){
+		geode = g;
+	}
+	virtual ~OSGMesh();
+
+	osg::ref_ptr<osg::Geode> geode;
+};
 
 class StubMesh : public Mesh {
 	

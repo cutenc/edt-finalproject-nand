@@ -21,12 +21,6 @@ public:
 public:
 	Mesh() { }
 	virtual ~Mesh() { }
-	
-	virtual std::ostream & toOutStream(std::ostream &os) const =0;
-		
-	friend std::ostream & operator<<(std::ostream &os, const Mesh &c) {
-		return c.toOutStream(os);
-	}
 };
 
 #endif /* MESH_HPP_ */

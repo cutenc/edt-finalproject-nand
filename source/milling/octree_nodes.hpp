@@ -20,6 +20,8 @@
 #include "common/Point3D.hpp"
 #include "common/Utilities.hpp"
 #include "ShiftedBox.hpp"
+#include "Adjacencies.hpp"
+#include "VoxelInfo.hpp"
 
 class OctreeNode {
 	
@@ -44,19 +46,20 @@ private:
 	const u_char childIdx;
 	const ShiftedBox::ConstPtr sbox;
 	const u_long NODE_ID;
-	const u_int CREATION_VERSION;
+	const u_char DEPTH;
 	
 	u_int firstChangeVersion;
 	
 public:
-	OctreeNode(const ShiftedBox::ConstPtr &box) : father(), childIdx(255), sbox(box),
-			NODE_ID(NodeIDs::getNodeID())
+	OctreeNode(const ShiftedBox::ConstPtr &box, u_int version) :
+		father(), childIdx(255), sbox(box), NODE_ID(NodeIDs::getNodeID()),
+		DEPTH(0), firstChangeVersion(version)
 	{ }
 	
 	OctreeNode(const OctreeNode::Ptr &father, u_char childIdx,
 			const ShiftedBox::ConstPtr &sbox, u_int creationVersion) :
 			father(father), childIdx(childIdx), sbox(sbox),
-			NODE_ID(NodeIDs::getNodeID()), CREATION_VERSION(creationVersion),
+			NODE_ID(NodeIDs::getNodeID()), DEPTH(father->getDepth() + 1),
 			firstChangeVersion(creationVersion)
 	{
 		
@@ -96,10 +99,7 @@ public:
 	
 	inline
 	virtual u_int getDepth() const {
-		if (isRoot())
-			return 0;
-		else
-			return 1 + getFather()->getDepth();
+		return this->DEPTH;
 	}
 	
 	inline
@@ -108,7 +108,7 @@ public:
 	}
 	
 	inline
-	void setFirstChangeVersion(u_long minVersion, u_long currVersion) {
+	void setFirstChangeVersion(u_int minVersion, u_int currVersion) {
 		if (firstChangeVersion > minVersion) {
 			// we already set our 'first change' version
 			return;
@@ -123,11 +123,29 @@ public:
 		}
 	}
 	
+	inline
+	u_int getFirstChangeVersion() const {
+		return this->firstChangeVersion;
+	}
+	
 	virtual std::ostream & toOutStream(std::ostream &os) const =0;
 	
 	friend std::ostream & operator<<(std::ostream & os, const OctreeNode& node) {
 		return node.toOutStream(os);
 	}
+	
+	OctreeNode::Ptr getAdjacent(Adjacencies::Direction dir) {
+		assert(!isRoot());
+		
+		std::vector<u_char> path;
+		return getFather()->getAdjacentUp(getChildIdx(), dir, path);
+	}
+	
+	virtual OctreeNode::Ptr getAdjacentUp(u_char childIdx,
+			const Adjacencies::Direction &dir,
+			std::vector< u_char > &path) =0;
+	
+	virtual OctreeNode::Ptr getAdjacentDown(std::vector< u_char > &path) =0;
 };
 
 
@@ -142,10 +160,14 @@ public:
 	
 private:
 	boost::array< OctreeNode::Ptr, N_CHILDREN > children;
+	
 	u_char removedChildren;
 	
 public:
-	BranchNode(const ShiftedBox::ConstPtr &box) : OctreeNode(box) { initChildren(); }
+	BranchNode(const ShiftedBox::ConstPtr &box, u_int version) :
+		OctreeNode(box, version)
+	{ initChildren(); }
+	
 	BranchNode(OctreeNode::Ptr father, u_char childIdx, const ShiftedBox::ConstPtr &sbox, u_int creationVersion) : 
 		OctreeNode(father, childIdx, sbox, creationVersion) { initChildren(); }
 	
@@ -207,50 +229,6 @@ public:
 		(this->children)[i] = child;
 	}
 	
-	/**
-	 * Returns the first (left-most) child node with given type or \c NULL if
-	 * no such child can be found
-	 * @param type
-	 * @return
-	 */
-	inline
-	OctreeNode::Ptr getFirst(OctreeNodeType type) const {
-		for (u_char i = 0; i < N_CHILDREN; ++i) {
-			if (hasChild(i)) {
-				OctreeNode::Ptr child = getChild(i);
-				if (child->getType() == type)
-					return child;
-				
-				if (child->getType() == this->getType())
-					return (dynamic_cast< BranchNode::Ptr >(child))->getFirst(type);
-			}
-		}
-		
-		return NULL;
-	}
-	
-	/**
-	 * Returns the first (left-most) child node with given type or \c NULL if
-	 * no such child can be found
-	 * @param type
-	 * @return
-	 */
-	inline
-	OctreeNode::Ptr getLast(OctreeNodeType type) const {
-		for (int i = N_CHILDREN - 1; i >= 0; --i) {
-			if (hasChild(i)) {
-				OctreeNode::Ptr child = getChild(i);
-				if (child->getType() == type)
-					return child;
-				
-				if (child->getType() == this->getType())
-					return (dynamic_cast< BranchNode::Ptr >(child))->getLast(type);
-			}
-		}
-		
-		return NULL;
-	}
-	
 	virtual std::ostream & toOutStream(std::ostream &os) const {
 		u_int depth = this->getDepth();
 		
@@ -280,6 +258,55 @@ public:
 		return os;
 	}
 	
+	virtual OctreeNode::Ptr getAdjacentUp(u_char childIdx, const Adjacencies::Direction &dir,
+			std::vector< u_char > &path) {
+		
+		Adjacencies::Adjacency adj = Adjacencies::getAdjacent(
+				childIdx,
+				dir
+		);
+		
+		switch (adj.second) {
+			case Adjacencies::LOCAL: {
+				if (hasChild(adj.second)) {
+					return getChild(adj.second)->getAdjacentDown(path);
+				} else {
+					/* there's a hole in the octree structure: the nearest
+					 * voxel in asked direction is this one.
+					 */
+					return this;
+				}
+			}
+			
+			case Adjacencies::EXTERN: {
+				if(isRoot()) {
+					// asking for a voxel outside the octree: there's none
+					return NULL;
+				}
+				
+				path.push_back(adj.second);
+				return getFather()->getAdjacentUp(getChildIdx(), dir, path);
+			}
+			
+			default:
+				throw std::runtime_error("Unknown adj type");
+		}
+	}
+	
+	virtual OctreeNode::Ptr getAdjacentDown(std::vector< u_char > &path) {
+		if (path.empty()) {
+			return this;
+		}
+		
+		u_char pChild = path.back(); path.pop_back();
+		if (hasChild(pChild)) {
+			return getChild(pChild)->getAdjacentDown(path);
+		} else {
+			return this;
+		}
+		
+	}
+	
 private:
 	void initChildren() {
 		for (u_char i = 0; i < N_CHILDREN; i++)
@@ -289,53 +316,28 @@ private:
 	}
 };
 
-template < typename DataT >
-struct DataTraits {
-	typedef DataT type;
-	typedef const DataT const_type;
-	typedef DataT & reference;
-	typedef const DataT & const_reference;
-	
-	static const_reference DEFAULT_DATA() {
-		static const_type DATA;
-		return DATA;
-	}
-};
 
-template <typename DataT, typename data_traits = DataTraits< DataT> >
 class LeafNode : public OctreeNode {
 	
 public:
-	typedef LeafNode< DataT, data_traits > * Ptr;
-	typedef const LeafNode< DataT, data_traits > * ConstPtr;
-	
-	typedef typename data_traits::const_type DataConst;
-	typedef typename data_traits::reference DataRef;
-	typedef typename data_traits::const_reference DataConstRef;
+	typedef LeafNode * Ptr;
+	typedef const LeafNode * ConstPtr;
 	
 private:
-	typedef LeafNode< DataT, data_traits >::Ptr LeafPtr;
-	
-private:
-	
-	const u_int DEPTH;
-	
-	DataConst data;
+	u_char cuttedVertex;
+	VoxelInfo::Ptr voxelInfo;
 	
 public:
-	LeafNode(const ShiftedBox::ConstPtr &box) :
-			OctreeNode(box),
-			DEPTH(0) {
-		
-		initVariables();
+	LeafNode(const ShiftedBox::ConstPtr &box, u_int version) :
+			OctreeNode(box, version)
+	{
 	}
 	
 	LeafNode(const OctreeNode::Ptr &father, u_char childIdx, 
-			const ShiftedBox::ConstPtr &sbox, u_int depth, u_int version) :
+			const ShiftedBox::ConstPtr &sbox, u_int version) :
 				OctreeNode(father, childIdx, sbox, version),
-				DEPTH(depth) {
-		
-		initVariables();
+				voxelInfo(boost::make_shared< VoxelInfo >(VoxelInfo::DEFAULT_INSIDENESS()))
+	{
 	}
 	
 	virtual ~LeafNode() { }
@@ -345,34 +347,22 @@ public:
 		return LEAF_NODE;
 	}
 	
-	inline
-	DataConstRef getData() const {
-		return this->data;
-	}
-	
-	inline
-	void setData(DataConstRef data) {
-		this->data = data;
-	}
-	
-	inline
-	virtual u_int getDepth() const {
-		return this->DEPTH;
+	VoxelInfo::Ptr getData() {
+		return this->voxelInfo;
 	}
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const {
-		os << "Leaf-" << this->getID() << "@" << getDepth() << ":";
-		os << this->data;
-		
-		return os;
-	}
-
-private:
-	
-	void initVariables() {
-		data = data_traits::DEFAULT_DATA();
+		return os << *voxelInfo;
 	}
 	
+	virtual OctreeNode::Ptr getAdjacentUp(u_char childIdx, const Adjacencies::Direction &dir,
+			std::vector< u_char > &path) {
+		throw std::runtime_error("Adjacent up request to a leaf");
+	}
+	
+	virtual OctreeNode::Ptr getAdjacentDown(std::vector< u_char > &path) {
+		return this;
+	}
 };
 
 

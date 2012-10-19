@@ -57,7 +57,7 @@ public:
 	
 	const IntersectionResult operator+(const IntersectionResult &other) const;
 	
-	static std::string IntersectionResult::getPrintHeader();
+	static std::string getPrintHeader();
 	
 	friend std::ostream & operator<<(std::ostream &os, const IntersectionResult &res);
 	

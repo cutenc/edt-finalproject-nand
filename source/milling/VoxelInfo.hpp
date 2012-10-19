@@ -14,26 +14,27 @@
 #include <cassert>
 #include <cmath>
 
+#include <boost/shared_ptr.hpp>
+
+#include <osg/Geode>
+
 #include "Corner.hpp"
-#include "common/OSGMesh.hpp"
 #include "common/Utilities.hpp"
 
 class VoxelInfo {
+	
+public:
+	typedef boost::shared_ptr< VoxelInfo > Ptr;
+	typedef boost::shared_ptr< const VoxelInfo > ConstPtr;
 	
 private:
 	// updated by updateInsideness(u_char, double) function
 	u_char insideCorners;
 	double insideness[Corner::N_CORNERS];
-	OSGMesh mesh;
+	
+	osg::ref_ptr<osg::Geode> geode;
 	
 public:
-	
-	/**
-	 * This constructor leave object in a incosistent state and should be
-	 * used only in conjunction with the #setInsideness method. It is
-	 * provided just to increase performance avoiding useless initializations.
-	 */
-	VoxelInfo();
 	
 	VoxelInfo(double val);
 	
@@ -44,47 +45,8 @@ public:
 	bool isContained() const;
 	
 	bool isCornerCut(Corner::CornerType c) const;
-
+	
 	double getInsideness(Corner::CornerType c) const;
-	
-	/**
-	 * You should use this method only in combination with the empty constructor
-	 * to initialize all corners of this object, but not for future
-	 * manipulation. Wrong usage of this method may result in current object
-	 * misbehaviour (in particular inside corner count may be incorrect,
-	 * affecting also methods like #isContained and #isIntersecting)
-	 * 
-	 * @param c
-	 * @param insideness
-	 * @return \c true if the carner fall inside (according to #isInside)
-	 * 
-	 * @see #updateInsideness
-	 */
-	bool setInsideness(Corner::CornerType c, double insideness);
-	
-	/**
-	 * You should use this method only in combination with the empty constructor
-	 * to initialize all corners of this object, but not for future
-	 * manipulation. Wrong usage of this method may result in current object
-	 * misbehaviour (in particular inside corner count may be incorrect,
-	 * affecting also methods like #isContained and #isIntersecting)
-	 * 
-	 * @param c
-	 * @param insideness
-	 * @return \c true if the carner fall inside (according to #isInside)
-	 * 
-	 * @see #updateInsideness
-	 */
-	bool setInsideness(Corner::CornerType c, double oldInsideness, double newInsideness);
-	
-	/**
-	 * Resets the number of inside corners to 0; you should call this
-	 * method only if you are going to call #setInsideness on each corner
-	 * after that.
-	 * 
-	 * @see #updateInsideness
-	 */
-	void reset();
 	
 	/**
 	 * 
@@ -95,27 +57,19 @@ public:
 	 */
 	bool updateInsideness(Corner::CornerType c, double insideness);
 	
-	VoxelInfo & operator+=(const VoxelInfo &v);
-	
-	const VoxelInfo operator+(const VoxelInfo &v);
-	
 	friend std::ostream & operator<<(std::ostream &os, const VoxelInfo &vinfo);
+	
+	osg::ref_ptr<osg::Geode> getGeode() const;
+	
+	void setGeode(osg::ref_ptr<osg::Geode> geode);
 	
 	static double DEFAULT_INSIDENESS();
 	
 	static bool isInside(double d);
-	
-	void setMesh(OSGMesh m);
-
-	OSGMesh getMesh();
 
 private:
 	
 	double getInsideness(u_char i) const;
-	
-	bool setInsideness(u_char i, double newInsideness);
-	
-	bool setInsideness(u_char i, double oldInsideness, double newInsideness);
 	
 	bool updateInsideness(u_char i, double newInsideness);
 
