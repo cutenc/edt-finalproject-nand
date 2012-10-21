@@ -25,4 +25,10 @@
  */
 #define CONF_COMMENT_CHAR '#'
 
+/* 
+ * VISUALIZATION CONSTANTS
+ */
+#define AXIS_LENGTH 1
+#define FRAMES_PER_SECOND 15
+
 #endif /* CONSTANTS_HPP_ */

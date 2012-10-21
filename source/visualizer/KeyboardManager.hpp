@@ -8,20 +8,22 @@
 #ifndef KEYBOARDMANAGER_HPP_
 #define KEYBOARDMANAGER_HPP_
 
-class KeyboardManager : public osgGA::GUIEventHandler {
-public:
-	KeyboardManager(InputDeviceStateType* ids) {
-		std::cout << "d" << std::endl;
+#include <osgGA/GUIEventHandler>
 
-		idst = ids;
-		std::cout << "e" << std::endl;
-	}
+#include "InputDeviceStateType.hpp"
+#include "threading/SteppableController.hpp"
+
+class KeyboardManager : public osgGA::GUIEventHandler {
+	
+private:
+	const InputDeviceStateType::Ptr IDST;
+	const SteppableController::Ptr CONTROLLER;
+	
+public:
+	KeyboardManager(InputDeviceStateType::Ptr ids, SteppableController::Ptr controller);
 	virtual ~KeyboardManager();
 
-	virtual bool handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAdapter&);
-	virtual void accept(osgGA::GUIEventHandlerVisitor& v)   { v.visit(*this); };
-protected:
-	InputDeviceStateType* idst;
+	virtual bool handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAdapter&);	
 };
 
 #endif /* KEYBOARDMANAGER_HPP_ */

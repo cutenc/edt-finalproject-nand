@@ -7,12 +7,24 @@
 
 #include "InputDeviceStateType.hpp"
 
-InputDeviceStateType::InputDeviceStateType() {
-	// TODO Auto-generated constructor stub
 
+
+
+InputDeviceStateType::InputDeviceStateType() {
+	// TODO
+	updateScene = true;
 }
 
 InputDeviceStateType::~InputDeviceStateType() {
-	// TODO Auto-generated destructor stub
 }
+
+bool InputDeviceStateType::shouldUpdateScene() {
+	// TODO
+	return updateScene;
+}
+
+void InputDeviceStateType::signalMillingEnd() {
+	updateScene = false;
+}
+
 

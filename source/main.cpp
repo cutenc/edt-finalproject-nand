@@ -23,19 +23,13 @@
 #include "milling/Stock.hpp"
 #include "milling/cutters.hpp"
 #include "visualizer/MillerRunnable.hpp"
-#include "visualizer/MesherStub.hpp"
+#include "visualizer/Display.hpp"
 #include "meshing/StockMesher.hpp"
 
 using namespace std;
 using namespace Eigen;
 
 int main(int argc, const char **argv) {
-	
-//	initParallel();
-	
-	cout << "epsilon double: " << numeric_limits<double>::epsilon() << endl;
-	cout << "epsilon float: " << numeric_limits<float>::epsilon() << endl;
-//	double BOOST_PI = boost::math::constants::pi< double >();
 	
 	/* 
 	 * ******** ConfigFileParser TEST ********
@@ -397,17 +391,16 @@ int main(int argc, const char **argv) {
 	
 	StockMesher::Ptr stockMesher = boost::make_shared< StockMesher >();
 	Stock::Ptr stock = boost::make_shared< Stock >(*cfp.getStockDescription(), max_depth, 1, stockMesher);
-	Cutter::ConstPtr cutter = Cutter::buildCutter(*cfp.getCutterDescription());
+	Cutter::Ptr cutter = Cutter::buildCutter(*cfp.getCutterDescription());
 	
 	MillingAlgorithmConf millingConf(stock, cutter, cfp.CNCMoveBegin(), cfp.CNCMoveEnd());
 	
 	MillingSignaler::Ptr signaler = boost::make_shared< MillingSignaler >();
-	SteppableController::Ptr controller = boost::make_shared< SteppableController >();
+	SteppableController::Ptr controller = boost::make_shared< SteppableController >(true);
 	
 	MillingAlgorithm::Ptr algorithm = boost::make_shared< MillingAlgorithm >(millingConf);
 	
 	MillerRunnable miller(controller, signaler, algorithm);
-	MesherStub mesher(signaler, stock);
 	
 	cout << "Setup info: " << endl
 			<< "\tPosition file: " << configFile << endl
@@ -416,37 +409,18 @@ int main(int argc, const char **argv) {
 			;
 	
 	boost::thread millerThrd(boost::ref(miller));
-	boost::thread mesherThrd(boost::ref(mesher));
-//	char c;
-//	do {
-//		cin >> c;
-//		switch (c) {
-//			case 'q':
-//				controller->stop();
-//				break;
-//			case 'n':
-//				controller->stepOnce();
-//				break;
-//			case 'g':
-//				controller->play();
-//				break;
-//			case 'p':
-//				controller->pause();
-//				break;
-//			case 'r':
-//				controller->resume();
-//				break;
-//			default:
-//				cout << "key not registered" << endl;
-//				break;
-//		}
-//	} while (c != 'q');
-//	
-//	cout << "exiting main & waiting for miller thread..." << endl;
+	
+	Display display(stock, cutter, signaler, controller);
+	display.draw();
+	
+	cout << "exiting drawer & stopping miller" << endl;
+	controller->stop();
+	
+	cout << "exiting main & waiting for miller thread..." << endl;
 	millerThrd.join();
-	cout << "miller ended, now waiting for mesher..." << endl;
-	mesherThrd.join();
-	cout << "meshaer ended! Bye..." << endl;
+	cout << "miller ended!" << endl;
+//	mesherThrd.join();
+//	cout << "meshaer ended! Bye..." << endl;
 	
 	
 	/* ****************

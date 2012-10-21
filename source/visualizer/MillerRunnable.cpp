@@ -14,7 +14,7 @@
 MillerRunnable::MillerRunnable(SteppableController::Ptr controller,
 		MillingSignaler::Ptr signaler, MillingAlgorithm::Ptr alg) :
 		SteppableRunnable(controller), signaler(signaler), algorithm(alg)
-		{ }
+{ }
 
 MillerRunnable::~MillerRunnable() {
 }

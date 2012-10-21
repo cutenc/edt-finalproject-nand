@@ -12,6 +12,8 @@
 
 #include <Eigen/Geometry>
 
+#include <osg/Geometry>
+
 class Point3D {
 	
 	Eigen::Vector3d point;
@@ -29,6 +31,10 @@ public:
 	
 	Eigen::Translation3d asTranslation() const {
 		return Eigen::Translation3d(this->point);
+	}
+	
+	osg::Vec3d asOSG() const {
+		return osg::Vec3d(point[0], point[1], point[2]);
 	}
 	
 	double getX() const {

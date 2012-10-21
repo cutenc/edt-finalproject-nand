@@ -1,13 +1,21 @@
 
 SET (visualizer_SRC
 # add here both your sources (cpp) and header (hpp) files
-MesherStub.hpp
-MillerEndedException.hpp
+Display.cpp
+Display.hpp
+InputDeviceStateType.cpp
+InputDeviceStateType.hpp
+KeyboardManager.cpp
+KeyboardManager.hpp
 MillerRunnable.cpp
 MillerRunnable.hpp
 MillingSignaler.cpp
 MillingSignaler.hpp
+SceneUpdater.cpp
+SceneUpdater.hpp
 SignaledInfo.hpp
+VisualizationUtils.cpp
+VisualizationUtils.hpp
 )
 
 ADD_LIBRARY(visualizer STATIC ${visualizer_SRC})

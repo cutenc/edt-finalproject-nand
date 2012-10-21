@@ -8,6 +8,7 @@ constants.hpp
 EulerAngles.cpp
 EulerAngles.hpp
 Mesh.hpp
+Mesh.cpp
 Model3D.hpp
 Point3D.cpp
 Point3D.hpp

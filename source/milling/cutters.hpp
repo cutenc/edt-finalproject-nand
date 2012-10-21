@@ -20,9 +20,13 @@
 
 #include <Eigen/Geometry>
 
+#include <osg/Geometry>
+#include <osg/Geode>
+#include <osg/ShapeDrawable>
+
 #include "configuration/CutterDescription.hpp"
 #include "common/Utilities.hpp"
-#include "common/meshes.hpp"
+#include "visualizer/VisualizationUtils.hpp"
 
 class SphereCutter : public Cutter {
 
@@ -31,7 +35,7 @@ public:
 	virtual Mesh::Ptr getMeshing() {
 		
 		// TODO implement meshing method
-		return boost::make_shared< StubMesh >();
+		throw std::runtime_error("NOT IMPLEMENTED YET");
 		
 	}
 	
@@ -105,10 +109,24 @@ public:
 	
 	
 	virtual Mesh::Ptr getMeshing() {
+		static const Mesh::Ptr mesh = buildMesh();
 		
-		// TODO implement meshing method
-		return boost::make_shared< StubMesh >();
+		return mesh;
+	}
+	
+private:
+	Mesh::Ptr buildMesh() const {
+		/* our center is on the center of the below base so we have to draw a 
+		 * translated cylinder
+		 */
+		osg::Vec3 tras(0, 0, HALF_LENGTH);
+		osg::ref_ptr< osg::ShapeDrawable > cylDraw = VisualizationUtils::buildCylinder(tras, RADIUS, LENGTH);
+		cylDraw->setColor(getColor().asOSG());
 		
+		osg::ref_ptr< osg::Geode > geode = new osg::Geode;
+		geode->addDrawable(cylDraw.get());
+		
+		return boost::make_shared< Mesh >(geode.get());
 	}
 };
 
@@ -120,7 +138,7 @@ public:
 	virtual Mesh::Ptr getMeshing() {
 		
 		// TODO implement meshing method
-		return boost::make_shared< StubMesh >();
+		throw std::runtime_error("NOT IMPLEMENTED YET");
 		
 	}
 	

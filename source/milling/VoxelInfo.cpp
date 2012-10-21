@@ -103,15 +103,3 @@ double VoxelInfo::getInsideness(u_char i) const {
 	return insideness[i];
 }
 
-//bool VoxelInfo::updateInsideness(u_char i, double oldInsideness, double newInsideness) {
-//	insideness[i] = fmax(oldInsideness, newInsideness);
-//	
-//	if ((!isInside(oldInsideness)) && isInside(newInsideness)) {
-//		insideCorners |= (0x01 << i);
-//		return true;
-//	} /* there is no else clause because function used for update is a MAX
-//	 * so previously inside corners cannot fall outside
-//	*/
-//	
-//	return false;
-//}

@@ -24,6 +24,12 @@
 #include "SimpleBox.hpp"
 #include "Corner.hpp"
 
+// TODO remove these three includes
+#include "visualizer/VisualizationUtils.hpp"
+#include <osg/Geode>
+#include <osg/Drawable>
+#include <osg/Geometry>
+
 
 Stock::Stock(const StockDescription &desc, u_int maxDepth, u_int maxThreads, MesherType::Ptr mesher) :
 	MAX_DEPTH(maxDepth),
@@ -258,6 +264,14 @@ Eigen::Vector3d Stock::getResolution() const {
 }
 
 
+const Eigen::Vector3d& Stock::getExtents() const {
+	return this->EXTENT;
+}
+
+const Eigen::Translation3d& Stock::getStockModelTranslation() const {
+	return this->STOCK_MODEL_TRASLATION;
+}
+
 std::ostream & operator<<(std::ostream &os, const Stock &stock) {
 	os << "STOCK(extent=[" << stock.EXTENT.transpose()
 			<< "];maxDepth=" << stock.MAX_DEPTH
@@ -272,11 +286,26 @@ std::ostream & operator<<(std::ostream &os, const Stock &stock) {
 
 Mesh::Ptr Stock::getMeshing() {
 	
+	// our reference system is translated from the box center...
+	static osg::Vec3 tras(
+			STOCK_MODEL_TRASLATION.translation()[0],
+			STOCK_MODEL_TRASLATION.translation()[1],
+			STOCK_MODEL_TRASLATION.translation()[2]
+	);
+	static osg::ref_ptr< osg::Drawable > boxDraw = VisualizationUtils::buildBox(
+			tras,
+			EXTENT[0], EXTENT[1], EXTENT[2]
+	);
+	
+	osg::ref_ptr< osg::Geode > geode = new osg::Geode;
+	geode->addDrawable(boxDraw.get());
+	
+	return boost::make_shared< Mesh >(geode.get());
+	
+	// TODO
 //	StoredData data = MODEL.getData(true);
 //	
 //	return MESHER->buildMesh(data);
-	
-	throw std::runtime_error("NOT IMPLEMENTED");
 	
 }
 

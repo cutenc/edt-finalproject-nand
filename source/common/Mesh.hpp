@@ -12,15 +12,22 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <osg/Node>
+
 class Mesh {
 	
 public:
 	typedef boost::shared_ptr< Mesh > Ptr;
 	typedef boost::shared_ptr< const Mesh > ConstPtr;
 	
+private:
+	osg::ref_ptr< osg::Node > meshPtr;
+	
 public:
-	Mesh() { }
-	virtual ~Mesh() { }
+	Mesh(osg::Node *mesh);
+	virtual ~Mesh();
+	
+	osg::ref_ptr< osg::Node > getMesh() const;
 };
 
 #endif /* MESH_HPP_ */

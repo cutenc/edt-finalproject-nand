@@ -85,6 +85,10 @@ public:
 	
 	Eigen::Vector3d getResolution() const;
 	
+	const Eigen::Vector3d &getExtents() const;
+	
+	const Eigen::Translation3d &getStockModelTranslation() const;
+	
 	virtual Mesh::Ptr getMeshing();
 	
 private:

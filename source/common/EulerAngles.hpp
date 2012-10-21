@@ -11,8 +11,11 @@
 #include <iostream>
 #include <cmath>
 
-#include <Eigen/Geometry>
 #include <boost/math/constants/constants.hpp>
+
+#include <Eigen/Geometry>
+
+#include <osg/Geometry>
 
 class EulerAngles {
 public:
@@ -29,6 +32,10 @@ public:
 				* Eigen::AngleAxisd(ALPHA, Eigen::Vector3d::UnitX());
 		
 		return mat;
+	}
+	
+	osg::Quat asOSG() const {
+		return osg::Quat(ALPHA, osg::X_AXIS, BETA, osg::Y_AXIS, GAMMA, osg::Z_AXIS);
 	}
 	
 	friend std::ostream &operator<<(std::ostream &os, const EulerAngles &ea) {

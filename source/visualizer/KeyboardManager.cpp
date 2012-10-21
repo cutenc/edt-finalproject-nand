@@ -7,47 +7,40 @@
 
 #include "KeyboardManager.hpp"
 
-KeyboardManager::~KeyboardManager() {
-	// TODO Auto-generated destructor stub
-}
+#include <iostream>
 
-bool KeyboardManager::handle(const osgGA::GUIEventAdapter& ea,osgGA::GUIActionAdapter& aa) {
-   switch(ea.getEventType()) {
-		case(osgGA::GUIEventAdapter::KEYDOWN): {
-			switch(ea.getKey()) {
-				case 's': 	// step
-							std::cout << " move on!" << std::endl;
-							idst->step = !idst->step;
-							idst->stepForever = false;
-							return false;
+KeyboardManager::KeyboardManager(InputDeviceStateType::Ptr ids, SteppableController::Ptr controller) :
+	IDST(ids), CONTROLLER(controller)
+{ }
 
-				case 'f':	// forever
-							std::cout << "move on Forever!" << std::endl;
-							idst->step = !idst->step;
-							idst->stepForever = !idst->stepForever;
-							return false;
+KeyboardManager::~KeyboardManager() { }
 
-				case 'p':	// pause
-							std::cout << "pausa" << std::endl;
-							if(idst->step) {
-								idst->step = false;
-								idst->stepForever = !idst->stepForever;
-							} else {
-								idst->step = true;
-								idst->stepForever = !idst->stepForever;
-							}
-							return false;
-
-//				case 'q':	//quit
-//							std::cout << "ciao" << std::endl;
-
-				default:
-							return false;
-			}
-		break;
-		}
-
-	default:
-				return false;
+bool KeyboardManager::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) {
+	if (ea.getEventType() != osgGA::GUIEventAdapter::KEYDOWN) {
+		return false;
 	}
+	
+	switch(ea.getKey()) {
+		case '1': 	// step
+			CONTROLLER->stepOnce();
+			break;
+		case '2': 	// step
+			CONTROLLER->step(10u);
+			break;
+		case '3': 	// step
+			CONTROLLER->step(50u);
+			break;
+		case 'r':	// run
+			CONTROLLER->play();
+			break;
+		case 'p':	// pause
+			CONTROLLER->pause();
+			break;
+			
+		default:
+			return false;
+	}
+	
+	return true;
 }
+

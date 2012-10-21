@@ -8,18 +8,25 @@
 #ifndef INPUTDEVICESTATETYPE_HPP_
 #define INPUTDEVICESTATETYPE_HPP_
 
+#include <boost/shared_ptr.hpp>
+#include <boost/thread.hpp>
+
 class InputDeviceStateType {
+	
 public:
-	InputDeviceStateType():
-	      step(false) , stepForever(false) {
-			std::cout << "InputDeviceStateType creato" << std::endl;
-		}
+	typedef boost::shared_ptr< InputDeviceStateType > Ptr;
+	typedef boost::shared_ptr< const InputDeviceStateType > ConstPtr;
+	
+private:
+	bool updateScene;
+	
+public:
+	InputDeviceStateType();
 	virtual ~InputDeviceStateType();
-
-   bool step;
-   bool stepForever;
-
-
+	
+	bool shouldUpdateScene();
+	
+	void signalMillingEnd();
 };
 
 #endif /* INPUTDEVICESTATETYPE_HPP_ */

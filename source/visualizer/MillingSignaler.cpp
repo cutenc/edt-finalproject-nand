@@ -7,40 +7,31 @@
 
 #include "MillingSignaler.hpp"
 
-#include <boost/make_shared.hpp>
+#include <limits>
 
-MillingSignaler::MillingSignaler() : 
-	millingResults(boost::make_shared< SignaledInfo::MillingData >()),
-	millingEnd(false)
-{
+#include <boost/make_shared.hpp>
+#include <boost/date_time.hpp>
+
+MillingSignaler::MillingSignaler() {
 }
 
 MillingSignaler::~MillingSignaler() {
 }
 
-SignaledInfo MillingSignaler::awaitMiller() throw(MillerEndedException) {
-	UniqueLock millingReadyLock(mutex);
+SignaledInfo MillingSignaler::awaitMiller() {
+	const static boost::posix_time::seconds MAX_TIME(
+			std::numeric_limits< long >::max()
+	);
 	
-	while(millingResults->empty() && (!millingEnd)) {
-		millingReady.wait(millingReadyLock);
-	}
-	
-	if (millingResults->empty()) {
-		throw MillerEndedException();
-	}
-	
-	SignaledInfo tmp(millingResults, lastMove);
-	millingResults = boost::make_shared< SignaledInfo::MillingData >();
-	
-	return tmp;
+	return awaitMiller(MAX_TIME);
 }
 
 void MillingSignaler::signalMesher(const MillingResult& result, const CNCMove &move) {
 	{
 		LockGuard millingLock(mutex);
 	
-		millingResults->push_back(result);
-		lastMove = move;
+		predicate.millingResults->push_back(result);
+		predicate.lastMove = move;
 	}
 	
 	millingReady.notify_all();
@@ -49,8 +40,9 @@ void MillingSignaler::signalMesher(const MillingResult& result, const CNCMove &m
 void MillingSignaler::signalMesher() {
 	{
 		LockGuard _(mutex);
-		millingEnd = true;
+		predicate.millingEnd = true;
 	}
 	
 	millingReady.notify_all();
 }
+

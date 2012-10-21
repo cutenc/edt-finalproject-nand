@@ -13,7 +13,6 @@
 
 #include "milling/MillingResult.hpp"
 #include "configuration/CNCMoveIterator.hpp"
-#include "MillerEndedException.hpp"
 #include "SignaledInfo.hpp"
 
 class MillingSignaler {
@@ -25,19 +24,65 @@ private:
 	typedef boost::unique_lock< boost::mutex > UniqueLock;
 	typedef boost::lock_guard< boost::mutex > LockGuard;
 	
-private:
-	SignaledInfo::MillingDataPtr millingResults;
-	CNCMove lastMove;
-	volatile bool millingEnd;
+	typedef SignaledInfo::MillingData MillingData;
+	typedef SignaledInfo::MillingDataPtr MillingDataPtr;
 	
+	struct Predicate {
+		CNCMove lastMove;
+		MillingDataPtr millingResults;
+		volatile bool millingEnd;
+		
+		Predicate() :
+			lastMove(),
+			millingResults(boost::make_shared< MillingData >()),
+			millingEnd(false)
+		{ }
+		
+		virtual ~Predicate() { }
+		
+		bool operator()() const {
+			return (!millingResults->empty()) || millingEnd;
+		}
+		
+		SignaledInfo buildInfo() {
+			if (millingResults->empty()) {
+				if (millingEnd) {
+					return SignaledInfo(SignaledInfo::MILLING_END);
+				} else {
+					return SignaledInfo(SignaledInfo::TIMEOUT);
+				}
+			} // else, we have data to return
+			
+			SignaledInfo tmp(millingResults, lastMove);
+			millingResults = boost::make_shared< SignaledInfo::MillingData >();
+			
+			return tmp;
+		}
+	};
+	
+private:
 	boost::condition_variable millingReady;
 	boost::mutex mutex;
+	
+	/*
+	 * Guarded-by #mutex
+	 */
+	Predicate predicate;
 	
 public:
 	MillingSignaler();
 	virtual ~MillingSignaler();
 	
-	virtual SignaledInfo awaitMiller() throw(MillerEndedException);
+	virtual SignaledInfo awaitMiller();
+	
+	template <typename Duration>
+	SignaledInfo awaitMiller(const Duration &duration) {
+		UniqueLock millingReadyLock(mutex);
+		
+		millingReady.timed_wait(millingReadyLock, duration, predicate);
+		
+		return predicate.buildInfo();
+	}
 	
 	/**
 	 * Used to tell awaiting meshers that miller has finished its work and
@@ -51,9 +96,7 @@ public:
 	 */
 	virtual void signalMesher(const MillingResult &results, const CNCMove &move);
 	
-private:
-	
-	
 };
+
 
 #endif /* MILLINGSIGNALER_HPP_ */

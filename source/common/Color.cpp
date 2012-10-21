@@ -7,16 +7,26 @@
 
 #include "Color.hpp"
 
-Color::Color() {
-	// TODO Auto-generated constructor stub
+#include <cassert>
 
+Color::Color() : color(1, 1, 1, 1)
+{
 }
 
-Color::Color(const std::string &color) {
-	// TODO Auto-generated constructor stub
+Color::Color(const osg::Vec4f& color) : color(color)
+{
 }
+
+Color::Color(const std::string& colorStr) : color(1, 1, 1, 1) 
+{
+	// TODO IMPLEMENT THIS METHOD, assigned color is just a stub
+	assert(!colorStr.empty());
+}
+
 
 Color::~Color() {
-	// TODO Auto-generated destructor stub
 }
 
+const osg::Vec4f &Color::asOSG() const {
+	return this->color;
+}

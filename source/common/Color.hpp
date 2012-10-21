@@ -8,19 +8,27 @@
 #ifndef COLOR_HPP_
 #define COLOR_HPP_
 
-#include <string>
+
+#include <osg/Geometry>
 
 class Color {
+	
+private:
+	osg::Vec4f color;
+	
 public:
 	Color();
 	
 	/**
-	 * Accept a color string given in HTML-hex format: \c 0xRRGGBB
-	 * 
-	 * @param color
+	 * Color string in the format 0xRRGGBB
+	 * @param colorStr
 	 */
-	Color(const std::string &color);
+	Color(const std::string &colorStr);
+	Color(const osg::Vec4f &color);
+	
 	virtual ~Color();
+	
+	const osg::Vec4f &asOSG() const;
 };
 
 #endif /* COLOR_HPP_ */

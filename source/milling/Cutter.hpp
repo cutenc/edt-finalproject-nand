@@ -32,7 +32,7 @@ public:
 	Cutter(Color color) : color(color) { }
 	virtual ~Cutter() { }
 	
-	Color getColor() const {
+	const Color &getColor() const {
 		return this->color;
 	}
 	
