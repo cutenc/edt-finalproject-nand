@@ -11,9 +11,13 @@
 #include <boost/shared_ptr.hpp>
 
 #include "common/Mesh.hpp"
+#include "common/StockMesh.hpp"
+#include "milling/Octree.hpp"
 
 template < typename T >
 class Mesher {
+
+	//Octree< VoxelInfo, DataTraits< VoxelInfo > >::DataView voxels;
 
 public:
 	typedef boost::shared_ptr< Mesher< T > > Ptr;

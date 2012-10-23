@@ -20,6 +20,7 @@
 #include "common/AtomicNumber.hpp"
 #include "configuration/StockDescription.hpp"
 #include "meshing/Mesher.hpp"
+#include "meshing/Meshing.hpp"
 #include "Cutter.hpp"
 #include "VoxelInfo.hpp"
 #include "Octree.hpp"

@@ -11,7 +11,6 @@
 #include <iostream>
 #include <cmath>
 
-#include <boost/math/constants/constants.hpp>
 
 #include <Eigen/Geometry>
 

@@ -15,11 +15,11 @@
 #include <osg/Node>
 
 class Mesh {
-	
+
 public:
 	typedef boost::shared_ptr< Mesh > Ptr;
 	typedef boost::shared_ptr< const Mesh > ConstPtr;
-	
+
 private:
 	osg::ref_ptr< osg::Node > meshPtr;
 	

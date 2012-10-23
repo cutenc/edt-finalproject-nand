@@ -14,6 +14,8 @@ Point3D.cpp
 Point3D.hpp
 Rototraslation.cpp
 Rototraslation.hpp
+Triangle.cpp
+Triangle.hpp
 Utilities.cpp
 Utilities.hpp
 )

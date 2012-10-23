@@ -34,3 +34,9 @@ Cutter::Ptr Cutter::buildCutter(const CutterDescription &desc) {
 	throw std::invalid_argument("Cutter geometry not registered");
 }
 
+Mesh::Ptr Cutter::getMeshing() {
+
+	return Meshing.getMesh(1, MODEL);// hmmm
+	//return boost::make_shared< Mesh >();
+
+}

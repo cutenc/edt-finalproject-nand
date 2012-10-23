@@ -300,7 +300,6 @@ std::ostream & operator<<(std::ostream &os, const Stock &stock) {
 	return os;
 }
 
-
 void Stock::buildChangedNodesQueue(BranchNode::ConstPtr node,
 			const VersionInfo &vinfo, StoredData::VoxelData &queue) const {
 
