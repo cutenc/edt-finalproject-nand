@@ -17,6 +17,7 @@
 #include <Eigen/Geometry>
 
 #include "common/Model3D.hpp"
+#include "common/AtomicNumber.hpp"
 #include "configuration/StockDescription.hpp"
 #include "meshing/Mesher.hpp"
 #include "Cutter.hpp"
@@ -24,6 +25,7 @@
 #include "Octree.hpp"
 #include "SimpleBox.hpp"
 #include "IntersectionResult.hpp"
+#include "StoredData.hpp"
 
 
 class Stock : public Model3D {
@@ -57,21 +59,33 @@ private:
 		virtual ~CutterInfos() { }
 	};
 	
+	typedef Octree::VersionInfo VersionInfo;
 	typedef LeafNode::Ptr LeafPtr;
-	typedef void (Stock::* Processer)(OctreeNode::Ptr, const CutterInfos &, IntersectionResult &);
+	typedef void (Stock::* Processer)(OctreeNode::Ptr,
+			const CutterInfos &,
+			const VersionInfo &,
+			IntersectionResult &);
+	
+	typedef boost::lock_guard< boost::mutex > LockGuard;
+	
+	typedef AtomicNumber<u_int> Versioner;
 	
 private:
 	const u_int MAX_DEPTH;
 	const Eigen::Vector3d EXTENT;
 	const Eigen::Translation3d STOCK_MODEL_TRASLATION;
-	const u_int MAX_THREADS;
 	OctreeType MODEL;
 	Processer PROCESSERS[2];
+	StoredData::DeletedDataPtr deletedData;
+	MesherType::Ptr MESHER;
 	
-	mutable MesherType::Ptr MESHER;
+	mutable boost::mutex mutex;
+	u_int lastRetrievedVersion;
+	
+	Versioner versioner;
 	
 public:
-	Stock(const StockDescription &desc, u_int maxDepth, u_int maxThreads, MesherType::Ptr mesher);
+	Stock(const StockDescription &desc, u_int maxDepth, MesherType::Ptr mesher);
 	virtual ~Stock();
 	
 	/**
@@ -94,13 +108,18 @@ public:
 private:
 	
 	void analyzeLeaf(OctreeNode::Ptr currLeaf, 
-			const CutterInfos &cutterInfo, IntersectionResult &results);
+			const CutterInfos &cutterInfo, const VersionInfo &vinfo,
+			IntersectionResult &results);
 	
 	void processTreeRecursive(OctreeNode::Ptr branch,
-			const CutterInfos &cutInfo, IntersectionResult &result);
+			const CutterInfos &cutInfo, const VersionInfo &vinfo,
+			IntersectionResult &result);
 	
 	bool isNodeIntersecting(OctreeNode::ConstPtr node,
 			const CutterInfos &cutInfo, bool accurate) const;
+	
+	void buildChangedNodesQueue(BranchNode::ConstPtr node,
+			const VersionInfo &vinfo, StoredData::VoxelData &queue) const;
 	
 	struct WasteInfo {
 		u_char newInsideCorners;

@@ -12,18 +12,24 @@
 
 #include <boost/date_time.hpp>
 
+#include <osg/Geometry>
+#include <osg/Projection>
+#include <osg/MatrixTransform>
+
 #include "common/constants.hpp"
 #include "configuration/CNCMoveIterator.hpp"
 #include "VisualizationUtils.hpp"
 
 SceneUpdater::SceneUpdater(InputDeviceStateType::Ptr ids,
 		MillingSignaler::Ptr signaler,
-		osg::ref_ptr< osg::Group > node,
+		const DisplayInfo &displayInfo,
 		Stock::Ptr stock, Cutter::Ptr cutter) :
+		
 	IDST(ids), SIGNALER(signaler),
 	stockRototras(new osg::PositionAttitudeTransform()),
 	cutterRototras(new osg::PositionAttitudeTransform()),
-	stockPtr(stock), cutterPtr(cutter)
+	txtMoves(new osgText::Text), txtWaste(new osgText::Text),
+	txtWater(new osgText::Text), stockPtr(stock), cutterPtr(cutter)
 
 {
 	// assign processers
@@ -31,13 +37,10 @@ SceneUpdater::SceneUpdater(InputDeviceStateType::Ptr ids,
 	PROCESSERS[SignaledInfo::MILLING_END] = &SceneUpdater::millingEnd;
 	PROCESSERS[SignaledInfo::TIMEOUT] = &SceneUpdater::timeoutExpired;
 	
-	// add basic nodes to the scene
-	node->addChild(stockRototras);
-	node->addChild(cutterRototras);
-	
 	osg::ref_ptr< osg::Geode > axisGeode = new osg::Geode;
 	axisGeode->addDrawable(VisualizationUtils::getAxis().get());
 	
+	// *** CUTTER SECTION ***
 	/* prepare cutter scene tree that is made up of:
 	 * - cutter Drawable (in position 0)
 	 * - cutter axis
@@ -51,7 +54,9 @@ SceneUpdater::SceneUpdater(InputDeviceStateType::Ptr ids,
 	double scaleFactor = cutterMin * 2;
 	pat->setScale(osg::Vec3d(scaleFactor, scaleFactor, scaleFactor));
 	pat->addChild(axisGeode.get());
+	displayInfo.SON_OF_ROOT->addChild(cutterRototras);
 	
+	// *** STOCK SECTION ***
 	/* prepare stock scene tree that is made up of:
 	 * - stock drawable (in position 0)
 	 * - stock axis
@@ -67,6 +72,37 @@ SceneUpdater::SceneUpdater(InputDeviceStateType::Ptr ids,
 	scaleFactor = stockMax * 0.1;
 	pat->setScale(osg::Vec3d(scaleFactor, scaleFactor, scaleFactor));
 	pat->addChild(axisGeode.get());
+	displayInfo.SON_OF_ROOT->addChild(stockRototras);
+	
+	// *** TEXT SECTION ***
+	/* creating a 2d-context and adding text to it */
+	osg::Projection *twoD_context = new osg::Projection;
+	twoD_context->setMatrix(osg::Matrix::ortho2D(0, displayInfo.winWidth,
+			0, displayInfo.winHeight));
+	
+	osg::MatrixTransform *matT = new osg::MatrixTransform;
+	matT->setMatrix(osg::Matrix::identity());
+	matT->setReferenceFrame(osg::Transform::ABSOLUTE_RF);
+	
+	matT->addChild(twoD_context);
+	displayInfo.SON_OF_ROOT->addChild(matT);
+	
+	/* adding text components to the scene
+	 */
+	osg::Geode *allTexts = new osg::Geode;
+	txtMoves->setText("PROVA");
+	txtMoves->setPosition(osg::Vec3(
+			0,
+			displayInfo.winHeight - 50,
+			0
+	));
+	
+	
+	allTexts->addDrawable(txtMoves.get());
+	allTexts->addDrawable(txtWaste.get());
+	allTexts->addDrawable(txtWater.get());
+	
+	twoD_context->addChild(allTexts);
 }
 
 SceneUpdater::~SceneUpdater() {
@@ -81,9 +117,6 @@ void SceneUpdater::operator()(osg::Node* node, osg::NodeVisitor* nv) {
 	assert(group.get() == stockRototras->getParent(0));
 	
 	if(IDST->shouldUpdateScene()) {
-		/* in order for the video to be fluid (>25fps) I have to wait for a 
-		 * result no more than 40ms
-		 */
 		SignaledInfo infos = SIGNALER->awaitMiller(WAIT_TIME);
 		
 		u_char procIdx = static_cast< u_char >(infos.state);

@@ -24,20 +24,33 @@ bool KeyboardManager::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionA
 		case '1': 	// step
 			CONTROLLER->stepOnce();
 			break;
+			
 		case '2': 	// step
 			CONTROLLER->step(10u);
 			break;
+			
 		case '3': 	// step
 			CONTROLLER->step(50u);
 			break;
+			
 		case 'r':	// run
 			CONTROLLER->play();
 			break;
+			
 		case 'p':	// pause
 			CONTROLLER->pause();
 			break;
 			
+		case 't': // toggle visualization
+			IDST->toggleUpdateScene();
+			break;
+			
+		case 'h': // print help
+			// TODO print help
+			break;
+			
 		default:
+			std::cerr << "Unknown key: type 'h' for a list of known commands" << std::endl;
 			return false;
 	}
 	

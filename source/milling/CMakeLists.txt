@@ -15,10 +15,13 @@ MillingAlgorithmConf.hpp
 MillingResult.hpp
 octree_nodes.hpp
 Octree.hpp
+PtrVersioner.hpp
 ShiftedBox.hpp
 SimpleBox.hpp
 Stock.cpp
 Stock.hpp
+StoredData.cpp
+StoredData.hpp
 Voxel.cpp
 Voxel.hpp
 VoxelInfo.cpp

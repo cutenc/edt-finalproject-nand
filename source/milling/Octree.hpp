@@ -24,7 +24,6 @@
 
 #include <Eigen/Geometry>
 
-#include "common/AtomicNumber.hpp"
 #include "octree_nodes.hpp"
 #include "Voxel.hpp"
 
@@ -83,34 +82,6 @@ private:
 	}
 };
 
-class StoredData {
-	
-public:
-	typedef std::pair< ShiftedBox::Ptr, VoxelInfo > VoxelPair;
-	typedef std::deque< VoxelPair > VoxelData;
-	typedef boost::shared_ptr< VoxelData > VoxelDataPtr;
-	
-public:
-	VoxelDataPtr data;
-	
-	StoredData() :
-		data(boost::make_shared< VoxelData >())
-	{ }
-	
-	StoredData(const VoxelDataPtr &data) :
-		data(data)
-	{ }
-	
-	virtual ~StoredData() { }
-	
-	VoxelDataPtr getData() const {
-		return data;
-	}
-	
-};
-
-
-
 class Octree {
 	
 public:
@@ -122,15 +93,7 @@ public:
 	
 	typedef typename SimpleBox::ConstPtr SimpleBoxPtr;
 	
-	typedef std::deque< LeafPtr > LeavesDeque;
-	typedef boost::shared_ptr< std::deque< LeafPtr > > LeavesDequePtr;
-	
-	typedef boost::array< LeafPtr, BranchNode::N_CHILDREN > LeavesArray;
-	typedef boost::shared_ptr< LeavesArray > LeavesArrayPtr;
-	
-private:
-	typedef AtomicNumber<u_int> Versioner;
-	typedef boost::lock_guard< boost::mutex > LockGuard;
+	typedef OctreeNode::VersionInfo VersionInfo;
 	
 private:
 	
@@ -139,15 +102,12 @@ private:
 	const SimpleBoxCache BOX_CACHE;
 	BranchPtr ROOT;
 	
-	Versioner versioner;
-	
 public:
 	
 	Octree(Eigen::Vector3d extent, u_int maxDepth) :
 			EXTENT(extent),
 			MAX_DEPTH(maxDepth),
-			BOX_CACHE(extent, maxDepth),
-			versioner(1)
+			BOX_CACHE(extent, maxDepth)
 	{
 		
 		GeometryUtils::checkExtent(EXTENT);
@@ -155,14 +115,12 @@ public:
 		/* create a FAKE root, link it with the leaves list and then "push"
 		 * it to get a branch (REAL root) and it's first children level
 		 */
+		VersionInfo fakeVinfo(1, 1);
 		boost::shared_ptr< LeafNode > fakeRoot = 
 				boost::make_shared< LeafNode >(BOX_CACHE.getShiftedBox(0,
-						Eigen::Translation3d::Identity()), versioner.get());
+						Eigen::Translation3d::Identity()), fakeVinfo);
 		
-		PushedLevel level = createLevel(fakeRoot.get(), versioner.get());
-		
-		// then set the REAL root pointer & link it in the leaves list
-		ROOT = level.newBranch;
+		ROOT = createLevel(fakeRoot.get(), fakeVinfo);
 	}
 	
 	virtual ~Octree() {
@@ -170,18 +128,17 @@ public:
 	}
 	
 	
+	
 	inline
 	BranchPtr getRoot() const {
 		return ROOT;
 	}
 	
-	void updateData(LeafPtr lpt) {
-		// TODO
-//		lpt->setFirstChangeVersion(lastRetrievedDataVersion, versioner.get());
+	void updateData(LeafPtr lpt, const VersionInfo &vinfo) {
+		lpt->setFirstChangeVersion(vinfo);
 	}
 	
 	void deleteLeaf(LeafPtr &lpt) {
-		// TODO lpt->delete callback
 		deleteNode(lpt);
 	}
 	
@@ -190,16 +147,15 @@ public:
 		deleteNode(bpt);
 	}
 	
-	BranchNode::Ptr pushLeaf(LeafPtr &lpt) {
+	BranchNode::Ptr pushLeaf(LeafPtr &lpt, const VersionInfo &vinfo) {
 		
-		// TODO
-//		lpt->getFather()->setFirstChangeVersion(lastRetrievedDataVersion, versioner.get());
+		lpt->getFather()->setFirstChangeVersion(vinfo);
 		
-		PushedLevel newLevel = createLevel(lpt, versioner.get());
+		BranchPtr newBranch = createLevel(lpt, vinfo);
 		
 		// now attach branch to the tree
 		BranchNode::Ptr father = static_cast< BranchNode::Ptr >(lpt->getFather());
-		assert(father == newLevel.newBranch->getFather());
+		assert(father == newBranch->getFather());
 		
 		u_char leafIdx = lpt->getChildIdx();
 		
@@ -207,12 +163,12 @@ public:
 		father->deleteChild(leafIdx);
 		
 		// then set newBranch as father's child
-		father->setChild(leafIdx, newLevel.newBranch);
+		father->setChild(leafIdx, newBranch);
 		
 		// then free leaf's memory (no longer needed)
 		delete lpt; lpt = NULL;
 		
-		return newLevel.newBranch;
+		return newBranch;
 	}
 	
 private:
@@ -225,12 +181,6 @@ private:
 		delete node;
 	}
 	
-	struct PushedLevel {
-		PushedLevel() : newLeaves(boost::make_shared< LeavesArray >()) { }
-		
-		BranchPtr newBranch;
-		LeavesArrayPtr newLeaves;
-	};
 	/**
 	 * Create a one-level tree detached from the main one; the new tree will
 	 * have:
@@ -243,18 +193,17 @@ private:
 	 * @param leaf
 	 * @return
 	 */
-	PushedLevel createLevel(const LeafConstPtr &leaf, u_int currVersion) const {
+	BranchPtr createLevel(const LeafConstPtr &leaf, const VersionInfo &vinfo) const {
 		
-		PushedLevel toRet;
-		
+		BranchPtr newBranch;
 		// first create new branch node that will replace given leaf
 		if (leaf->isRoot()) {
-			toRet.newBranch = new BranchNode(leaf->getBox(), currVersion);
+			newBranch = new BranchNode(leaf->getBox(), vinfo);
 		} else {
-			toRet.newBranch = new BranchNode(leaf->getFather(),
+			newBranch = new BranchNode(leaf->getFather(),
 				leaf->getChildIdx(),
 				leaf->getBox(),
-				currVersion);
+				vinfo);
 		}
 		
 		// create some variables needed in the following leaves-generation loop
@@ -307,17 +256,15 @@ private:
 			ShiftedBox newBox = baseSBox.getShifted(Eigen::Translation3d(traslation));
 			
 			LeafPtr child = new LeafNode(
-					toRet.newBranch,
+					newBranch,
 					i,
 					boost::make_shared< ShiftedBox >(newBox),
-					currVersion);
+					vinfo);
 			
-			toRet.newBranch->setChild(i, child);
-			
-			toRet.newLeaves->at(i) = child;
+			newBranch->setChild(i, child);
 		}
 		
-		return toRet;
+		return newBranch;
 	}
 	
 	friend std::ostream & operator<<(std::ostream &os, const Octree &tree) {

@@ -10,16 +10,26 @@
 
 #include "Mesher.hpp"
 
-#include "milling/Octree.hpp"
-#include "milling/VoxelInfo.hpp"
+#include <Eigen/Geometry>
+
+#include <osg/Group> 
+
+#include "configuration/StockDescription.hpp"
+#include "milling/StoredData.hpp"
+#include "CubeCache.hpp"
 
 class StockMesher: public Mesher< StoredData > {
 	
 public:
 	typedef Mesher< StoredData >::Ptr Ptr;
+
+private:
+	const Eigen::Vector3d HALF_EXTENTS;
+	const osg::ref_ptr< osg::Group > MESH;
+	CubeCache cubeCache;
 	
 public:
-	StockMesher();
+	StockMesher(const StockDescription &stock);
 	virtual ~StockMesher();
 	
 	virtual Mesh::Ptr buildMesh(const StoredData &data);

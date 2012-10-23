@@ -16,7 +16,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <osg/Geode>
+#include <osg/Node>
 
 #include "Corner.hpp"
 #include "common/Utilities.hpp"
@@ -32,7 +32,7 @@ private:
 	u_char insideCorners;
 	double insideness[Corner::N_CORNERS];
 	
-	osg::ref_ptr<osg::Geode> geode;
+	osg::ref_ptr<osg::Node> graphics;
 	
 public:
 	
@@ -59,9 +59,11 @@ public:
 	
 	friend std::ostream & operator<<(std::ostream &os, const VoxelInfo &vinfo);
 	
-	osg::ref_ptr<osg::Geode> getGeode() const;
+	osg::ref_ptr<osg::Node> getGraphics() const;
 	
-	void setGeode(osg::ref_ptr<osg::Geode> geode);
+	void setGraphics(osg::ref_ptr<osg::Node> geode);
+	
+	bool hasGraphics() const;
 	
 	static double DEFAULT_INSIDENESS();
 	
@@ -70,10 +72,6 @@ public:
 private:
 	
 	double getInsideness(u_char i) const;
-	
-	bool updateInsideness(u_char i, double newInsideness);
-
-	bool updateInsideness(u_char i, double oldInsideness, double newInsideness);
 	
 };
 

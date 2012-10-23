@@ -21,29 +21,23 @@
 
 #include <Eigen/Geometry>
 
+#include <osg/PositionAttitudeTransform>
+
 #include "SimpleBox.hpp"
 #include "Corner.hpp"
+#include "StoredData.hpp"
 
-// TODO remove these three includes
-#include "visualizer/VisualizationUtils.hpp"
-#include <osg/Geode>
-#include <osg/Drawable>
-#include <osg/Geometry>
-
-
-Stock::Stock(const StockDescription &desc, u_int maxDepth, u_int maxThreads, MesherType::Ptr mesher) :
+Stock::Stock(const StockDescription &desc, u_int maxDepth, MesherType::Ptr mesher) :
 	MAX_DEPTH(maxDepth),
 	EXTENT(desc.getGeometry()->X, desc.getGeometry()->Y, desc.getGeometry()->Z),
 	STOCK_MODEL_TRASLATION(EXTENT / 2.0),
-	MAX_THREADS(maxThreads),
 	MODEL(EXTENT, maxDepth),
-	MESHER(mesher)
+	deletedData(boost::make_shared< StoredData::DeletedData >()),
+	MESHER(mesher), lastRetrievedVersion(0), versioner(2)
 {
 	GeometryUtils::checkExtent(EXTENT);
 	if(MAX_DEPTH <= 0)
 		throw std::invalid_argument("max depth should be >0");
-	if (MAX_THREADS < 1)
-		throw std::invalid_argument("max threads should be >= 1");
 	
 	PROCESSERS[0] = &Stock::processTreeRecursive;
 	PROCESSERS[1] = &Stock::analyzeLeaf;
@@ -117,14 +111,28 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 	IntersectionResult results;
 	
 	BranchNode::Ptr root = MODEL.getRoot();
-	processTreeRecursive(root, *cutterInfo, results);
+	
+	{
+		LockGuard l(mutex);
+		VersionInfo vinfo(lastRetrievedVersion, versioner.get() + 1);
+		processTreeRecursive(root, *cutterInfo, vinfo, results);
+		/* we completed the production of the new version so now we can 
+		 * update versioner. It would have been wrong to update versioner
+		 * during VersionInfo creation because the new version wouldn't have
+		 * been completed yet (and theoretically should not be sent outside)
+		 */
+		versioner.incAndGet();
+	}
 	
 	results.elapsedTime = boost::chrono::duration_cast<boost::chrono::microseconds>(boost::chrono::thread_clock::now() - startTime);
 	
 	return results;
 }
 
-void Stock::processTreeRecursive(OctreeNode::Ptr branchNode, const CutterInfos &cutInfo, IntersectionResult &results) {
+void Stock::processTreeRecursive(OctreeNode::Ptr branchNode,
+		const CutterInfos &cutInfo,
+		const VersionInfo &vinfo,
+		IntersectionResult &results) {
 	
 	BranchNode::Ptr branch = static_cast< BranchNode::Ptr >(branchNode);
 	
@@ -142,7 +150,7 @@ void Stock::processTreeRecursive(OctreeNode::Ptr branchNode, const CutterInfos &
 		
 		assert(procIdx >= 0 && procIdx < 2);
 		
-		(this->*(PROCESSERS[procIdx]))(child, cutInfo, results);
+		(this->*(PROCESSERS[procIdx]))(child, cutInfo, vinfo, results);
 	}
 	
 	if (branch->isEmpty()) {
@@ -156,7 +164,9 @@ bool Stock::isNodeIntersecting(OctreeNode::ConstPtr node, const CutterInfos &cut
 }
 
 void Stock::analyzeLeaf(OctreeNode::Ptr leaf, 
-		const CutterInfos &cutterInfo, IntersectionResult &results) {
+		const CutterInfos &cutterInfo,
+		const VersionInfo &vinfo,
+		IntersectionResult &results) {
 	
 	LeafPtr currLeaf = static_cast< LeafPtr >(leaf);
 	
@@ -181,6 +191,9 @@ void Stock::analyzeLeaf(OctreeNode::Ptr leaf,
 		results.purged_leaves++;
 		results.waste += calculateNewWaste(currLeaf, waste);
 		
+		// add stored info to the deleted data deque
+		deletedData->push_back(currLeaf->getData());
+		
 		// then delete currLeaf from the model
 		MODEL.deleteLeaf(currLeaf);
 		
@@ -192,10 +205,14 @@ void Stock::analyzeLeaf(OctreeNode::Ptr leaf,
 			
 			results.pushed_leaves++;
 			
+			// pushing cause current leaf to be deleted
+			deletedData->push_back(currLeaf->getData());
+			
 			// we can push another level so let's do it...
-			BranchNode::Ptr newBranch = MODEL.pushLeaf(currLeaf);
+			BranchNode::Ptr newBranch = MODEL.pushLeaf(currLeaf, vinfo);
+			
 			// ... and recursively process it
-			processTreeRecursive(newBranch, cutterInfo, results);
+			processTreeRecursive(newBranch, cutterInfo, vinfo, results);
 			
 		} else {
 			
@@ -210,7 +227,7 @@ void Stock::analyzeLeaf(OctreeNode::Ptr leaf,
 			results.updated_data_leaves++;
 			results.waste += calculateNewWaste(currLeaf, waste);
 			
-			MODEL.updateData(currLeaf);
+			MODEL.updateData(currLeaf, vinfo);
 		} // if (canPushLevel)
 	} // if (isContained)	
 	
@@ -284,28 +301,92 @@ std::ostream & operator<<(std::ostream &os, const Stock &stock) {
 }
 
 
+void Stock::buildChangedNodesQueue(BranchNode::ConstPtr node,
+			const VersionInfo &vinfo, StoredData::VoxelData &queue) const {
+
+	for(int i = 0; i < BranchNode::N_CHILDREN; ++i) {
+		if (!node->hasChild(i)) {
+			continue;
+		}
+		
+		OctreeNode::Ptr child = node->getChild(i);
+		if(!child->isChanged(vinfo)) {
+			continue;
+		}
+		
+		switch (child->getType()) {
+			case OctreeNode::BRANCH_NODE:
+				buildChangedNodesQueue(
+						static_cast< BranchNode::ConstPtr >(child),
+						vinfo,
+						queue
+				);
+				break;
+			case OctreeNode::LEAF_NODE: {
+				LeafNode::Ptr leaf = static_cast< LeafNode::Ptr >(child);
+				StoredData::VoxelPair vpair(
+						leaf->getBox(),
+						leaf->getData()
+				);
+				queue.push_back(vpair);
+				break;
+			}
+			default:
+				throw std::runtime_error("Unknown node type");
+				break;
+		}
+	}
+}
+
 Mesh::Ptr Stock::getMeshing() {
-	
-	// our reference system is translated from the box center...
-	static osg::Vec3 tras(
+	const static osg::Vec3d TRANSLATION(
 			STOCK_MODEL_TRASLATION.translation()[0],
 			STOCK_MODEL_TRASLATION.translation()[1],
 			STOCK_MODEL_TRASLATION.translation()[2]
 	);
-	static osg::ref_ptr< osg::Drawable > boxDraw = VisualizationUtils::buildBox(
-			tras,
-			EXTENT[0], EXTENT[1], EXTENT[2]
-	);
 	
-	osg::ref_ptr< osg::Geode > geode = new osg::Geode;
-	geode->addDrawable(boxDraw.get());
+	StoredData::VoxelDataPtr data = boost::make_shared< StoredData::VoxelData >();
+	StoredData::DeletedDataPtr newDeleted = boost::make_shared< StoredData::DeletedData >();
+	BranchNode::ConstPtr root = MODEL.getRoot();
+	{
+		// acquire lock
+		LockGuard l(mutex);
+		
+		// build & update version informations
+		VersionInfo currVinfo(lastRetrievedVersion, versioner.get());
+		lastRetrievedVersion = versioner.get();
+		
+		// build new & updated data queue
+		if (root->isChanged(currVinfo)) {
+			buildChangedNodesQueue(root, currVinfo, *data);
+		}
+		
+		/* TODO nella gestione della concorrenza rimane un problema: i
+		 * VoxelInfo mandati al mesher sono comunque condivisi con il miller
+		 * quindi potrebbe accadere che per due voxel adiacenti il mesher ne
+		 * calcoli uno con un vertice eroso e un'altro con il vertice ancora
+		 * posizionato. In caso di stepping mode (o comunque nell'ultima
+		 * visualizzazione) tutti questi artifatti spariscono in quanto
+		 * milling e meshing hanno una relazione happens-before
+		 */
+		
+		// renew deletedDataPtr
+		deletedData.swap(newDeleted);
+		
+		// release lock
+	}
 	
-	return boost::make_shared< Mesh >(geode.get());
+	// build StoredData based on updatedData & deletedData
+	StoredData storedData(data, newDeleted);
 	
-	// TODO
-//	StoredData data = MODEL.getData(true);
-//	
-//	return MESHER->buildMesh(data);
+	// invoke mesher
+	Mesh::Ptr mesh = MESHER->buildMesh(storedData);
 	
+	// apply translation to given mesh
+	osg::PositionAttitudeTransform *PAT = new osg::PositionAttitudeTransform;
+	PAT->setPosition(TRANSLATION);
+	PAT->addChild(mesh->getMesh().get());
+	
+	return boost::make_shared< Mesh >(PAT);
 }
 

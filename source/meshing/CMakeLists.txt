@@ -1,7 +1,11 @@
 
 SET (meshing_SRC
 # add here both your sources (cpp) and header (hpp) files
+CubeCache.cpp
+CubeCache.hpp
 Mesher.hpp
+MeshingUtils.cpp
+MeshingUtils.hpp
 StockMesher.cpp
 StockMesher.hpp
 )

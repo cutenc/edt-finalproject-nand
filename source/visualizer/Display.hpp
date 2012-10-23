@@ -8,10 +8,11 @@
 #ifndef DISPLAY_HPP_
 #define DISPLAY_HPP_
 
+#include "threading/SteppableController.hpp"
 #include "milling/Stock.hpp"
 #include "milling/Cutter.hpp"
-#include "threading/SteppableController.hpp"
 #include "MillingSignaler.hpp"
+#include "DisplayInfo.hpp"
 
 class Display {
 	

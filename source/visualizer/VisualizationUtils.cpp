@@ -39,7 +39,6 @@ osg::ref_ptr<osg::ShapeDrawable> VisualizationUtils::buildBox(
 	osg::ref_ptr< osg::ShapeDrawable > sdraw = new osg::ShapeDrawable(box.get());
 	
 	return sdraw.get();	
-	
 }
 
 osg::ref_ptr<osg::ShapeDrawable> VisualizationUtils::buildBox(float x, float y,

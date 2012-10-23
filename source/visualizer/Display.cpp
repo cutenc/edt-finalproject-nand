@@ -33,37 +33,33 @@ Display::~Display() {
 
 //crea la scena e lancia il viewer
 void Display::draw() {
-
-	osg::ref_ptr<osg::Group> root = osg::ref_ptr<osg::Group>(new osg::Group);
-
-	// creo il nodo che conterrà poi tutta la scena
-	osg::ref_ptr<osg::Group> sonOfRoot = osg::ref_ptr<osg::Group>(new osg::Group);
 	
+	// get screen resolution
+	osg::GraphicsContext::WindowingSystemInterface *wsi = osg::GraphicsContext::getWindowingSystemInterface();
+	if (!wsi) {
+		throw std::runtime_error("No windows system present");
+	}
+	
+	u_int WIN_WIDTH, WIN_HEIGHT;
+	wsi->getScreenResolution(osg::GraphicsContext::ScreenIdentifier(0), WIN_WIDTH, WIN_HEIGHT);
+	
+	DisplayInfo displayInfo(WIN_WIDTH, WIN_HEIGHT);
+	
+	// *** SON_OF_ROOT ***
 	/* creo la classe che contiene le informazioni condivise tra SceneUpdater
 	 * e KeyboardManager
 	 */
 	InputDeviceStateType::Ptr idst = boost::make_shared< InputDeviceStateType >();
-	std::cout << "input device state type created" << std::endl;
 	
-	osg::ref_ptr<KeyboardManager> kh = new KeyboardManager(idst, controller);
-	std::cout << "keyboard handler created" << std::endl;
-	
-	sonOfRoot->setDataVariance(osg::Object::DYNAMIC);
-	osg::ref_ptr< SceneUpdater > sceneUpd = new SceneUpdater(idst, signaler, sonOfRoot,
+	// creo il nodo che conterrà poi tutta la scena
+	displayInfo.SON_OF_ROOT->setDataVariance(osg::Object::DYNAMIC);
+	osg::ref_ptr< SceneUpdater > sceneUpd = new SceneUpdater(idst, signaler, displayInfo,
 			stockPtr, cutterPtr); 
-	sonOfRoot->setUpdateCallback(sceneUpd.get());
+	displayInfo.SON_OF_ROOT->setUpdateCallback(sceneUpd.get());
+	displayInfo.ROOT->addChild(displayInfo.SON_OF_ROOT.get());
 
-	std::cout << "Creo il viewer il viewer... ";
-	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer;
-	std::cout << "fatto" << std::endl;
-
-	osgGA::TrackballManipulator *tbmp = new osgGA::TrackballManipulator;
-	viewer->setCameraManipulator(tbmp);
-	tbmp->setHomePosition(osg::Vec3d(400, 400, 400), osg::Vec3d(), osg::Z_AXIS, false);
 	
-	viewer->setUpViewInWindow(128, 32, 1024, 768, 0);
-	viewer->addEventHandler(kh);
-
+	// *** LIGHT ***
 //	osg::ref_ptr<osg::Light> light = osg::ref_ptr<osg::Light>(new osg::Light);
 //	// each light must have a unique number
 //	light->setLightNum(1);
@@ -83,23 +79,35 @@ void Display::draw() {
 //	// aggiungo la sonOfRoot alla luce e la luce a root
 //	ls->addChild(sonOfRoot);
 	
-	root->addChild(sonOfRoot.get());
-
-	root->getOrCreateStateSet()->setMode(
+	displayInfo.ROOT->getOrCreateStateSet()->setMode(
 			GL_LIGHTING,
 			osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE
 	);
-
+	
+	
+	// *** WORLD AXIS ***
 	osg::PositionAttitudeTransform *axisPAT = new osg::PositionAttitudeTransform;
-	root->addChild(axisPAT);
 	double axisScaleFactor = 50;
 	axisPAT->setScale(osg::Vec3d(axisScaleFactor, axisScaleFactor, axisScaleFactor));
 	osg::Geode* axisGeode = new osg::Geode();
 	axisPAT->addChild(axisGeode);
 	axisGeode->addDrawable( VisualizationUtils::getAxis().get() );
-
-	viewer->setSceneData( root );
+	displayInfo.ROOT->addChild(axisPAT);
 	
+	
+	// *** VIEWER ***
+	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer;
+//	viewer->setUpViewOnSingleScreen(0);
+	viewer->setUpViewInWindow(0, 0, displayInfo.winWidth, displayInfo.winHeight, 0);
+	
+	osgGA::TrackballManipulator *tbmp = new osgGA::TrackballManipulator;
+	tbmp->setHomePosition(osg::Vec3d(400, 400, 400), osg::Vec3d(), osg::Z_AXIS, false);
+	viewer->setCameraManipulator(tbmp);
+	
+	osg::ref_ptr<KeyboardManager> kh = new KeyboardManager(idst, controller);
+	viewer->addEventHandler(kh);
+	// setting up scene and realize
+	viewer->setSceneData(displayInfo.ROOT.get());
 	viewer->realize();
 
 	std::cout << "Run viewer" << std::endl;

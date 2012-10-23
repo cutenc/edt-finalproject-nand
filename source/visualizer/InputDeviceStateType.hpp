@@ -27,6 +27,8 @@ public:
 	bool shouldUpdateScene();
 	
 	void signalMillingEnd();
+	
+	bool toggleUpdateScene();
 };
 
 #endif /* INPUTDEVICESTATETYPE_HPP_ */

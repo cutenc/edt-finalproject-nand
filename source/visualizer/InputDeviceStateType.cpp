@@ -10,9 +10,8 @@
 
 
 
-InputDeviceStateType::InputDeviceStateType() {
-	// TODO
-	updateScene = true;
+InputDeviceStateType::InputDeviceStateType() : updateScene(true)
+{
 }
 
 InputDeviceStateType::~InputDeviceStateType() {
@@ -26,5 +25,10 @@ bool InputDeviceStateType::shouldUpdateScene() {
 void InputDeviceStateType::signalMillingEnd() {
 	updateScene = false;
 }
+
+bool InputDeviceStateType::toggleUpdateScene() {
+	return updateScene = !updateScene;
+}
+
 
 

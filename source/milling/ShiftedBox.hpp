@@ -27,8 +27,8 @@ public:
 	typedef Eigen::Translation<long double, 3> Translation3ld;
 	typedef Eigen::Matrix<long double, 3, 1> Vector3ld;
 	
-//	typedef Eigen::Matrix<double, 3, 2> MinMaxMatrix;
-//	typedef boost::shared_ptr< const MinMaxMatrix > MinMaxMPtr;
+	typedef Eigen::Matrix<double, 3, 2> MinMaxMatrix;
+	typedef boost::shared_ptr< const MinMaxMatrix > MinMaxMPtr;
 	
 private:
 	const SimpleBox::ConstPtr simpleBox;
@@ -82,14 +82,22 @@ public:
 		return ShiftedBox(newSize, this->shift);
 	}
 	
+	inline
 	Eigen::Vector3d getCorner(const Corner::CornerType &corner, const Eigen::Isometry3d &rototras) const {
 		return (rototras * shift.cast< double >()) * simpleBox->getCorner(corner);
 	}
 	
+	inline
+	Eigen::Vector3d getCorner(const Corner::CornerType &corner) const {
+		return shift.cast< double >().translation() + simpleBox->getCorner(corner);
+	}
+	
+	inline
 	Eigen::Translation3d getShift() const {
 		return this->shift.cast< double >();
 	}
 	
+	inline
 	const SimpleBox::ConstPtr & getSimpleBox() const {
 		return this->simpleBox;
 	}
@@ -234,12 +242,16 @@ public:
 //		
 //	}
 	
-	
 	friend std::ostream & operator<<(std::ostream &os, const ShiftedBox &sbox) {
 		os << "SBOX[" << *sbox.simpleBox << "@(" 
 				<< sbox.shift.translation().transpose() << ")]";
 		
 		return os;
+	}
+	
+	static void buildMinMax(const ShiftedBox &sbox, MinMaxMatrix &minMax) {
+		minMax.col(0).noalias() = sbox.getCorner(Corner::BottomFrontLeft);
+		minMax.col(1).noalias() = sbox.getCorner(Corner::UpperRearRight);
 	}
 	
 private:
@@ -266,19 +278,6 @@ private:
 //			minMax(1, minMaxLookupCol[cIdx][1]),
 //			minMax(2, minMaxLookupCol[cIdx][2])
 //		);
-//	}
-	
-//	inline
-//	static MinMaxMPtr buildMinMax(const SimpleBox::ConstPtr &box, const Eigen::Translation3d &tras) {
-//		
-//		boost::shared_ptr< MinMaxMatrix > m = boost::allocate_shared< MinMaxMatrix, Eigen::aligned_allocator < MinMaxMatrix > >(
-//					Eigen::aligned_allocator < MinMaxMatrix >()
-//				);
-//		
-//		m->col(0) = box->getCorner(Corner::BottomFrontLeft) + tras.translation();
-//		m->col(1) = box->getCorner(Corner::UpperRearRight) + tras.translation();
-//		
-//		return m;
 //	}
 	
 };

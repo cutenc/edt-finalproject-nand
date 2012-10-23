@@ -34,6 +34,17 @@ public:
 		LEAF_NODE
 	};
 	
+	struct VersionInfo {
+		VersionInfo() : minChangeVersion(0), currVersion(0) { }
+		VersionInfo(u_int minVersion, u_int currVersion) :
+			minChangeVersion(minVersion), currVersion(currVersion) { }
+		
+		virtual ~VersionInfo() { }
+		
+		const u_int minChangeVersion;
+		const u_int currVersion;
+	};
+	
 private:
 	struct NodeIDs {
 		static u_long getNodeID() {
@@ -51,16 +62,16 @@ private:
 	u_int firstChangeVersion;
 	
 public:
-	OctreeNode(const ShiftedBox::ConstPtr &box, u_int version) :
+	OctreeNode(const ShiftedBox::ConstPtr &box, const VersionInfo &vinfo) :
 		father(), childIdx(255), sbox(box), NODE_ID(NodeIDs::getNodeID()),
-		DEPTH(0), firstChangeVersion(version)
+		DEPTH(0), firstChangeVersion(vinfo.currVersion)
 	{ }
 	
 	OctreeNode(const OctreeNode::Ptr &father, u_char childIdx,
-			const ShiftedBox::ConstPtr &sbox, u_int creationVersion) :
+			const ShiftedBox::ConstPtr &sbox, const VersionInfo &vinfo) :
 			father(father), childIdx(childIdx), sbox(sbox),
 			NODE_ID(NodeIDs::getNodeID()), DEPTH(father->getDepth() + 1),
-			firstChangeVersion(creationVersion)
+			firstChangeVersion(vinfo.currVersion)
 	{
 		
 		if (father == NULL)
@@ -107,25 +118,29 @@ public:
 		return this->NODE_ID;
 	}
 	
-	inline
-	void setFirstChangeVersion(u_int minVersion, u_int currVersion) {
-		if (firstChangeVersion > minVersion) {
+	void setFirstChangeVersion(const VersionInfo &vinfo) {
+		if (isChanged(vinfo)) {
 			// we already set our 'first change' version
 			return;
 		}
 		
-		firstChangeVersion = currVersion;
+		firstChangeVersion = vinfo.currVersion;
 		
 		if (isRoot()) {
 			return;
 		} else {
-			getFather()->setFirstChangeVersion(minVersion, currVersion);
+			getFather()->setFirstChangeVersion(vinfo);
 		}
 	}
 	
-	inline
-	u_int getFirstChangeVersion() const {
-		return this->firstChangeVersion;
+	/**
+	 * 
+	 * @param vinfo
+	 * @return \c true if firstChangeVersion occurs in the
+	 * ]vinfo.minChangeVersion; +inf] interval
+	 */
+	bool isChanged(const VersionInfo &vinfo) const {
+		return firstChangeVersion > vinfo.minChangeVersion;
 	}
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const =0;
@@ -164,12 +179,12 @@ private:
 	u_char removedChildren;
 	
 public:
-	BranchNode(const ShiftedBox::ConstPtr &box, u_int version) :
-		OctreeNode(box, version)
+	BranchNode(const ShiftedBox::ConstPtr &box, const VersionInfo &vinfo) :
+		OctreeNode(box, vinfo)
 	{ initChildren(); }
 	
-	BranchNode(OctreeNode::Ptr father, u_char childIdx, const ShiftedBox::ConstPtr &sbox, u_int creationVersion) : 
-		OctreeNode(father, childIdx, sbox, creationVersion) { initChildren(); }
+	BranchNode(OctreeNode::Ptr father, u_char childIdx, const ShiftedBox::ConstPtr &sbox, const VersionInfo &vinfo) : 
+		OctreeNode(father, childIdx, sbox, vinfo) { initChildren(); }
 	
 	virtual ~BranchNode() {
 		for (u_char i = 0; i < N_CHILDREN; i++) {
@@ -328,14 +343,14 @@ private:
 	VoxelInfo::Ptr voxelInfo;
 	
 public:
-	LeafNode(const ShiftedBox::ConstPtr &box, u_int version) :
-			OctreeNode(box, version)
+	LeafNode(const ShiftedBox::ConstPtr &box, const VersionInfo &vinfo) :
+			OctreeNode(box, vinfo)
 	{
 	}
 	
 	LeafNode(const OctreeNode::Ptr &father, u_char childIdx, 
-			const ShiftedBox::ConstPtr &sbox, u_int version) :
-				OctreeNode(father, childIdx, sbox, version),
+			const ShiftedBox::ConstPtr &sbox, const VersionInfo &vinfo) :
+				OctreeNode(father, childIdx, sbox, vinfo),
 				voxelInfo(boost::make_shared< VoxelInfo >(VoxelInfo::DEFAULT_INSIDENESS()))
 	{
 	}

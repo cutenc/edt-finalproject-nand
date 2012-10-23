@@ -91,12 +91,16 @@ bool VoxelInfo::isInside(double d) {
 	return d >= -0.0;
 }
 
-osg::ref_ptr<osg::Geode> VoxelInfo::getGeode() const {
-	return geode;
+osg::ref_ptr<osg::Node> VoxelInfo::getGraphics() const {
+	return graphics;
 }
 
-void VoxelInfo::setGeode(osg::ref_ptr<osg::Geode> geode) {
-	this->geode = geode;
+void VoxelInfo::setGraphics(osg::ref_ptr<osg::Node> graphics) {
+	this->graphics = graphics;
+}
+
+bool VoxelInfo::hasGraphics() const {
+	return graphics.valid();
 }
 
 double VoxelInfo::getInsideness(u_char i) const {

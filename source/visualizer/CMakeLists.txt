@@ -3,6 +3,7 @@ SET (visualizer_SRC
 # add here both your sources (cpp) and header (hpp) files
 Display.cpp
 Display.hpp
+DisplayInfo.hpp
 InputDeviceStateType.cpp
 InputDeviceStateType.hpp
 KeyboardManager.cpp
