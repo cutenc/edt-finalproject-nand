@@ -225,9 +225,13 @@ void Stock::analyzeLeaf(OctreeNode::Ptr leaf,
 			 */
 			
 			results.updated_data_leaves++;
-			results.waste += calculateNewWaste(currLeaf, waste);
 			
-			MODEL.updateData(currLeaf, vinfo);
+			double newWaste = calculateNewWaste(currLeaf, waste);
+			results.waste += newWaste;
+			
+			if (newWaste > 0)
+				MODEL.updateData(currLeaf, vinfo);
+			
 		} // if (canPushLevel)
 	} // if (isContained)	
 	

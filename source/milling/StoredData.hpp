@@ -19,7 +19,16 @@
 class StoredData {
 	
 public:
-	typedef std::pair< ShiftedBox::ConstPtr, VoxelInfo::Ptr > VoxelPair;
+	struct VoxelPair {
+		VoxelPair(const ShiftedBox::ConstPtr &sBox, const VoxelInfo::Ptr vInfo) :
+			sBox(sBox), vInfo(vInfo)
+		{}
+		virtual ~VoxelPair() { }
+		
+		const ShiftedBox::ConstPtr sBox;
+		const VoxelInfo::Ptr vInfo;
+	};
+	
 	typedef std::deque< VoxelPair > VoxelData;
 	typedef boost::shared_ptr< VoxelData > VoxelDataPtr;
 	

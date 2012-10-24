@@ -78,11 +78,11 @@ void Display::draw() {
 //	
 //	// aggiungo la sonOfRoot alla luce e la luce a root
 //	ls->addChild(sonOfRoot);
-	
-	displayInfo.ROOT->getOrCreateStateSet()->setMode(
-			GL_LIGHTING,
-			osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE
-	);
+//	
+//	displayInfo.ROOT->getOrCreateStateSet()->setMode(
+//			GL_LIGHTING,
+//			osg::StateAttribute::ON | osg::StateAttribute::OVERRIDE
+//	);
 	
 	
 	// *** WORLD AXIS ***
@@ -101,7 +101,7 @@ void Display::draw() {
 	viewer->setUpViewInWindow(0, 0, displayInfo.winWidth, displayInfo.winHeight, 0);
 	
 	osgGA::TrackballManipulator *tbmp = new osgGA::TrackballManipulator;
-	tbmp->setHomePosition(osg::Vec3d(400, 400, 400), osg::Vec3d(), osg::Z_AXIS, false);
+	tbmp->setHomePosition(osg::Vec3d(500, 500, 500), osg::Vec3d(), osg::Z_AXIS, false);
 	viewer->setCameraManipulator(tbmp);
 	
 	osg::ref_ptr<KeyboardManager> kh = new KeyboardManager(idst, controller);

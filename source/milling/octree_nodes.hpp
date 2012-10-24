@@ -370,12 +370,12 @@ public:
 		return os << *voxelInfo;
 	}
 	
-	virtual OctreeNode::Ptr getAdjacentUp(u_char childIdx, const Adjacencies::Direction &dir,
-			std::vector< u_char > &path) {
+	virtual OctreeNode::Ptr getAdjacentUp(u_char, const Adjacencies::Direction &,
+			std::vector< u_char > &) {
 		throw std::runtime_error("Adjacent up request to a leaf");
 	}
 	
-	virtual OctreeNode::Ptr getAdjacentDown(std::vector< u_char > &path) {
+	virtual OctreeNode::Ptr getAdjacentDown(std::vector< u_char > &) {
 		return this;
 	}
 };

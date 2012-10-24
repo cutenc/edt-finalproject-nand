@@ -145,11 +145,10 @@ void SceneUpdater::updateScene(const SignaledInfo& info) {
 	Mesh::Ptr mesh = stockPtr->getMeshing();
 	
 	assert(stockRototras->getNumChildren() == 2);
-	stockRototras->replaceChild(
-			stockRototras->getChild(0),
-			mesh->getMesh().get()
-	);
+	// will do a replace of the child in position 0
+	stockRototras->setChild(0, mesh->getMesh().get());
 	
+	// TODO update text informations
 //			SignaledInfo::MillingData::const_iterator it;
 //			for (it = infos.millingResults->begin(); it != infos.millingResults->end(); ++it) {
 //				std::cout << *it << std::endl;
