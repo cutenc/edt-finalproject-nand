@@ -91,9 +91,27 @@ Mesh::Ptr StockMesher::buildMesh(const StoredData &data) {
 			// we have to build the cube & append it to the master geode
 			
 			// get cube from cache and create a surrounding Geode
-			osg::ref_ptr< osg::ShapeDrawable > cube = cubeCache.getCube(sbox->getSimpleBox());
-			osg::Geode *geode = new osg::Geode;
-			geode->addDrawable(cube.get());
+
+			/*
+			 * aggiungo io (Franz): chiamata a MC - spero sia nel punto giusto
+			 */
+			MeshingVoxel mv;
+			int i;
+			mv = MeshingVoxel(
+						sbox.get()->simpleBox,
+						this->getDistance(
+								Eigen::Vector3d(0,0,0), // da dove?
+								sbox.get()->simpleBox
+						)
+					);
+
+			osg::ref_ptr<osg::Geode> geode = osg::ref_ptr<osg::Geode>(new osg::Geode);
+			geode->addDrawable(Meshing::buildMesh(mv, MC_THRESHOLD));
+			MESH->addChild(geode);
+
+			//osg::ref_ptr< osg::ShapeDrawable > cube = cubeCache.getCube(sbox->getSimpleBox());
+			//osg::Geode *geode = new osg::Geode;
+			//geode->addDrawable(cube.get());
 			
 			// translate it
 			osg::PositionAttitudeTransform *pat = new osg::PositionAttitudeTransform;
@@ -108,4 +126,50 @@ Mesh::Ptr StockMesher::buildMesh(const StoredData &data) {
 	}
 	
 	return boost::make_shared< Mesh >(MESH.get());
+}
+
+double* StockMesher::getDistance(const Eigen::Vector3d point, SimpleBox::Ptr sbp) {
+
+	double weights[8] = {
+			VoxelInfo::DEFAULT_INSIDENESS(),VoxelInfo::DEFAULT_INSIDENESS(),
+			VoxelInfo::DEFAULT_INSIDENESS(),VoxelInfo::DEFAULT_INSIDENESS(),
+			VoxelInfo::DEFAULT_INSIDENESS(),VoxelInfo::DEFAULT_INSIDENESS(),
+			VoxelInfo::DEFAULT_INSIDENESS(),VoxelInfo::DEFAULT_INSIDENESS()
+	};
+
+	int i;
+	for (i = 0; i < 8; i++) {
+		if (point[2] < 0)
+				return boost::math::changesign(CommonUtils::INFINITE());
+
+		double halfDim = HALF_EXTENTS;//sbp.get()->getHalfExtent();
+
+
+		/* following implicit function given in "Adaptive NC Simulation
+		 * for Multi-axis Solid Machining" for a flat endmill aligned with
+		 * Z-axis we can write:
+		 */
+		double firstTerm = fabs((double)point[2] - halfDim) - halfDim;
+
+		/* in order to reduce floating point approximation errors we will
+		 * rewrite
+		 * double secondTerm = sqr(point.getX()) + sqr(point.getY()) - SQR_RADIUS;
+		 * in a more floating-point-friendly way.
+		 *
+		 * http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
+		 */
+		double secondTerm = boost::math::pow< 2 >((double)point[0])
+				+ (point[1] + RADIUS) * (point[1] - RADIUS);
+
+		double distance = fmax(firstTerm, secondTerm);
+
+		/* I have to add a minus sign because in paper specification
+		 * distance <0 means "inside surface" and >0 "outside surface" but,
+		 * in our specification <0 means "outside" and >0 "inside"
+		 */
+		//return
+		weights[i] = boost::math::changesign(distance);
+	}
+
+	return weights;
 }
