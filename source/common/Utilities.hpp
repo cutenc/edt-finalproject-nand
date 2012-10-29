@@ -74,7 +74,7 @@ public:
 	static std::string extractProperty(const std::string &line, const std::string &propName, 
 			const std::string &propValuePattern, bool icase = true) throw(std::runtime_error);
 	
-	static std::string repeat(const std::string &pattern, u_int nTimes);
+	static std::string repeat(const std::string &pattern, unsigned int nTimes);
 };
 
 

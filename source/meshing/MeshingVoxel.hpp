@@ -21,7 +21,7 @@ public:
 
 		Voxel::CornerTypeArray &order = Voxel::DEFAULT_ORDER;
 
-		u_int i = 0;
+		unsigned int i = 0;
 		Voxel::CornerTypeArray::const_iterator it;
 		for (it = order.begin(); it != order.end(); ++it) {
 			Eigen::Vector3d corner = sbp.get()->simpleBox.get()->getCorner(*it);

@@ -25,8 +25,8 @@ public:
 	typedef boost::shared_ptr< const VoxelInfo > ConstPtr;
 	
 private:
-	// updated by updateInsideness(u_char, double) function
-	u_char insideCorners;
+	// updated by updateInsideness(unsigned char, double) function
+	unsigned char insideCorners;
 	
 	GraphicPointer graphics;
 	
@@ -64,7 +64,7 @@ public:
 	inline
 	bool updateInsideness(Corner::CornerType c, double newInsideness) {
 		
-		u_char oldInside = insideCorners;
+		unsigned char oldInside = insideCorners;
 		
 		int i = static_cast< int >(c);
 		assert(i >= 0 && i < 8);

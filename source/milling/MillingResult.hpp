@@ -17,10 +17,10 @@
 struct MillingResult {
 	
 public:
-	MillingResult(u_int stepNumber, const IntersectionResult &res, bool water) :
+	MillingResult(unsigned int stepNumber, const IntersectionResult &res, bool water) :
 			stepNumber(stepNumber), intersection(res), water(water) { }
 	
-	u_int stepNumber;
+	unsigned int stepNumber;
 	IntersectionResult intersection;
 	bool water;
 	

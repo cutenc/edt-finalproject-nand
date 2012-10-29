@@ -13,7 +13,7 @@
 class BranchNodeData: public OctreeNodeData {
 	
 public:
-	BranchNodeData(const osg::BoundingBoxd &bbox, u_char depth) :
+	BranchNodeData(const osg::BoundingBoxd &bbox, unsigned char depth) :
 		OctreeNodeData(bbox, depth) { }
 	
 	virtual NodeDataType getType() const {

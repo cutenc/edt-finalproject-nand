@@ -10,17 +10,21 @@
 
 #include <eigen3/Eigen/Geometry>
 
+#include "Voxel.hpp"
+
 class MeshingVoxel {
 public:
 
 	MeshingVoxel(ShiftedBox::Ptr sbp, double *weights) {
 
-		int i;
-
 		this->weights = weights;
 
-		for (i = 0; i < 8; i++) {
-			Eigen::Vector3d corner = sbp.get()->getCorner(i, sbp.get()->getShift());
+		Voxel::CornerTypeArray &order = Voxel::DEFAULT_ORDER;
+
+		u_int i = 0;
+		Voxel::CornerTypeArray::const_iterator it;
+		for (it = order.begin(); it != order.end(); ++it) {
+			Eigen::Vector3d corner = sbp.get()->simpleBox.get()->getCorner(*it);
 			corners->push_back(osg::Vec3f(corner[0], corner[1], corner[2]));
 		}
 	}

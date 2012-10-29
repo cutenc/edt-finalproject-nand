@@ -16,7 +16,7 @@
 class CyclicRunnable: public Runnable {
 	
 private:
-	AtomicNumber<u_long> cycleCounter;
+	AtomicNumber<unsigned long> cycleCounter;
 	
 protected:
 	virtual bool hasNextCycle() throw() =0;
@@ -46,7 +46,7 @@ public:
 	
 	void run();
 	
-	u_long getCycleCount();
+	unsigned long getCycleCount();
 	
 };
 

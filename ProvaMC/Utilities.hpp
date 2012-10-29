@@ -10,7 +10,8 @@
 
 #include <iostream>
 #include <stdexcept>
-
+#include <limits>
+#include <cmath>
 #include <bits/postypes.h>
 
 #include <Eigen/Geometry>
@@ -115,6 +116,13 @@ public:
 				std::numeric_limits<double>::infinity() : std::numeric_limits<double>::max();
 		
 		return INF;
+	}
+	
+	inline
+	static bool doubleEquals(double x, double y) {
+		static double EPS = 3 * std::numeric_limits< double >::epsilon();
+		
+		return fabs(x - y) < EPS;
 	}
 };
 

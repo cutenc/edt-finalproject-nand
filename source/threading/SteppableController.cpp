@@ -46,7 +46,7 @@ void SteppableController::stepOnce() {
 	step(1);
 }
 
-void SteppableController::step(u_long n) {
+void SteppableController::step(unsigned long n) {
 	UniqueLock _(mutex);
 	
 	remainingStep = n;

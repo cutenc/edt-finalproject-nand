@@ -38,8 +38,8 @@ private:
 	const Cutter::Ptr cutterPtr;
 	const double stockVolume;
 	
-	u_long nFrames;
-	u_int nMoves;
+	unsigned long nFrames;
+	unsigned int nMoves;
 	double totWaste;
 	bool waterFlag;
 	

@@ -21,7 +21,7 @@
 #include "milling/VoxelInfo.hpp"
 
 MeshOctree::MeshOctree(const osg::BoundingBoxd& bbox, 
-		LeafNodeCallback* nodeCallback, u_int dataPerLeaf, u_int maxDepth) :
+		LeafNodeCallback* nodeCallback, unsigned int dataPerLeaf, unsigned int maxDepth) :
 	groupCallback(nodeCallback),
 	maxLeafSize(dataPerLeaf), maxDepth(maxDepth)
 {
@@ -43,7 +43,7 @@ bool MeshOctree::addData(const GraphicData& data) {
 		return false;
 	}
 	
-	u_int pidx = static_cast< u_int >(nodeData->getType());
+	unsigned int pidx = static_cast< unsigned int >(nodeData->getType());
 	assert(pidx < 2);
 	(this->*(PROCESSERS[pidx]))(getRoot(), bbox, data);
 	
@@ -64,7 +64,7 @@ osg::Group* MeshOctree::getRoot() {
 	return this->ROOT.get();
 }
 
-osg::ref_ptr<osg::Group> MeshOctree::createLeafGrp(const osg::BoundingBoxd& bbox, u_char depth) {
+osg::ref_ptr<osg::Group> MeshOctree::createLeafGrp(const osg::BoundingBoxd& bbox, unsigned char depth) {
 	osg::ref_ptr< osg::Group > grp = new osg::Group;
 
 	// create Group data & set it
@@ -141,7 +141,7 @@ void MeshOctree::processBranchGrp(osg::Group* group, const osg::BoundingBoxd& bb
 		// extract data
 		OctreeNodeData *ocData = MeshingUtils::getUserData< OctreeNodeData >(nextGrp);
 		if (ocData->isMyCompetence(bbox)) {
-			u_int pidx = static_cast< u_int >(ocData->getType());
+			unsigned int pidx = static_cast< unsigned int >(ocData->getType());
 			assert(pidx < 2);
 			(this->*(PROCESSERS[pidx]))(nextGrp, bbox, data);
 			return;

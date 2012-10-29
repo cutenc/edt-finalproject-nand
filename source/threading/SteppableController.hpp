@@ -21,14 +21,14 @@ private:
 	typedef boost::lock_guard< boost::mutex > LockGuard;
 	
 private:
-	const static u_long MAX_STEPS;
+	const static unsigned long MAX_STEPS;
 	
 	mutable boost::mutex mutex;
 	boost::condition_variable awaitPlay;
 	
 	volatile bool isStopped;
 	volatile bool isPaused;
-	volatile u_long remainingStep;
+	volatile unsigned long remainingStep;
 	
 public:
 	SteppableController(bool startPaused = false);
@@ -48,7 +48,7 @@ public:
 	void pause();
 	void resume();
 	void stepOnce();
-	void step(u_long n);
+	void step(unsigned long n);
 	
 private:
 	bool shouldWait() const;

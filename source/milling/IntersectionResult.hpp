@@ -21,12 +21,12 @@ public:
 	 */
 	double waste;
 	
-	u_long analyzed_leaves;
-	u_long purged_leaves;
+	unsigned long analyzed_leaves;
+	unsigned long purged_leaves;
 	
-	u_long pushed_leaves;
+	unsigned long pushed_leaves;
 	
-	u_long updated_data_leaves;
+	unsigned long updated_data_leaves;
 	
 	boost::chrono::microseconds elapsedTime;
 	

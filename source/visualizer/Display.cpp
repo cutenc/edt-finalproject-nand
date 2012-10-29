@@ -41,7 +41,7 @@ void Display::draw() {
 		throw std::runtime_error("No windows system present");
 	}
 	
-	u_int WIN_WIDTH, WIN_HEIGHT;
+	unsigned int WIN_WIDTH, WIN_HEIGHT;
 	wsi->getScreenResolution(osg::GraphicsContext::ScreenIdentifier(0), WIN_WIDTH, WIN_HEIGHT);
 	
 	DisplayInfo displayInfo(WIN_WIDTH, WIN_HEIGHT);

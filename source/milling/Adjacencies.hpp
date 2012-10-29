@@ -34,9 +34,9 @@ public:
 	};
 	
 	typedef std::pair<Axis, Verso> Direction;
-	typedef std::pair< u_char, AdjacencyType > Adjacency;
+	typedef std::pair< unsigned char, AdjacencyType > Adjacency;
 	
-	static Adjacency getAdjacent(u_char c, const Direction &dir);
+	static Adjacency getAdjacent(unsigned char c, const Direction &dir);
 	
 };
 

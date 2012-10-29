@@ -29,7 +29,7 @@ private:
 	
 public:
 	CommonMesher(const StockDescription &stock, LeafNodeCallback *lnc,
-			u_int maxLeafSize, u_int maxDepth = 32);
+			unsigned int maxLeafSize, unsigned int maxDepth = 32);
 	virtual ~CommonMesher();
 	
 	virtual Mesh::Ptr buildMesh(const StoredData &data);

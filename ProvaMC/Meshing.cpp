@@ -312,7 +312,7 @@ Meshing::~Meshing() {}
   0 will be returned if the grid Cell is either totally above
   of totally below the cutterThreshold.
 */
-osg::ref_ptr<osg::Geometry> buildMesh(MeshingVoxel grid, double cutterThreshold) {
+static osg::ref_ptr<osg::Geometry> buildMesh(MeshingVoxel grid, double cutterThreshold) {
 
 	int i, j, cubeindex;
 	osg::Vec3Array vertlist = new osg::Vec3Array();
@@ -377,6 +377,7 @@ osg::ref_ptr<osg::Geometry> buildMesh(MeshingVoxel grid, double cutterThreshold)
 		for (j = 0; j < 3; j++) {
 			osg::ref_ptr<osg::DrawElementsUInt> face =
 				osg::ref_ptr<osg::DrawElementsUInt>(new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 3));
+
 			face->push_back(vertlist[Meshing::triTable[cubeindex][i+j]].x());
 			face->push_back(vertlist[Meshing::triTable[cubeindex][i+j]].y());
 			face->push_back(vertlist[Meshing::triTable[cubeindex][i+j]].z());
@@ -393,12 +394,11 @@ osg::ref_ptr<osg::Geometry> buildMesh(MeshingVoxel grid, double cutterThreshold)
   Linearly interpolate the position where an isosurface cuts
   an edge between two vertices, each with their own scalar value
 */
-osg::Vec3f Meshing::VertInterp(const double cutterThreshold,
-								      const osg::Vec3f p1,
-								      const osg::Vec3f p2,
-								      const double valp1,
-								      const double valp2
-							   	     )
+osg::Vec3f Meshing::VertInterp(const double 	cutterThreshold,
+							   const osg::Vec3f p1,
+							   const osg::Vec3f p2,
+							   const double 	valp1,
+							   const double 	valp2)
 {
 
 	double	p1x = p1.x(), p1y = p1.y(), p1z = p1.z(),
@@ -415,14 +415,10 @@ osg::Vec3f Meshing::VertInterp(const double cutterThreshold,
 
 	p = osg::Vec3f(
 					(p1x + mu * (p2x - p1x)),
-   	   	   	   	   	(p1y + mu * (p2y - p1y)),
-  	   	   	   	   	(p1z + mu * (p2z - p1z))
+					(p1y + mu * (p2y - p1y)),
+					(p1z + mu * (p2z - p1z))
 				  );
 
 	return(p);
 }
-
-//marchingCubes() {
-//
-//}
 

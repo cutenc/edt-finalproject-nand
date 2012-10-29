@@ -19,7 +19,7 @@ class PtrVersioner {
 
 public:
 	
-	typedef u_long version_type;
+	typedef unsigned long version_type;
 	
 	struct VersionInfo {
 		static const version_type NULL_VERSION = 0;
@@ -39,7 +39,7 @@ public:
 	};
 	
 private:
-	static const u_char ARRAY_SIZE = 3; 
+	static const unsigned char ARRAY_SIZE = 3;
 	
 	typedef std::pair< version_type, boost::shared_ptr< DataT > > VersionedPtr;
 	

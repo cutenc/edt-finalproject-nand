@@ -9,7 +9,7 @@
 
 #include <cassert>
 
-LeafNodeData::LeafNodeData(const osg::BoundingBoxd& bbox, u_char depth) :
+LeafNodeData::LeafNodeData(const osg::BoundingBoxd& bbox, unsigned char depth) :
 	OctreeNodeData(bbox, depth), storedElms(0), dirty(true) 
 { }
 
@@ -33,7 +33,7 @@ void LeafNodeData::updateElm(const GraphicData::Elm& ref,
 	*ref = info;
 }
 
-u_int LeafNodeData::getSize() const {
+unsigned int LeafNodeData::getSize() const {
 	// elements.size() may take constant time (in libc it is so)
 	return storedElms;
 }

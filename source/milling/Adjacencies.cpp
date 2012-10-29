@@ -7,9 +7,9 @@
 
 #include "Adjacencies.hpp"
 
-Adjacencies::Adjacency Adjacencies::getAdjacent(u_char corner, const Direction &dir) {
+Adjacencies::Adjacency Adjacencies::getAdjacent(unsigned char corner, const Direction &dir) {
 	
-	static u_char directionLookup[][3] = {
+	static unsigned char directionLookup[][3] = {
 	/* 0 */	{1, 3, 4},
 	/* 1 */	{0, 2, 5},
 	/* 2 */	{3, 1, 6},

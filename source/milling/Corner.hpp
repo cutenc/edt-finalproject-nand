@@ -17,7 +17,7 @@ class Corner {
 	
 public:
 	
-	static const u_char N_CORNERS = 8;
+	static const unsigned char N_CORNERS = 8;
 	
 	/**
 	 *            Z     Y

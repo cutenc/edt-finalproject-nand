@@ -100,7 +100,7 @@ public:
 		BranchNode::Ptr father = static_cast< BranchNode::Ptr >(lpt->getFather());
 		assert(father == newBranch->getFather());
 		
-		u_char leafIdx = lpt->getChildIdx();
+		unsigned char leafIdx = lpt->getChildIdx();
 		
 		// then delete leaf from father
 		father->deleteChild(leafIdx);

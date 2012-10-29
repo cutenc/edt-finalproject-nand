@@ -23,18 +23,18 @@ private:
 	typedef void (MeshOctree::* NodeDataProcessers)(osg::Group *lod, const osg::BoundingBoxd &, const GraphicData &);
 	
 private:
-	static const u_char N_CHILDREN = 8;
+	static const unsigned char N_CHILDREN = 8;
 	
-	static const u_int GROUP_IDX = 0;
+	static const unsigned int GROUP_IDX = 0;
 	
 	const osg::ref_ptr< LeafNodeCallback > groupCallback;
-	const u_int maxLeafSize, maxDepth;
+	const unsigned int maxLeafSize, maxDepth;
 	NodeDataProcessers PROCESSERS[2];
 	osg::ref_ptr< osg::Group > ROOT;
 	
 public:
 	MeshOctree(const osg::BoundingBoxd &bbox, LeafNodeCallback *nodeCallback, 
-			u_int dataPerLeaf, u_int maxDepth);
+			unsigned int dataPerLeaf, unsigned int maxDepth);
 	
 	virtual ~MeshOctree();
 	
@@ -50,7 +50,7 @@ public:
 	osg::Group * getRoot();
 	
 private:
-	osg::ref_ptr< osg::Group > createLeafGrp(const osg::BoundingBoxd &bbox, u_char depth);
+	osg::ref_ptr< osg::Group > createLeafGrp(const osg::BoundingBoxd &bbox, unsigned char depth);
 	osg::ref_ptr< LeafNodeData > pushGrp(osg::Group *lod);
 	
 	void processBranchGrp(osg::Group *lod, const osg::BoundingBoxd &bbox, const GraphicData &data);

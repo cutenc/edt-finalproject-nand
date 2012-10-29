@@ -19,4 +19,4 @@ bool SteppableRunnable::hasNextCycle() throw() {
 	return (CONTROLLER->canStep()) && this->hasNextStep();
 }
 
-const u_long SteppableController::MAX_STEPS = std::numeric_limits< u_long >::max();
+const unsigned long SteppableController::MAX_STEPS = std::numeric_limits< unsigned long >::max();

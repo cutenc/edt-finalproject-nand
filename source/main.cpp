@@ -44,7 +44,7 @@ int main(int argc, const char **argv) {
 	// calculate max octree depth
 	double maxDim = cfp.getStockDescription()->getGeometry()->asEigen().maxCoeff();
 	float minSize = clp.getMinVoxelSize();
-	u_int max_depth = log2(maxDim / minSize) + 1;
+	unsigned int max_depth = log2(maxDim / minSize) + 1;
 	
 	typename Mesher< StoredData >::Ptr mesher;
 	switch (clp.getVideoMode()) {

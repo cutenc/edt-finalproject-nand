@@ -25,7 +25,7 @@
 #include "Corner.hpp"
 #include "StoredData.hpp"
 
-Stock::Stock(const StockDescription &desc, u_int maxDepth, MesherType::Ptr mesher) :
+Stock::Stock(const StockDescription &desc, unsigned int maxDepth, MesherType::Ptr mesher) :
 	MAX_DEPTH(maxDepth),
 	EXTENT(desc.getGeometry()->asEigen()),
 	STOCK_MODEL_TRASLATION(EXTENT / 2.0),

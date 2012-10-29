@@ -27,7 +27,7 @@ void CyclicRunnable::run() {
 	onEnd();
 }
 
-u_long CyclicRunnable::getCycleCount() {
+unsigned long CyclicRunnable::getCycleCount() {
 	return this->cycleCounter.get();
 }
 

@@ -152,7 +152,7 @@ void SceneUpdater::operator()(osg::Node* node, osg::NodeVisitor* nv) {
 	if(IDST->shouldUpdateScene()) {
 		SignaledInfo infos = SIGNALER->awaitMiller(WAIT_TIME);
 		
-		u_char procIdx = static_cast< u_char >(infos.state);
+		unsigned char procIdx = static_cast< unsigned char >(infos.state);
 		assert(procIdx < 3);
 		(this->*(PROCESSERS[procIdx]))(infos);
 	} else {

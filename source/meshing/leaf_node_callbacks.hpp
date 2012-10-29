@@ -57,7 +57,7 @@ public:
 		assert(data.isDirty());
 		
 		osg::ref_ptr< osg::Geometry > geom = new osg::Geometry;
-		u_int nElm = 0, totElm = data.getElements().size();
+		unsigned int nElm = 0, totElm = data.getElements().size();
 		
 		/* face order:
 		 * left, bottom, front, rigth, rear, top
@@ -82,7 +82,7 @@ public:
 		GraphicData::List::const_iterator dataIt = data.getElements().begin();
 		for (; dataIt != data.getElements().end(); ++dataIt) {
 			
-			u_int shift = nElm * Corner::N_CORNERS;
+			unsigned int shift = nElm * Corner::N_CORNERS;
 			
 			CornerIterator cit = CornerIterator::begin();
 			for (; cit != CornerIterator::end(); ++cit) {
@@ -137,7 +137,7 @@ public:
 			/*
 			 * BUILD NORMAL ARRAY INDEX
 			 */
-			for (u_char i = 0; i < 6; ++i) {
+			for (unsigned char i = 0; i < 6; ++i) {
 				// normals are always 0, 1, 2, ..., 5
 				normalIndexArray->push_back(i);
 			}
@@ -145,7 +145,7 @@ public:
 			/*
 			 * BUILD COLOR ARRAY INDEX
 			 */
-			for (u_char i = 0; i < 6; ++i) {
+			for (unsigned char i = 0; i < 6; ++i) {
 				// normals are always 0, 1, 2, ..., 5
 				colorIndexArray->push_back(i);
 			}

@@ -18,7 +18,7 @@
 class LeafNodeCallback : public osg::NodeCallback {
 	
 public:
-	const static u_int NODE_IDX = 0;
+	const static unsigned int NODE_IDX = 0;
 	
 public:
 	LeafNodeCallback() { }

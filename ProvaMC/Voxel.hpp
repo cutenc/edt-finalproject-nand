@@ -20,7 +20,7 @@
 
 #include "Corner.hpp"
 #include "SimpleBox.hpp"
-#include "Utilities.hpp"
+#include "common/Utilities.hpp"
 
 class Voxel {
 	

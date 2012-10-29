@@ -110,11 +110,11 @@ private:
 		
 	private:
 		static const int N_DIVISIONS = 2;
-		const u_int depthSwitch;
+		const unsigned int depthSwitch;
 		TestFoo TESTS[N_DIVISIONS];
 		
 	public:
-		IntersectionTester(u_int maxDepth) :
+		IntersectionTester(unsigned int maxDepth) :
 			depthSwitch( fmin(4.0, maxDepth) )
 		{
 			int i = 0;
@@ -157,16 +157,16 @@ private:
 	
 	typedef boost::lock_guard< boost::mutex > LockGuard;
 	
-	typedef AtomicNumber<u_int> Versioner;
+	typedef AtomicNumber<unsigned int> Versioner;
 	
 private:
-	const u_int MAX_DEPTH;
+	const unsigned int MAX_DEPTH;
 	const Eigen::Vector3d EXTENT;
 	const Eigen::Translation3d STOCK_MODEL_TRASLATION;
 	OctreeType MODEL;
 	const IntersectionTester intersectionTester;
 	MesherType::Ptr MESHER;
-	u_int lastRetrievedVersion;
+	unsigned int lastRetrievedVersion;
 	Versioner versioner;
 	
 	mutable boost::mutex mutex;
@@ -174,7 +174,7 @@ private:
 	DeletedDataQueuer deletedQueuer;
 	
 public:
-	Stock(const StockDescription &desc, u_int maxDepth, MesherType::Ptr mesher);
+	Stock(const StockDescription &desc, unsigned int maxDepth, MesherType::Ptr mesher);
 	virtual ~Stock();
 	
 	/**

@@ -44,12 +44,12 @@ public:
 		return 0.00001;
 	};
 
+	static osg::ref_ptr<osg::Geometry> buildMesh(MeshingVoxel grid, double cutterThreshold);
 	static osg::Vec3f VertInterp(const double cutterThreshold,
 					      const osg::Vec3f p1,
 						  const osg::Vec3f p2,
 						  const double valp1,
 						  const double valp2);
-	osg::ref_ptr<osg::Geometry> buildMesh(MeshingVoxel grid, double cutterThreshold);
 
 };
 

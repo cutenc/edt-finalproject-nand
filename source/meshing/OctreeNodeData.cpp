@@ -7,7 +7,7 @@
 
 #include "OctreeNodeData.hpp"
 
-OctreeNodeData::OctreeNodeData(const osg::BoundingBoxd& bbox, u_char depth):
+OctreeNodeData::OctreeNodeData(const osg::BoundingBoxd& bbox, unsigned char depth):
 	bbox(bbox), depth(depth)
 { }
 
@@ -21,7 +21,7 @@ bool OctreeNodeData::isMyCompetence(const osg::BoundingBoxd& box) {
 			(this->bbox.intersects(box) && this->bbox.contains(box.center()));
 }
 
-OctreeNodeData::u_char OctreeNodeData::getDepth() const {
+OctreeNodeData::unsigned char OctreeNodeData::getDepth() const {
 	return this->depth;
 }
 

@@ -12,7 +12,7 @@
 #include "MeshingUtils.hpp"
 
 CommonMesher::CommonMesher(const StockDescription& stock,
-		LeafNodeCallback *lnc, u_int maxLeafSize, u_int maxDepth) :
+		LeafNodeCallback *lnc, unsigned int maxLeafSize, unsigned int maxDepth) :
 		HALF_EXTENTS(stock.getGeometry()->asEigen() * 0.5),
 		meshOctree(
 				osg::BoundingBoxd(

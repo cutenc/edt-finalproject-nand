@@ -11,14 +11,14 @@
 #include <osg/Group>
 
 struct DisplayInfo {
-	DisplayInfo(u_int winWidth, u_int winHeight) :
+	DisplayInfo(unsigned int winWidth, unsigned int winHeight) :
 		winWidth(winWidth), winHeight(winHeight),
 		ROOT(new osg::Group), SON_OF_ROOT(new osg::Group)
 	{ }
 	
 	virtual ~DisplayInfo() { }
 	
-	const u_int winWidth, winHeight;
+	const unsigned int winWidth, winHeight;
 	const osg::ref_ptr< osg::Group > ROOT;
 	const osg::ref_ptr< osg::Group > SON_OF_ROOT;
 };

@@ -19,18 +19,18 @@ class LeafNodeData: public OctreeNodeData {
 	
 private:
 	GraphicData::List elements;
-	u_int storedElms;
+	unsigned int storedElms;
 	bool dirty;
 	
 public:
-	LeafNodeData(const osg::BoundingBoxd &bbox, u_char depth);
+	LeafNodeData(const osg::BoundingBoxd &bbox, unsigned char depth);
 	
 	virtual NodeDataType getType() const;
 	
 	GraphicData::Elm insertElm(const GraphicData &info);
 	void deleteElm(const GraphicData::Elm &ref);
 	void updateElm(const GraphicData::Elm &ref, const GraphicData &info);
-	u_int getSize() const;
+	unsigned int getSize() const;
 	
 	const GraphicData::List &getElements() const;
 	GraphicData::List &getElements();

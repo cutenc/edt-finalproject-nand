@@ -29,7 +29,7 @@ private:
 	MillingAlgorithmConf CONFIG;
 	
 	double waterFluxWasteCount;
-	u_int stepNumber;
+	unsigned int stepNumber;
 	
 	
 public:
@@ -41,7 +41,7 @@ public:
 	
 	bool hasNextStep();
 	
-	u_int getStepNumber();
+	unsigned int getStepNumber();
 	
 	/**
 	 * Returns dimensions of the smallest voxel in which STOCK will be divided.

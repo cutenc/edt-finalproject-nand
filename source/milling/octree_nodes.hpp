@@ -36,30 +36,30 @@ public:
 	
 	struct VersionInfo {
 		VersionInfo() : minChangeVersion(0), currVersion(0) { }
-		VersionInfo(u_int minVersion, u_int currVersion) :
+		VersionInfo(unsigned int minVersion, unsigned int currVersion) :
 			minChangeVersion(minVersion), currVersion(currVersion) { }
 		
 		virtual ~VersionInfo() { }
 		
-		const u_int minChangeVersion;
-		const u_int currVersion;
+		const unsigned int minChangeVersion;
+		const unsigned int currVersion;
 	};
 	
 private:
 	struct NodeIDs {
-		static u_long getNodeID() {
-			static AtomicNumber< u_long > IDs;
+		static unsigned long getNodeID() {
+			static AtomicNumber< unsigned long > IDs;
 			return IDs.getAndInc();
 		}
 	};
 	
 	const OctreeNode::Ptr father;
-	const u_char childIdx;
+	const unsigned char childIdx;
 	const ShiftedBox::ConstPtr sbox;
-	const u_long NODE_ID;
-	const u_int DEPTH;
+	const unsigned long NODE_ID;
+	const unsigned int DEPTH;
 	
-	u_int firstChangeVersion;
+	unsigned int firstChangeVersion;
 	
 public:
 	OctreeNode(const ShiftedBox::ConstPtr &box, const VersionInfo &vinfo) :
@@ -67,7 +67,7 @@ public:
 		DEPTH(0), firstChangeVersion(vinfo.currVersion)
 	{ }
 	
-	OctreeNode(const OctreeNode::Ptr &father, u_char childIdx,
+	OctreeNode(const OctreeNode::Ptr &father, unsigned char childIdx,
 			const ShiftedBox::ConstPtr &sbox, const VersionInfo &vinfo) :
 			father(father), childIdx(childIdx), sbox(sbox),
 			NODE_ID(NodeIDs::getNodeID()), DEPTH(father->getDepth() + 1),
@@ -96,7 +96,7 @@ public:
 	}
 	
 	inline
-	u_char getChildIdx() const {
+	unsigned char getChildIdx() const {
 		assert(!isRoot());
 			// throw std::runtime_error("cannot ask root's childIdx");
 		
@@ -109,12 +109,12 @@ public:
 	}
 	
 	inline
-	u_int getDepth() const {
+	unsigned int getDepth() const {
 		return this->DEPTH;
 	}
 	
 	inline
-	u_long getID() const {
+	unsigned long getID() const {
 		return this->NODE_ID;
 	}
 	
@@ -152,15 +152,15 @@ public:
 	OctreeNode::Ptr getAdjacent(Adjacencies::Direction dir) {
 		assert(!isRoot());
 		
-		std::vector<u_char> path;
+		std::vector<unsigned char> path;
 		return getFather()->getAdjacentUp(getChildIdx(), dir, path);
 	}
 	
-	virtual OctreeNode::Ptr getAdjacentUp(u_char childIdx,
+	virtual OctreeNode::Ptr getAdjacentUp(unsigned char childIdx,
 			const Adjacencies::Direction &dir,
-			std::vector< u_char > &path) =0;
+			std::vector< unsigned char > &path) =0;
 	
-	virtual OctreeNode::Ptr getAdjacentDown(std::vector< u_char > &path) =0;
+	virtual OctreeNode::Ptr getAdjacentDown(std::vector< unsigned char > &path) =0;
 };
 
 
@@ -180,14 +180,14 @@ private:
 	 * bit = 0 => children absent
 	 * bit = 1 => children present
 	 */
-	u_char childrenMask;
+	unsigned char childrenMask;
 	
 public:
 	BranchNode(const ShiftedBox::ConstPtr &box, const VersionInfo &vinfo) :
 		OctreeNode(box, vinfo)
 	{ initChildren(); }
 	
-	BranchNode(OctreeNode::Ptr father, u_char childIdx, const ShiftedBox::ConstPtr &sbox, const VersionInfo &vinfo) : 
+	BranchNode(OctreeNode::Ptr father, unsigned char childIdx, const ShiftedBox::ConstPtr &sbox, const VersionInfo &vinfo) :
 		OctreeNode(father, childIdx, sbox, vinfo) { initChildren(); }
 	
 	virtual ~BranchNode() {
@@ -246,7 +246,7 @@ public:
 	}
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const {
-		u_int depth = this->getDepth();
+		unsigned int depth = this->getDepth();
 		
 		std::string tabs = StringUtils::repeat("\t", depth);
 		os << "Branch-" << this->getID() << "@" << depth;
@@ -263,8 +263,8 @@ public:
 		return os;
 	}
 	
-	virtual OctreeNode::Ptr getAdjacentUp(u_char childIdx, const Adjacencies::Direction &dir,
-			std::vector< u_char > &path) {
+	virtual OctreeNode::Ptr getAdjacentUp(unsigned char childIdx, const Adjacencies::Direction &dir,
+			std::vector< unsigned char > &path) {
 		
 		Adjacencies::Adjacency adj = Adjacencies::getAdjacent(
 				childIdx,
@@ -298,12 +298,12 @@ public:
 		}
 	}
 	
-	virtual OctreeNode::Ptr getAdjacentDown(std::vector< u_char > &path) {
+	virtual OctreeNode::Ptr getAdjacentDown(std::vector< unsigned char > &path) {
 		if (path.empty()) {
 			return this;
 		}
 		
-		u_char pChild = path.back(); path.pop_back();
+		unsigned char pChild = path.back(); path.pop_back();
 		if (hasChild(pChild)) {
 			return getChild(pChild)->getAdjacentDown(path);
 		} else {
@@ -326,7 +326,7 @@ public:
 	typedef const LeafNode * ConstPtr;
 	
 private:
-	u_char cuttedVertex;
+	unsigned char cuttedVertex;
 	VoxelInfo::Ptr voxelInfo;
 	
 public:
@@ -335,7 +335,7 @@ public:
 	{
 	}
 	
-	LeafNode(const OctreeNode::Ptr &father, u_char childIdx, 
+	LeafNode(const OctreeNode::Ptr &father, unsigned char childIdx,
 			const ShiftedBox::ConstPtr &sbox, const VersionInfo &vinfo) :
 				OctreeNode(father, childIdx, sbox, vinfo),
 				voxelInfo(boost::make_shared< VoxelInfo >(VoxelInfo::DEFAULT_INSIDENESS()))
@@ -357,12 +357,12 @@ public:
 		return os << *voxelInfo;
 	}
 	
-	virtual OctreeNode::Ptr getAdjacentUp(u_char, const Adjacencies::Direction &,
-			std::vector< u_char > &) {
+	virtual OctreeNode::Ptr getAdjacentUp(unsigned char, const Adjacencies::Direction &,
+			std::vector< unsigned char > &) {
 		throw std::runtime_error("Adjacent up request to a leaf");
 	}
 	
-	virtual OctreeNode::Ptr getAdjacentDown(std::vector< u_char > &) {
+	virtual OctreeNode::Ptr getAdjacentDown(std::vector< unsigned char > &) {
 		return this;
 	}
 };

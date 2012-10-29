@@ -53,7 +53,7 @@ bool MillingAlgorithm::hasNextStep() {
 	return CONFIG.MOVE_IT != CONFIG.MOVE_END;
 }
 
-u_int MillingAlgorithm::getStepNumber() {
+unsigned int MillingAlgorithm::getStepNumber() {
 	return this->stepNumber;
 }
 

@@ -14,7 +14,7 @@
 class OctreeNodeData: public osg::Referenced {
 	
 public:
-	typedef unsigned char u_char;
+	typedef unsigned char unsigned char;
 	enum NodeDataType {
 		BranchLODData = 0,
 		LeafLODData = 1
@@ -22,10 +22,10 @@ public:
 	
 private:
 	const osg::BoundingBoxd bbox;
-	const u_char depth;
+	const unsigned char depth;
 	
 public:
-	OctreeNodeData(const osg::BoundingBoxd &bbox, u_char depth);
+	OctreeNodeData(const osg::BoundingBoxd &bbox, unsigned char depth);
 	
 	const osg::BoundingBoxd &getCompetenceBox() const;
 	
@@ -36,7 +36,7 @@ public:
 	 * is intersecting but with box.center contained in this box
 	 */
 	bool isMyCompetence(const osg::BoundingBoxd &bbox);
-	u_char getDepth() const;
+	unsigned char getDepth() const;
 	
 	virtual NodeDataType getType() const =0;
 	
