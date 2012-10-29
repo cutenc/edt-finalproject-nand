@@ -312,11 +312,11 @@ Meshing::~Meshing() {}
   0 will be returned if the grid Cell is either totally above
   of totally below the cutterThreshold.
 */
-static osg::ref_ptr<osg::Geometry> buildMesh(MeshingVoxel grid, double cutterThreshold) {
+static osg::ref_ptr<osg::Geometry> Meshing::buildMesh(const MeshingVoxel &grid, double cutterThreshold) {
 
 	int i, j, cubeindex;
 	osg::Vec3Array vertlist = new osg::Vec3Array();
-	osg::ref_ptr<osg::Geometry> mesh = osg::ref_ptr<osg::Geometry>(new osg::Geometry);
+	osg::ref_ptr<osg::Geometry> mesh = new osg::Geometry;
 
 	mesh->setVertexArray(grid.getCorners());
 
@@ -395,8 +395,8 @@ static osg::ref_ptr<osg::Geometry> buildMesh(MeshingVoxel grid, double cutterThr
   an edge between two vertices, each with their own scalar value
 */
 osg::Vec3f Meshing::VertInterp(const double 	cutterThreshold,
-							   const osg::Vec3f p1,
-							   const osg::Vec3f p2,
+							   const osg::Vec3f &p1,
+							   const osg::Vec3f &p2,
 							   const double 	valp1,
 							   const double 	valp2)
 {

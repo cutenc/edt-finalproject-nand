@@ -14,6 +14,7 @@
 
 #include <osg/Geometry>
 #include <osg/Geode>
+#include <osg/Array>
 
 #include "milling/Corner.hpp"
 #include "common/Utilities.hpp"
@@ -21,10 +22,38 @@
 
 class BoxMesherCallback : public LeafNodeCallback {
 	
+	const osg::ref_ptr< osg::Vec3Array > normalArray;
+	const osg::ref_ptr< osg::Vec4Array > colorArray;
+	
 public:
-	BoxMesherCallback() { }
+	BoxMesherCallback() :
+		normalArray(new osg::Vec3Array), colorArray(new osg::Vec4Array)
+	{
+		
+		/* build normal and color array: they will be shared among all builded
+		 * objects
+		 */
+		normalArray->push_back(osg::Vec3(-1, 0, 0));
+		normalArray->push_back(osg::Vec3(0, -1, 0));
+		normalArray->push_back(osg::Vec3(0, 0, -1));
+		normalArray->push_back(osg::Vec3(+1, 0, 0));
+		normalArray->push_back(osg::Vec3(0, +1, 0));
+		normalArray->push_back(osg::Vec3(0, 0, +1));
+		
+		colorArray->push_back(osg::Vec4(1, 0, 0, 1));
+		colorArray->push_back(osg::Vec4(0, 1, 0, 1));
+		colorArray->push_back(osg::Vec4(0, 0, 1, 1));
+		colorArray->push_back(osg::Vec4(.5, .5, 0, 1));
+		colorArray->push_back(osg::Vec4(0, .5, .5, 1));
+		colorArray->push_back(osg::Vec4(.5, 0, .5, 1));
+		
+	}
 	
 	virtual osg::ref_ptr< osg::Node > buildNode(const LeafNodeData &data) {
+		if (data.isEmpty()) {
+			return new osg::Geode;
+		}
+		
 		assert(data.isDirty());
 		
 		osg::ref_ptr< osg::Geometry > geom = new osg::Geometry;
@@ -34,27 +63,17 @@ public:
 		 * left, bottom, front, rigth, rear, top
 		 */
 		
-		// build normal
-		osg::ref_ptr< osg::Vec3Array > normalArray = new osg::Vec3Array;
-		normalArray->push_back(osg::Vec3(-1, 0, 0));
-		normalArray->push_back(osg::Vec3(0, -1, 0));
-		normalArray->push_back(osg::Vec3(0, 0, -1));
-		normalArray->push_back(osg::Vec3(+1, 0, 0));
-		normalArray->push_back(osg::Vec3(0, +1, 0));
-		normalArray->push_back(osg::Vec3(0, 0, +1));
+		// build normal & its indices
 		geom->setNormalArray(normalArray.get());
-		geom->setNormalBinding(osg::Geometry::BIND_PER_PRIMITIVE_SET);
+		geom->setNormalBinding(osg::Geometry::BIND_PER_PRIMITIVE);
+		osg::UByteArray *normalIndexArray = new osg::UByteArray;
+		geom->setNormalIndices(normalIndexArray);
 		
-		// build colors
-		osg::ref_ptr< osg::Vec4Array > colorArray = new osg::Vec4Array;
-		colorArray->push_back(osg::Vec4(1, 0, 0, 1));
-		colorArray->push_back(osg::Vec4(0, 1, 0, 1));
-		colorArray->push_back(osg::Vec4(0, 0, 1, 1));
-		colorArray->push_back(osg::Vec4(.5, .5, 0, 1));
-		colorArray->push_back(osg::Vec4(0, .5, .5, 1));
-		colorArray->push_back(osg::Vec4(.5, 0, .5, 1));
+		// build colors & its indices
 		geom->setColorArray(colorArray.get());
-		geom->setColorBinding(osg::Geometry::BIND_PER_PRIMITIVE_SET);
+		geom->setColorBinding(osg::Geometry::BIND_PER_PRIMITIVE);
+		osg::UByteArray *colorIndexArray = new osg::UByteArray;
+		geom->setColorIndices(colorIndexArray);
 		
 		// build vertices
 		osg::ref_ptr< osg::Vec3Array > vertices = new osg::Vec3Array(Corner::N_CORNERS * totElm);
@@ -70,55 +89,70 @@ public:
 				(*vertices)[*cit + shift] = GeometryUtils::toOsg(dataIt->sbox->getCorner(*cit));
 			}
 			
-			osg::ref_ptr< osg::DrawElementsUInt > faceLeft = 
-					new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, 4);
-			faceLeft->push_back(0 + shift);
-			faceLeft->push_back(4 + shift);
-			faceLeft->push_back(7 + shift);
-			faceLeft->push_back(3 + shift);
-			geom->addPrimitiveSet(faceLeft);
+			/* 
+			 * BUILD FACES
+			 */
+			osg::ref_ptr< osg::DrawElementsUInt > faces = 
+					new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS);
 			
-			osg::ref_ptr< osg::DrawElementsUInt > faceBottom = 
-					new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, 4);
-			faceBottom->push_back(3 + shift);
-			faceBottom->push_back(2 + shift);
-			faceBottom->push_back(1 + shift);
-			faceBottom->push_back(0 + shift);
-			geom->addPrimitiveSet(faceBottom);
+			// left face
+			faces->push_back(0 + shift);
+			faces->push_back(4 + shift);
+			faces->push_back(7 + shift);
+			faces->push_back(3 + shift);
 			
-			osg::ref_ptr< osg::DrawElementsUInt > faceFront = 
-					new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, 4);
-			faceFront->push_back(1 + shift);
-			faceFront->push_back(5 + shift);
-			faceFront->push_back(4 + shift);
-			faceFront->push_back(0 + shift);
-			geom->addPrimitiveSet(faceFront);
+			// bottom face
+			faces->push_back(3 + shift);
+			faces->push_back(2 + shift);
+			faces->push_back(1 + shift);
+			faces->push_back(0 + shift);
 			
-			osg::ref_ptr< osg::DrawElementsUInt > faceRight = 
-					new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, 4);
-			faceRight->push_back(2 + shift);
-			faceRight->push_back(6 + shift);
-			faceRight->push_back(5 + shift);
-			faceRight->push_back(1 + shift);
-			geom->addPrimitiveSet(faceRight);
+			// front face
+			faces->push_back(1 + shift);
+			faces->push_back(5 + shift);
+			faces->push_back(4 + shift);
+			faces->push_back(0 + shift);
 			
-			osg::ref_ptr< osg::DrawElementsUInt > faceRear = 
-					new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, 4);
-			faceRear->push_back(2 + shift);
-			faceRear->push_back(6 + shift);
-			faceRear->push_back(7 + shift);
-			faceRear->push_back(3 + shift);
-			geom->addPrimitiveSet(faceRear);
+			// rigth face
+			faces->push_back(2 + shift);
+			faces->push_back(6 + shift);
+			faces->push_back(5 + shift);
+			faces->push_back(1 + shift);
 			
-			osg::ref_ptr< osg::DrawElementsUInt > faceTop = 
-					new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS, 4);
-			faceTop->push_back(5 + shift);
-			faceTop->push_back(6 + shift);
-			faceTop->push_back(7 + shift);
-			faceTop->push_back(4 + shift);
-			geom->addPrimitiveSet(faceTop);
+			// rear face
+			faces->push_back(2 + shift);
+			faces->push_back(6 + shift);
+			faces->push_back(7 + shift);
+			faces->push_back(3 + shift);
+			
+			// top face
+			faces->push_back(5 + shift);
+			faces->push_back(6 + shift);
+			faces->push_back(7 + shift);
+			faces->push_back(4 + shift);
+			
+			geom->addPrimitiveSet(faces);
+			
+			
+			/*
+			 * BUILD NORMAL ARRAY INDEX
+			 */
+			for (u_char i = 0; i < 6; ++i) {
+				// normals are always 0, 1, 2, ..., 5
+				normalIndexArray->push_back(i);
+			}
+			
+			/*
+			 * BUILD COLOR ARRAY INDEX
+			 */
+			for (u_char i = 0; i < 6; ++i) {
+				// normals are always 0, 1, 2, ..., 5
+				colorIndexArray->push_back(i);
+			}
+			
 			++nElm;
 		}
+
 		
 		osg::ref_ptr< osg::Geode > geode = new osg::Geode;
 		geode->addDrawable(geom.get());

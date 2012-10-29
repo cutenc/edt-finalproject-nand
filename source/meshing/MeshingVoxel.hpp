@@ -8,7 +8,7 @@
 #ifndef MESHINGVOXEL_HPP_
 #define MESHINGVOXEL_HPP_
 
-#include <eigen3/Eigen/Geometry>
+#include <Eigen/Geometry>
 
 #include "Voxel.hpp"
 

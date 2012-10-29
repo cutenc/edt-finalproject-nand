@@ -14,9 +14,7 @@
 #include <osg/Node>
 #include <osg/Geometry>
 
-#include "common/Triangle.hpp"
 #include "meshing/MeshingVoxel.hpp"
-#include "milling/Voxel.hpp"
 #include "milling/VoxelInfo.hpp"
 
 //using namespace std;
@@ -34,10 +32,10 @@ public:
 		return 0.00001;
 	};
 
-	static osg::ref_ptr<osg::Geometry> buildMesh(MeshingVoxel grid, double cutterThreshold);
+	static osg::ref_ptr<osg::Geometry> buildMesh(const MeshingVoxel &grid, double cutterThreshold);
 	static osg::Vec3f VertInterp(const double cutterThreshold,
-					      const osg::Vec3f p1,
-						  const osg::Vec3f p2,
+					      const osg::Vec3f &p1,
+						  const osg::Vec3f &p2,
 						  const double valp1,
 						  const double valp2);
 
