@@ -32,22 +32,27 @@ void DisplayTextual::doCycle() throw() {
 	
 	SignaledInfo sInfo = signaler->awaitMiller();
 	
-	if (sInfo.state == SignaledInfo::MILLING_END) {
+	switch (sInfo.state) {
+	case SignaledInfo::HAS_DATA:
+		if (idst->shouldUpdateScene()) {
+			SignaledInfo::MillingData::const_iterator dataIt = sInfo.millingResults->begin();
+			for (; dataIt != sInfo.millingResults->end(); ++dataIt) {
+				std::cout << *dataIt << std::endl;
+			}
+		}
+		break;
+		
+	case SignaledInfo::MILLING_END:
 		idst->signalMillingEnd();
 		millerEnd = true;
+		break;
 		
-		return;
+	default:
+		/* This case should never happen but there may be spurious wakeups
+		 * not trapped by boost itself
+		 */
+		break;
 	}
-	
-	assert(sInfo.state == SignaledInfo::HAS_DATA);
-	
-	if (idst->shouldUpdateScene()) {
-		SignaledInfo::MillingData::const_iterator dataIt = sInfo.millingResults->begin();
-		for (; dataIt != sInfo.millingResults->end(); ++dataIt) {
-			std::cout << *dataIt << std::endl;
-		}
-	}
-	
 }
 
 

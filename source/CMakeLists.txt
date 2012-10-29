@@ -10,6 +10,10 @@ IF(CMAKE_COMPILER_IS_GNUCXX)
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fmessage-length=0")
 ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 
+IF(NOT CMAKE_BUILD_TYPE)
+    SET(CMAKE_BUILD_TYPE Release)
+ENDIF()
+
 # help Eclipse includes discovery from Makefile '-l' argument
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
@@ -44,7 +48,7 @@ SET (MY_LIBS ${MY_LIBS} ${OPENSCENEGRAPH_LIBRARIES})
 
 # EIGEN
 IF (${WIN32})
-#    INCLUDE_DIRECTORIES("/usr/include/eigen3")
+    INCLUDE_DIRECTORIES("$ENV{EIGEN_ROOT}/include")
 ELSEIF(${UNIX})
     INCLUDE_DIRECTORIES("/usr/include/eigen3")
 ELSE()

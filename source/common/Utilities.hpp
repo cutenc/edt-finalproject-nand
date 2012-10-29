@@ -12,7 +12,7 @@
 #include <stdexcept>
 #include <limits>
 #include <cmath>
-#include <bits/postypes.h>
+#include <iosfwd>
 
 #include <Eigen/Geometry>
 
