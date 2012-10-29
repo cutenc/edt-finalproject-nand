@@ -15,7 +15,7 @@
 class VoxelMesher : public CommonMesher {
 	
 private:
-	static const unsigned int DEFAULT_LEAF_SIZE = 300;
+	static const unsigned int DEFAULT_LEAF_SIZE = 400;
 	
 public:
 	VoxelMesher(const StockDescription& stock) :

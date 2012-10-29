@@ -59,13 +59,15 @@ bool KeyboardManager::process(int key) {
 }
 
 void KeyboardManager::printHelp(std::ostream& os) {
-	os << "'r'\t\tRun milling as fast as possible" << std::endl
+	os << "Available key bindings: " << std::endl
+			<< "'r'\t\tRun milling as fast as possible" << std::endl
 			<< "'1'\t\tStep position by position" << std::endl
 			<< "'2'\t\tStep 10 positions at once" << std::endl
 			<< "'3'\t\tStep 50 positions at once" << std::endl
 			<< "'p'\t\tPause milling process" << std::endl
 			<< "'t'\t\tToggle visualization updates (on/off)" << std::endl
 			<< "'k'\t\tKill miller (stop milling)" << std::endl
-			<< "'h'\t\tPrint help" << std::endl;
+			<< "'h'\t\tPrint help" << std::endl
+			<< "'ESC'\t\tExit program" << std::endl;
 }
 

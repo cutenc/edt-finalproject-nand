@@ -28,10 +28,6 @@ public:
 
 	static const int triTable[256][16];
 
-	inline static double cutterThresholdError() {
-		return 0.00001;
-	};
-
 	static osg::ref_ptr<osg::Geometry> buildMesh(const MeshingVoxel &grid, double cutterThreshold);
 	static osg::Vec3f VertInterp(const double cutterThreshold,
 					      const osg::Vec3f &p1,

@@ -324,15 +324,10 @@ static osg::ref_ptr<osg::Geometry> Meshing::buildMesh(const MeshingVoxel &grid, 
     Determine the index into the edge table which
     tells us which vertices are inside of the surface
   */
-	cubeindex = 0;
-	if (grid.weights[0] < cutterThreshold) cubeindex |= 1;
-	if (grid.weights[1] < cutterThreshold) cubeindex |= 2;
-	if (grid.weights[2] < cutterThreshold) cubeindex |= 4;
-	if (grid.weights[3] < cutterThreshold) cubeindex |= 8;
-	if (grid.weights[4] < cutterThreshold) cubeindex |= 16;
-	if (grid.weights[5] < cutterThreshold) cubeindex |= 32;
-	if (grid.weights[6] < cutterThreshold) cubeindex |= 64;
-	if (grid.weights[7] < cutterThreshold) cubeindex |= 128;
+	cubeindex = 0x00;
+	for (int i = 0; i < Corner::N_CORNERS; ++i) {
+		cubeindex |= ((int)(grid.weights[i] < cutterThreshold)) << i;
+	}
 
 	/* Cube is entirely in/out of the surface */
 	if (Meshing::edgeTable[cubeindex] == 0)
@@ -373,19 +368,15 @@ static osg::ref_ptr<osg::Geometry> Meshing::buildMesh(const MeshingVoxel &grid, 
 
   /* Create the triangles */
 
-	for (i=0; Meshing::triTable[cubeindex][i] != -1 ; i+=3) {
-		for (j = 0; j < 3; j++) {
-			osg::ref_ptr<osg::DrawElementsUInt> face =
-				osg::ref_ptr<osg::DrawElementsUInt>(new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES, 3));
-
-			face->push_back(vertlist[Meshing::triTable[cubeindex][i+j]].x());
-			face->push_back(vertlist[Meshing::triTable[cubeindex][i+j]].y());
-			face->push_back(vertlist[Meshing::triTable[cubeindex][i+j]].z());
-
-			mesh->addPrimitiveSet(face);
-		}
-;
+	osg::ref_ptr<osg::DrawElementsUInt> faces = new osg::DrawElementsUInt(osg::PrimitiveSet::TRIANGLES);
+	
+	for (i=0; Meshing::triTable[cubeindex][i] != -1; i += 3) {
+		faces->push_back(Meshing::triTable[cubeindex][i]);
+		faces->push_back(Meshing::triTable[cubeindex][i+1]);
+		faces->push_back(Meshing::triTable[cubeindex][i+2]);
 	}
+	
+	mesh->addPrimitiveSet(faces);
 
 	return(mesh);
 }
@@ -405,20 +396,18 @@ osg::Vec3f Meshing::VertInterp(const double 	cutterThreshold,
 			p2x = p2.x(), p2y = p2.y(), p2z = p2.z(),
 			mu;
 
-	osg::Vec3f p;
-
-	if (fabs(cutterThreshold-valp1) < Meshing::cutterThresholdError()) 	return(p1);
-	if (fabs(cutterThreshold-valp2) < Meshing::cutterThresholdError())	return(p2);
-	if (fabs(valp1-valp2) 			< Meshing::cutterThresholdError())	return(p1);
+	if (CommonUtils::doubleEquals(valp1, cutterThreshold)) 	return(p1);
+	if (CommonUtils::doubleEquals(valp2, cutterThreshold))	return(p2);
+	if (CommonUtils::doubleEquals(valp1, valp2))	return(p1);
 
 	mu = (cutterThreshold - valp1) / (valp2 - valp1);
 
-	p = osg::Vec3f(
-					(p1x + mu * (p2x - p1x)),
-					(p1y + mu * (p2y - p1y)),
-					(p1z + mu * (p2z - p1z))
-				  );
+	osg::Vec3 p(
+		(p1x + mu * (p2x - p1x)),
+		(p1y + mu * (p2y - p1y)),
+		(p1z + mu * (p2z - p1z))
+	);
 
-	return(p);
+	return p;
 }
 

@@ -10,13 +10,15 @@
 
 #include <cassert>
 
+#include <boost/assert.hpp>
+
 #include <osg/Geode>
 #include <osg/NodeCallback>
 
 #include "LeafNodeData.hpp"
 #include "MeshingUtils.hpp"
 
-class LeafNodeCallback : public osg::NodeCallback {
+class LeafNodeCallback : boost::noncopyable, public osg::NodeCallback {
 	
 public:
 	const static unsigned int NODE_IDX = 0;
