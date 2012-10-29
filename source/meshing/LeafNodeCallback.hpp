@@ -10,6 +10,7 @@
 
 #include <cassert>
 
+#include <osg/Geode>
 #include <osg/NodeCallback>
 
 #include "LeafNodeData.hpp"
@@ -33,7 +34,12 @@ public:
 		if (data->isDirty()) {
 			/* we have to rebuild mesh based on current leaf infos
 			 */
-			osg::ref_ptr< osg::Node > childNode = buildNode(*data);
+			osg::ref_ptr< osg::Node > childNode;
+			if (data->isEmpty()) {
+				childNode = new osg::Geode;
+			} else {
+				childNode = buildNode(*data);
+			}
 			
 			assert(group->getNumChildren() == 1);
 			group->setChild(NODE_IDX, childNode.get());

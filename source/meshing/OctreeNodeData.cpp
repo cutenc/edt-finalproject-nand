@@ -21,7 +21,7 @@ bool OctreeNodeData::isMyCompetence(const osg::BoundingBoxd& box) {
 			(this->bbox.intersects(box) && this->bbox.contains(box.center()));
 }
 
-OctreeNodeData::unsigned char OctreeNodeData::getDepth() const {
+unsigned char OctreeNodeData::getDepth() const {
 	return this->depth;
 }
 

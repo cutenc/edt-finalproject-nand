@@ -12,6 +12,8 @@
 
 #include <cassert>
 
+#include <boost/noncopyable.hpp>
+
 #include <osg/Geometry>
 #include <osg/Geode>
 #include <osg/Array>
@@ -20,7 +22,7 @@
 #include "common/Utilities.hpp"
 #include "visualizer/VisualizationUtils.hpp"
 
-class BoxMesherCallback : public LeafNodeCallback {
+class BoxMesherCallback : boost::noncopyable, public LeafNodeCallback {
 	
 	const osg::ref_ptr< osg::Vec3Array > normalArray;
 	const osg::ref_ptr< osg::Vec4Array > colorArray;
@@ -34,8 +36,8 @@ public:
 		 * objects
 		 */
 		normalArray->push_back(osg::Vec3(-1, 0, 0));
-		normalArray->push_back(osg::Vec3(0, -1, 0));
 		normalArray->push_back(osg::Vec3(0, 0, -1));
+		normalArray->push_back(osg::Vec3(0, -1, 0));
 		normalArray->push_back(osg::Vec3(+1, 0, 0));
 		normalArray->push_back(osg::Vec3(0, +1, 0));
 		normalArray->push_back(osg::Vec3(0, 0, +1));
@@ -50,11 +52,7 @@ public:
 	}
 	
 	virtual osg::ref_ptr< osg::Node > buildNode(const LeafNodeData &data) {
-		if (data.isEmpty()) {
-			return new osg::Geode;
-		}
-		
-		assert(data.isDirty());
+		assert(data.isDirty() && !data.isEmpty());
 		
 		osg::ref_ptr< osg::Geometry > geom = new osg::Geometry;
 		unsigned int nElm = 0, totElm = data.getElements().size();

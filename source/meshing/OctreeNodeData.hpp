@@ -14,7 +14,6 @@
 class OctreeNodeData: public osg::Referenced {
 	
 public:
-	typedef unsigned char unsigned char;
 	enum NodeDataType {
 		BranchLODData = 0,
 		LeafLODData = 1
