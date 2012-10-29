@@ -15,9 +15,10 @@
 #include <osgViewer/Viewer>
 #include <osgGA/TrackballManipulator>
 
+#include "common/Utilities.hpp"
 #include "VisualizationUtils.hpp"
 #include "InputDeviceStateType.hpp"
-#include "KeyboardManager.hpp"
+#include "KeyboardHandler.hpp"
 #include "SceneUpdater.hpp"
 
 Display::Display(
@@ -97,22 +98,19 @@ void Display::draw() {
 	
 	// *** VIEWER ***
 	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer;
-//	viewer->setUpViewOnSingleScreen(0);
-	viewer->setUpViewInWindow(0, 0, displayInfo.winWidth, displayInfo.winHeight, 0);
+	viewer->setUpViewOnSingleScreen(0);
+//	viewer->setUpViewInWindow(0, 0, displayInfo.winWidth, displayInfo.winHeight, 0);
 	
 	osgGA::TrackballManipulator *tbmp = new osgGA::TrackballManipulator;
-	tbmp->setHomePosition(osg::Vec3d(500, 500, 500), osg::Vec3d(), osg::Z_AXIS, false);
+	osg::Vec3d initPos = GeometryUtils::toOsg(stockPtr->getExtents() * 3);
+	tbmp->setHomePosition(initPos, osg::Vec3d(), osg::Z_AXIS, false);
 	viewer->setCameraManipulator(tbmp);
 	
-	osg::ref_ptr<KeyboardManager> kh = new KeyboardManager(idst, controller);
+	osg::ref_ptr<KeyboardHandler> kh = new KeyboardHandler(idst, controller);
 	viewer->addEventHandler(kh);
 	// setting up scene and realize
 	viewer->setSceneData(displayInfo.ROOT.get());
 	viewer->realize();
 
-	std::cout << "Run viewer" << std::endl;
-
 	viewer->run();
 }
-
-

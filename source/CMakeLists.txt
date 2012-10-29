@@ -14,8 +14,13 @@ ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 SET(CMAKE_VERBOSE_MAKEFILE ON)
 
 # Compiler Options
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -ggdb -O0 -losg -losgViewer -losgGA")
-
+IF (${WIN32})
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -ggdb -O0")
+ELSEIF(${UNIX})
+    SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -ggdb -O0")
+ELSE()
+    MESSAGE(WARNING "** Arch not supported **")
+ENDIF()
 
 ##############
 
@@ -38,13 +43,14 @@ INCLUDE_DIRECTORIES(${OPENSCENEGRAPH_INCLUDE_DIRS})
 SET (MY_LIBS ${MY_LIBS} ${OPENSCENEGRAPH_LIBRARIES})
 
 # EIGEN
-INCLUDE_DIRECTORIES("/usr/include/eigen3")
+IF (${WIN32})
+#    INCLUDE_DIRECTORIES("/usr/include/eigen3")
+ELSEIF(${UNIX})
+    INCLUDE_DIRECTORIES("/usr/include/eigen3")
+ELSE()
+    MESSAGE(WARNING "** Arch not supported **")
+ENDIF()
 
-# OSG
-INCLUDE_DIRECTORIES("usr/include/osg")
-INCLUDE_DIRECTORIES("usr/include/osgGA")
-INCLUDE_DIRECTORIES("usr/include/osgManipulator")
-INCLUDE_DIRECTORIES("usr/include/osgViewer")
 
 # MATH LIBRARY
 SET (MY_LIBS ${MY_LIBS} m)

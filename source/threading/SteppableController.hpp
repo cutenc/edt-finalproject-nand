@@ -23,7 +23,7 @@ private:
 private:
 	const static u_long MAX_STEPS;
 	
-	boost::mutex mutex;
+	mutable boost::mutex mutex;
 	boost::condition_variable awaitPlay;
 	
 	volatile bool isStopped;

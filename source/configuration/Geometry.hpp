@@ -13,6 +13,10 @@
 
 #include <boost/shared_ptr.hpp>
 
+#include <Eigen/Geometry>
+
+#include <osg/Geometry>
+
 class Geometry {
 public:
 	
@@ -67,6 +71,14 @@ public:
 	virtual ~RectCuboid() { }
 	
 	virtual GeometryType getType() const { return RECTANGULAR_CUBOID; }
+	
+	osg::Vec3d asOsg() const {
+		return osg::Vec3d(X, Y, Z);
+	}
+	
+	Eigen::Vector3d asEigen() const {
+		return Eigen::Vector3d(X, Y, Z);
+	}
 	
 	const double X, Y, Z;
 };

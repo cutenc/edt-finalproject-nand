@@ -48,18 +48,6 @@ public:
 	double getZ() const {
 		return point[2];
 	}
-
-	void setX(double x) {
-		point[0] = x;
-	}
-
-	void setY(double y) {
-		point[1] = y;
-	}
-
-	void setZ (double z) {
-		point[2] = z;
-	}
 	
 	friend std::ostream &operator<<(std::ostream &os, const Point3D &p) {
 		os << p.point.transpose();

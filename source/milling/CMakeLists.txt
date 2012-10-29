@@ -7,6 +7,7 @@ Corner.hpp
 Cutter.cpp
 Cutter.hpp
 cutters.hpp
+graphics_info.hpp
 IntersectionResult.cpp
 IntersectionResult.hpp
 MillingAlgorithm.cpp
@@ -17,13 +18,10 @@ octree_nodes.hpp
 Octree.hpp
 PtrVersioner.hpp
 ShiftedBox.hpp
-SimpleBox.hpp
 Stock.cpp
 Stock.hpp
 StoredData.cpp
 StoredData.hpp
-Voxel.cpp
-Voxel.hpp
 VoxelInfo.cpp
 VoxelInfo.hpp
 )

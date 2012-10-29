@@ -3,6 +3,8 @@ X = 260
 Y = 260
 Z = 300
 [TOOL]
+#Type = sphere
+#Diameter = 45
 Type = cylinder
 Height = 40
 Diameter = 12

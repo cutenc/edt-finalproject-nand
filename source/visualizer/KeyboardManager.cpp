@@ -10,26 +10,23 @@
 #include <iostream>
 
 KeyboardManager::KeyboardManager(InputDeviceStateType::Ptr ids, SteppableController::Ptr controller) :
-	IDST(ids), CONTROLLER(controller)
+		IDST(ids), CONTROLLER(controller)
 { }
 
-KeyboardManager::~KeyboardManager() { }
+KeyboardManager::~KeyboardManager() {
+}
 
-bool KeyboardManager::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionAdapter& aa) {
-	if (ea.getEventType() != osgGA::GUIEventAdapter::KEYDOWN) {
-		return false;
-	}
-	
-	switch(ea.getKey()) {
-		case '1': 	// step
+bool KeyboardManager::process(int key) {
+	switch(key) {
+		case '1': 	// step1
 			CONTROLLER->stepOnce();
 			break;
 			
-		case '2': 	// step
+		case '2': 	// step10
 			CONTROLLER->step(10u);
 			break;
 			
-		case '3': 	// step
+		case '3': 	// step50
 			CONTROLLER->step(50u);
 			break;
 			
@@ -45,15 +42,30 @@ bool KeyboardManager::handle(const osgGA::GUIEventAdapter& ea, osgGA::GUIActionA
 			IDST->toggleUpdateScene();
 			break;
 			
+		case 'k': // kill miller
+			CONTROLLER->stop();
+			break;
+			
+		case '?': // print help
 		case 'h': // print help
-			// TODO print help
+			printHelp(std::cout);
 			break;
 			
 		default:
-			std::cerr << "Unknown key: type 'h' for a list of known commands" << std::endl;
 			return false;
 	}
 	
 	return true;
+}
+
+void KeyboardManager::printHelp(std::ostream& os) {
+	os << "'r'\t\tRun milling as fast as possible" << std::endl
+			<< "'1'\t\tStep position by position" << std::endl
+			<< "'2'\t\tStep 10 positions at once" << std::endl
+			<< "'3'\t\tStep 50 positions at once" << std::endl
+			<< "'p'\t\tPause milling process" << std::endl
+			<< "'t'\t\tToggle visualization updates (on/off)" << std::endl
+			<< "'k'\t\tKill miller (stop milling)" << std::endl
+			<< "'h'\t\tPrint help" << std::endl;
 }
 

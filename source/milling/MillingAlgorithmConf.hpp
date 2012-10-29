@@ -15,8 +15,10 @@
 class MillingAlgorithmConf {
 public:
 	MillingAlgorithmConf(Stock::Ptr stock, Cutter::ConstPtr cutter,
-			const CNCMoveIterator &begin, const CNCMoveIterator &end) :
-				STOCK(stock), CUTTER(cutter), MOVE_IT(begin), MOVE_END(end)
+			const CNCMoveIterator &begin, const CNCMoveIterator &end,
+			float waterRemotionRate, float waterThreshold) :
+				STOCK(stock), CUTTER(cutter), MOVE_IT(begin), MOVE_END(end),
+				waterFlux(waterRemotionRate), waterThreshold(waterThreshold)
 	{
 		
 	}
@@ -26,6 +28,8 @@ public:
 	const Stock::Ptr STOCK;
 	const Cutter::ConstPtr CUTTER;
 	CNCMoveIterator MOVE_IT, MOVE_END;
+	const float waterFlux;
+	const float waterThreshold;
 };
 
 #endif /* MILLINGALGORITHMCONF_HPP_ */

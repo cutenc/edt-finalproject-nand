@@ -57,7 +57,7 @@ private:
 	const u_char childIdx;
 	const ShiftedBox::ConstPtr sbox;
 	const u_long NODE_ID;
-	const u_char DEPTH;
+	const u_int DEPTH;
 	
 	u_int firstChangeVersion;
 	
@@ -109,7 +109,7 @@ public:
 	}
 	
 	inline
-	virtual u_int getDepth() const {
+	u_int getDepth() const {
 		return this->DEPTH;
 	}
 	
@@ -171,12 +171,16 @@ public:
 	typedef const BranchNode * ConstPtr;
 	
 public:
-	static const u_char N_CHILDREN = 8;
+	static const int N_CHILDREN = 8;
 	
 private:
 	boost::array< OctreeNode::Ptr, N_CHILDREN > children;
 	
-	u_char removedChildren;
+	/*
+	 * bit = 0 => children absent
+	 * bit = 1 => children present
+	 */
+	u_char childrenMask;
 	
 public:
 	BranchNode(const ShiftedBox::ConstPtr &box, const VersionInfo &vinfo) :
@@ -187,8 +191,8 @@ public:
 		OctreeNode(father, childIdx, sbox, vinfo) { initChildren(); }
 	
 	virtual ~BranchNode() {
-		for (u_char i = 0; i < N_CHILDREN; i++) {
-			if (children[i] != NULL)
+		for (int i = 0; i < N_CHILDREN; i++) {
+			if (hasChild(i))
 				delete children[i];
 		}
 	}
@@ -199,14 +203,14 @@ public:
 	}
 	
 	inline
-	bool hasChild(u_char i) const {
-		return children[i] != NULL;
+	bool hasChild(int i) const {
+		assert(i >= 0 && i < N_CHILDREN);
+		return childrenMask & (0x01 << i);
 	}
 	
 	inline
-	OctreeNode::Ptr getChild(u_char i) const {
+	OctreeNode::Ptr getChild(int i) const {
 		assert(hasChild(i));
-		
 		return children[i];
 	}
 	
@@ -216,7 +220,7 @@ public:
 	 */
 	inline
 	bool isEmpty() const {
-		return removedChildren == N_CHILDREN;
+		return !childrenMask;
 	}
 	
 	/**
@@ -226,42 +230,28 @@ public:
 	 * @return
 	 */	
 	inline
-	bool deleteChild(u_char i) {
+	void deleteChild(int i) {
 		assert(hasChild(i));
 		
-		removedChildren++;
-		
+		childrenMask &= ~(0x01 << i);
 		children[i] = NULL;
-		return isEmpty();
 	}
 	
 	inline
-	void setChild(u_char i, const OctreeNode::Ptr &child) {
+	void setChild(int i, const OctreeNode::Ptr &child) {
 		assert(!hasChild(i));
 		
-		removedChildren--;
-		
+		childrenMask |= (0x01 << i);
 		(this->children)[i] = child;
 	}
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const {
 		u_int depth = this->getDepth();
 		
-		std::cout << "depth calculated" << std::endl;
-		
 		std::string tabs = StringUtils::repeat("\t", depth);
-		
-		std::cout << "tabs ok " << std::endl;
-		
 		os << "Branch-" << this->getID() << "@" << depth;
-		
-		std::cout << "branch signature" << std::endl;
-		
-		for (u_char i = 0; i < this->N_CHILDREN; i++) {
+		for (int i = 0; i < this->N_CHILDREN; i++) {
 			os << std::endl << tabs << "|->" << (int)i << "-";
-			
-			std::cout << "first line ok" << std::endl;
-			
 			if (hasChild(i)) {
 				os << *(getChild(i));
 			} else {
@@ -324,10 +314,7 @@ public:
 	
 private:
 	void initChildren() {
-		for (u_char i = 0; i < N_CHILDREN; i++)
-			children[i] = NULL;
-		
-		removedChildren = N_CHILDREN;
+		childrenMask = 0x00;
 	}
 };
 

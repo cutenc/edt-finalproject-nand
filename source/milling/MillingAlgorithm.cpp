@@ -30,8 +30,7 @@ MillingAlgorithm::MillingAlgorithm(const MillingAlgorithmConf &conf) :
 MillingAlgorithm::~MillingAlgorithm() { }
 
 MillingAlgorithm::StepInfo MillingAlgorithm::step() {
-	if (!hasNextStep())
-		throw std::runtime_error("Algorithm is already finished");
+	assert(hasNextStep());
 	
 	this->stepNumber++;
 	
@@ -40,9 +39,9 @@ MillingAlgorithm::StepInfo MillingAlgorithm::step() {
 	
 	bool water = false;
 	this->waterFluxWasteCount += infos.waste;
-	if (this->waterFluxWasteCount > ALG_WATER_THRESHOLD) {
+	if (this->waterFluxWasteCount > CONFIG.waterThreshold) {
 		this->waterFluxWasteCount = std::max< double >(0, 
-				this->waterFluxWasteCount - ALG_WATER_REMOTION_RATE);
+				this->waterFluxWasteCount - CONFIG.waterFlux);
 		water = true;
 	}
 			

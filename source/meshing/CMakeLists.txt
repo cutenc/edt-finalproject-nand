@@ -1,13 +1,23 @@
 
 SET (meshing_SRC
 # add here both your sources (cpp) and header (hpp) files
-CubeCache.cpp
-CubeCache.hpp
+BranchNodeData.hpp
+CommonMesher.cpp
+CommonMesher.hpp
+leaf_node_callbacks.hpp
+LeafNodeCallback.hpp
+LeafNodeData.cpp
+LeafNodeData.hpp
+MarchingCubeMesher.hpp
 Mesher.hpp
 MeshingUtils.cpp
 MeshingUtils.hpp
-StockMesher.cpp
-StockMesher.hpp
+MeshOctree.cpp
+MeshOctree.hpp
+OctreeNodeData.cpp
+OctreeNodeData.hpp
+StubMesher.hpp
+VoxelMesher.hpp
 )
 
 ADD_LIBRARY(meshing STATIC ${meshing_SRC})

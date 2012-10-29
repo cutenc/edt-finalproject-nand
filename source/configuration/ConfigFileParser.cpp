@@ -135,7 +135,7 @@ void ConfigFileParser::sectionParser_tool(std::ifstream& ifs) {
 		float height = boost::lexical_cast<float>(heightStr);
 		float diameter = boost::lexical_cast<float>(diameterStr);
 		
-		geometry = boost::make_shared<Cylinder>(Cylinder(diameter / 2.0, height));
+		geometry = boost::make_shared<Cylinder>(Cylinder(diameter * 0.5, height));
 		
 	} else if (type == "sphere") {
 		// next line should be 'Diameter=NN':
@@ -144,7 +144,7 @@ void ConfigFileParser::sectionParser_tool(std::ifstream& ifs) {
 		
 		float diameter = boost::lexical_cast<float>(diameterStr);
 		
-		geometry = boost::make_shared<Sphere>(Sphere(diameter / 2.0));
+		geometry = boost::make_shared<Sphere>(Sphere(diameter * 0.5));
 		
 	} else if (type == "mesh") {
 		// TODO need to be implemented

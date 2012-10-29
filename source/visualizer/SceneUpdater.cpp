@@ -9,12 +9,14 @@
 
 #include <cassert>
 #include <cmath>
+#include <sstream>
 
 #include <boost/date_time.hpp>
 
 #include <osg/Geometry>
 #include <osg/Projection>
 #include <osg/MatrixTransform>
+#include <osg/StateSet>
 
 #include "common/constants.hpp"
 #include "configuration/CNCMoveIterator.hpp"
@@ -26,10 +28,16 @@ SceneUpdater::SceneUpdater(InputDeviceStateType::Ptr ids,
 		Stock::Ptr stock, Cutter::Ptr cutter) :
 		
 	IDST(ids), SIGNALER(signaler),
+	
 	stockRototras(new osg::PositionAttitudeTransform()),
 	cutterRototras(new osg::PositionAttitudeTransform()),
+	
 	txtMoves(new osgText::Text), txtWaste(new osgText::Text),
-	txtWater(new osgText::Text), stockPtr(stock), cutterPtr(cutter)
+	txtWater(new osgText::Text),
+	
+	stockPtr(stock), cutterPtr(cutter), stockVolume(stock->getExtents().prod()),
+	
+	nFrames(0), nMoves(0), totWaste(0), waterFlag(false)
 
 {
 	// assign processers
@@ -77,8 +85,10 @@ SceneUpdater::SceneUpdater(InputDeviceStateType::Ptr ids,
 	// *** TEXT SECTION ***
 	/* creating a 2d-context and adding text to it */
 	osg::Projection *twoD_context = new osg::Projection;
-	twoD_context->setMatrix(osg::Matrix::ortho2D(0, displayInfo.winWidth,
-			0, displayInfo.winHeight));
+	twoD_context->setMatrix(
+			osg::Matrix::ortho2D(0, displayInfo.winWidth,
+			0, displayInfo.winHeight)
+	);
 	
 	osg::MatrixTransform *matT = new osg::MatrixTransform;
 	matT->setMatrix(osg::Matrix::identity());
@@ -89,20 +99,41 @@ SceneUpdater::SceneUpdater(InputDeviceStateType::Ptr ids,
 	
 	/* adding text components to the scene
 	 */
+	osg::Vec4 txtColor(.7, .2, .2, 1);
+	float txtSize = 17.f; float margin = 10.f;
 	osg::Geode *allTexts = new osg::Geode;
-	txtMoves->setText("PROVA");
-	txtMoves->setPosition(osg::Vec3(
-			0,
-			displayInfo.winHeight - 50,
-			0
-	));
+	osg::StateSet *textStateSet = new osg::StateSet;
+	allTexts->setStateSet(textStateSet);
+	textStateSet->setMode(GL_DEPTH_TEST, osg::StateAttribute::OFF);
+	textStateSet->setRenderBinDetails(11, "RenderBin");
 	
-	
+	// top left corner
+	txtMoves->setAlignment(osgText::Text::LEFT_TOP);
+	txtMoves->setPosition(osg::Vec3(margin, displayInfo.winHeight - margin, 0));
+	txtMoves->setColor(txtColor);
+	txtMoves->setCharacterSize(txtSize);
+	txtMoves->setDataVariance(osgText::Text::DYNAMIC);
 	allTexts->addDrawable(txtMoves.get());
+	
+	// bottom left corner
+	txtWaste->setAlignment(osgText::Text::LEFT_BOTTOM);
+	txtWaste->setPosition(osg::Vec3(margin, txtSize + margin, 0));
+	txtWaste->setColor(txtColor);
+	txtWaste->setCharacterSize(txtSize);
+	txtWaste->setDataVariance(osgText::Text::DYNAMIC);
 	allTexts->addDrawable(txtWaste.get());
+	
+	// top right corner
+	txtWater->setAlignment(osgText::Text::RIGHT_TOP);
+	txtWater->setPosition(osg::Vec3(displayInfo.winWidth - 70, displayInfo.winHeight - margin, 0));
+	txtWater->setColor(txtColor);
+	txtWater->setCharacterSize(txtSize);
+	txtWater->setDataVariance(osgText::Text::DYNAMIC);
 	allTexts->addDrawable(txtWater.get());
 	
 	twoD_context->addChild(allTexts);
+	
+	timer.setStartTick();
 }
 
 SceneUpdater::~SceneUpdater() {
@@ -110,6 +141,8 @@ SceneUpdater::~SceneUpdater() {
 
 void SceneUpdater::operator()(osg::Node* node, osg::NodeVisitor* nv) {
 	static const boost::posix_time::milliseconds WAIT_TIME(1000 / FRAMES_PER_SECOND);
+	
+	++nFrames;
 	
 	//recupera l'oggetto cui fa riferimento la callback
 	osg::ref_ptr<osg::Group> group = node->asGroup();
@@ -122,6 +155,8 @@ void SceneUpdater::operator()(osg::Node* node, osg::NodeVisitor* nv) {
 		u_char procIdx = static_cast< u_char >(infos.state);
 		assert(procIdx < 3);
 		(this->*(PROCESSERS[procIdx]))(infos);
+	} else {
+		usleep(1000 * WAIT_TIME.total_milliseconds());
 	}
 	
 	// MUST BE CALLED to continue traversing
@@ -148,12 +183,35 @@ void SceneUpdater::updateScene(const SignaledInfo& info) {
 	// will do a replace of the child in position 0
 	stockRototras->setChild(0, mesh->getMesh().get());
 	
-	// TODO update text informations
-//			SignaledInfo::MillingData::const_iterator it;
-//			for (it = infos.millingResults->begin(); it != infos.millingResults->end(); ++it) {
-//				std::cout << *it << std::endl;
-//			}
+	// update information variables & call textUpdate
+	SignaledInfo::MillingData::const_iterator it;
+	for (it = info.millingResults->begin(); it != info.millingResults->end(); ++it) {
+		totWaste += it->intersection.waste;
+	}
+	--it;
+	waterFlag = it->water;
+	nMoves = it->stepNumber;
 	
+	updateText();
+}
+
+void SceneUpdater::updateText() {
+	std::stringstream ss;
+	
+	double secs = timer.time_s();
+	
+	ss /*<< std::setw(6) << std::setiosflags(std::ios::fixed) << std::setprecision(1) */ 
+			<< "# Move: " << nMoves << std::endl
+			<< "MPS/FPS: " << (nMoves / secs) << " / " << (nFrames / secs);
+	txtMoves->setText(ss.str());
+	ss.str(std::string());
+	
+	ss << "Waste / Volume: " << totWaste << " / " << stockVolume;
+	txtWaste->setText(ss.str());
+	ss.str(std::string());
+	
+	ss << "Water: " << ((waterFlag) ? "Y" : "N");
+	txtWater->setText(ss.str());
 }
 
 void SceneUpdater::millingEnd(const SignaledInfo& info) {

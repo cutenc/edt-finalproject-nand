@@ -16,15 +16,15 @@ Cutter::Ptr Cutter::buildCutter(const CutterDescription &desc) {
 	
 	switch (desc.getGeometry()->getType()) {
 		case Geometry::CYLINDER: {
-			
 			const Cylinder &geom = desc.getGeometry()->getAs< Cylinder >();
-			
 			return boost::make_shared< CylinderCutter >(geom, desc.getColor());
-			
-			break;
 		}
 		
-		case Geometry::SPHERE:
+		case Geometry::SPHERE: {
+			const Sphere &geom = desc.getGeometry()->getAs< Sphere >();
+			return boost::make_shared< SphereCutter >(geom, desc.getColor());
+		}
+		
 		case Geometry::RECTANGULAR_CUBOID:
 		case Geometry::MESH:
 			throw std::runtime_error("Cutter geometry not registered");
@@ -34,9 +34,3 @@ Cutter::Ptr Cutter::buildCutter(const CutterDescription &desc) {
 	throw std::invalid_argument("Cutter geometry not registered");
 }
 
-Mesh::Ptr Cutter::getMeshing() {
-
-	return Meshing.getMesh(1, MODEL);// hmmm
-	//return boost::make_shared< Mesh >();
-
-}

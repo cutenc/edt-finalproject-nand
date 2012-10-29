@@ -11,107 +11,150 @@
 #include <ostream>
 #include <cmath>
 
+#include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
 #include <Eigen/Geometry>
 
-#include "Voxel.hpp"
+#include <osg/BoundingBox>
 
-class ShiftedBox {
+#include "Corner.hpp"
+
+class ShiftedBox : boost::noncopyable {
 	
 public:
+	
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 	
 	typedef boost::shared_ptr< ShiftedBox > Ptr;
 	typedef boost::shared_ptr< const ShiftedBox > ConstPtr;
-	typedef Eigen::Translation<long double, 3> Translation3ld;
-	typedef Eigen::Matrix<long double, 3, 1> Vector3ld;
 	
 	typedef Eigen::Matrix<double, 3, 2> MinMaxMatrix;
-	typedef boost::shared_ptr< const MinMaxMatrix > MinMaxMPtr;
+	typedef boost::shared_ptr< MinMaxMatrix > MinMaxPtr;
+	typedef boost::shared_ptr< const MinMaxMatrix > MinMaxCPtr;
+	
+	static const int MIN_IDX = 0;
+	static const int MAX_IDX = 1;
 	
 private:
-	const SimpleBox::ConstPtr simpleBox;
 	
-	/* we decide to keep translation as a long double because the getShifted()
-	 * method will be called "recursively" behaving like a long sum of terms.
-	 * Such an operation can led to lose a lot of precision and one
-	 * method used to mitigate this effect is doubling the precision of the
-	 * sum, as described here:
-	 * http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
-	 * (an alternative would have been Kahan summation formula but it offers
-	 * worse error reduction at about the same impact in class behavior) 
-	 */
-	const Translation3ld shift;
-	
-//	const MinMaxMPtr minMax;
-	
+	MinMaxMatrix MIN_MAX;
+	Eigen::Vector3d EXTENTS;
+	double VOLUME;
 	
 public:
-	ShiftedBox(const SimpleBox::ConstPtr &box, const Eigen::Translation3d &tras) :
-			simpleBox(box), shift(tras.cast< long double >())
-			
-//			,minMax(buildMinMax(box, tras))
-	{ }
+	ShiftedBox(const Eigen::Vector3d &center, const Eigen::Vector3d &extents) :
+		EXTENTS(extents)
+	{
+		assert(EXTENTS(0) > 0 && EXTENTS(1) > 0 && EXTENTS(2) > 0);
+		
+		calculateMinMax(MIN_MAX, center, extents);
+		
+		VOLUME = EXTENTS.prod();
+		assert(VOLUME > 0);
+	}
 	
-	explicit
-	ShiftedBox(const SimpleBox::ConstPtr &box, const Translation3ld &tras) :
-			simpleBox(box), shift(tras)
+	ShiftedBox(const MinMaxMatrix &minMax) :
+		MIN_MAX(minMax)
+	{
+		calculateExtentsAndVolume();
+	}
 	
-//			,minMax(buildMinMax(box, tras.cast< double >()))
-	{ }
+	ShiftedBox() { }
 	
 	virtual ~ShiftedBox() { }
 	
-	/**
-	 * 
-	 * @param tras
-	 * @return another box shifted from current one according to given
-	 * translation
-	 */
-	ShiftedBox getShifted(const Eigen::Translation3d &tras) const {
-		Vector3ld tmpTrans = this->shift.translation() + 
-				tras.translation().cast< long double >();
-		
-		Translation3ld newTrans(tmpTrans);
-		
-		return ShiftedBox(this->simpleBox, newTrans);
+	inline
+	double getVolume() const {
+		return this->VOLUME;
 	}
 	
-	ShiftedBox getResized(const SimpleBox::ConstPtr &newSize) const {
-		return ShiftedBox(newSize, this->shift);
+	inline
+	MinMaxMatrix::ConstColXpr getMax() const {
+		return MIN_MAX.col(1);
+	}
+	
+	inline
+	MinMaxMatrix::ConstColXpr getMin() const {
+		return MIN_MAX.col(0);
+	}
+	
+	inline
+	const MinMaxMatrix &getMatrix() const {
+		return MIN_MAX;
+	}
+	
+	inline
+	MinMaxMatrix &getMatrix() {
+		return MIN_MAX;
+	}
+	
+	inline
+	void calculateExtentsAndVolume() {
+		EXTENTS.noalias() = MIN_MAX.col(MAX_IDX) - MIN_MAX.col(MIN_IDX);
+		assert(EXTENTS(0) > 0 && EXTENTS(1) > 0 && EXTENTS(2) > 0);
+		
+		VOLUME = EXTENTS.prod();
+		assert(VOLUME > 0);
+	}
+	
+	inline
+	const Eigen::Vector3d &getExtents() const {
+		return this->EXTENTS;
 	}
 	
 	inline
 	Eigen::Vector3d getCorner(const Corner::CornerType &corner, const Eigen::Isometry3d &rototras) const {
-		return (rototras * shift.cast< double >()) * simpleBox->getCorner(corner);
+		return rototras * getCorner(corner);
 	}
 	
 	inline
 	Eigen::Vector3d getCorner(const Corner::CornerType &corner) const {
-		return shift.cast< double >().translation() + simpleBox->getCorner(corner);
+		return getCornerImp(corner, MIN_MAX);
 	}
 	
 	inline
-	Eigen::Translation3d getShift() const {
-		return this->shift.cast< double >();
+	Eigen::Vector3d getShift() const {
+		return MIN_MAX.rowwise().mean();
 	}
 	
 	inline
-	const SimpleBox::ConstPtr & getSimpleBox() const {
-		return this->simpleBox;
+	osg::BoundingBoxd asBoundingBox() const {
+		/* specify every coord in order to avoid some useless vector
+		 * creation & destruction
+		 */ 
+		return osg::BoundingBoxd(
+				MIN_MAX(0, 0), MIN_MAX(1, 0), MIN_MAX(2, 0),
+				MIN_MAX(0, 1), MIN_MAX(1, 1), MIN_MAX(2, 1)
+		);
+	}
+	
+	bool isIntersecting(const MinMaxMatrix &minMax) const {
+		const MinMaxMatrix &thisMM = getMatrix();
+		
+		for (int i = 0; i < 3; ++i) {
+			
+			if(thisMM(i, MAX_IDX) < minMax(i, MIN_IDX)
+				||
+				thisMM(i, MIN_IDX) > minMax(i, MAX_IDX)) {
+				
+				return false;
+			}
+			
+		}
+		
+		return true;
 	}
 	
 	/**
 	 * 
-	 * @param otherBox
-	 * @param rototras
-	 * @param accurate tells wether check should be very accurate or not:
+	 * @param accurate tells wether check should be accurate or not:
 	 * if this flag is set to false some NON colliding cases will be threated
 	 * as collinding ones but method execution will be ~3/7 times faster.
 	 * @return
 	 */
-	bool isIntersecting(const SimpleBox &otherBox,
+	bool isIntersecting(const Eigen::Vector3d &extents,
 			const Eigen::Isometry3d &rototras,
 			bool accurate) const {
 		
@@ -122,12 +165,12 @@ public:
 		boxes overlap. */
 		
 		double ra, rb, t;
-		const Eigen::Vector3d &a = this->simpleBox->getHalfExtent(),
-				&b = otherBox.getHalfExtent();
+		const Eigen::Vector3d a = this->getExtents() * 0.5,
+				b = extents * 0.5;
 		
 		const Eigen::Matrix3d &rotation = rototras.linear();
 		const Eigen::Vector3d traslation = rototras.translation() - 
-				this->shift.cast< double >().translation();
+				this->getShift();
 		
 		//A's basis vectors
 		for(int i = 0; i < 3; i++ ) {
@@ -220,7 +263,6 @@ public:
 			t = fabs((double)(traslation[1]*rotation(0, 2) - traslation[0]*rotation(1, 2)));
 			if( t > ra + rb )
 				return false;
-			
 		}
 
 		/*no separating axis found,
@@ -229,56 +271,67 @@ public:
 		return true;
 	}
 	
-//	typedef std::pair<Eigen::Vector3d, Eigen::Vector3d> MinMaxVector;
-//	bool isIntersecting(const MinMaxVector &minMax) const {
+//	friend std::ostream & operator<<(std::ostream &os, const ShiftedBox &sbox) {
+//		os << "SBOX[" << *sbox.simpleBox << "@(" 
+//				<< sbox.shift.translation().transpose() << ")]";
 //		
-//		if (thisMax[0] < minMax.first[0] || thisMin[0] > minMax.second[0])
-//			return false;
-//		if (thisMax[1] < minMax.first[1] || thisMin[1] > minMax.second[1])
-//			return false;
-//		if (thisMax[2] < minMax.first[2] || thisMin[2] > minMax.second[2])
-//			return false;
-//		return true;
-//		
+//		return os;
 //	}
 	
-	friend std::ostream & operator<<(std::ostream &os, const ShiftedBox &sbox) {
-		os << "SBOX[" << *sbox.simpleBox << "@(" 
-				<< sbox.shift.translation().transpose() << ")]";
+	static void calculateMinMax(MinMaxMatrix &minMax, const Eigen::Isometry3d &isom, const Eigen::Vector3d &extents) {
+		// first build a origin-centerd minMax
+		MinMaxMatrix tmp;
+		tmp.col(0).noalias() = extents * -0.5;
+		tmp.col(1).noalias() = extents * 0.5;
 		
-		return os;
+		// then apply the isometry to each corner finding new min-max
+		assert(Corner::N_CORNERS >= 1);
+		minMax.col(MIN_IDX).noalias() = minMax.col(MAX_IDX).noalias() = isom * getCornerImp(0, tmp);
+		
+		for (int i = 1; i < Corner::N_CORNERS; ++i) {
+			Eigen::Vector3d newCorner = isom * getCornerImp(i, tmp);
+			for (int c = 0; c < 3; ++c) {
+				if (newCorner(c) < minMax(c, MIN_IDX)) {
+					// less than min
+					minMax(c, MIN_IDX) = newCorner(c);
+				} else if (newCorner(c) > minMax(c, MAX_IDX)) {
+					// more than max
+					minMax(c, MAX_IDX) = newCorner(c);
+				}
+			}
+		}
 	}
 	
-	static void buildMinMax(const ShiftedBox &sbox, MinMaxMatrix &minMax) {
-		minMax.col(0).noalias() = sbox.getCorner(Corner::BottomFrontLeft);
-		minMax.col(1).noalias() = sbox.getCorner(Corner::UpperRearRight);
+	static void calculateMinMax(MinMaxMatrix &minMax, const Eigen::Vector3d &center, const Eigen::Vector3d &extents) {
+		minMax.col(0).noalias() = center - extents * 0.5;
+		minMax.col(1).noalias() = center + extents * 0.5;
 	}
 	
 private:
 	
-//	static Eigen::Vector3d getCorner(const Corner::CornerType &c,
-//			const MinMaxMatrix &minMax) {
-//		
-//		// with this matrix i choose wether to use MIN or MAX columns
-//		static int minMaxLookupCol[][3] = {
-//			/*	 X  Y  Z	*/
-//		/*BFL*/	{0, 0, 0},
-//		/*BFR*/	{1, 0, 0},
-//		/*BRR*/	{1, 1, 0},
-//		/*BRL*/	{0, 1, 0},
-//		/*UFL*/	{0, 0, 1},
-//		/*UFR*/	{1, 0, 1},
-//		/*URR*/	{1, 1, 1},
-//		/*URL*/	{0, 1, 1}
-//		};
-//		
-//		int cIdx = static_cast< int >(c);
-//		return Eigen::Vector3d(
-//			minMax(0, minMaxLookupCol[cIdx][0]),
-//			minMax(1, minMaxLookupCol[cIdx][1]),
-//			minMax(2, minMaxLookupCol[cIdx][2])
-//		);
-//	}
+	static Eigen::Vector3d getCornerImp(int c, const MinMaxMatrix &minMax) {
+		
+		// with this matrix i choose wether to use MIN or MAX columns
+		static const int minMaxLookupCol[][3] = {
+			/*	 X  Y  Z	*/
+		/*BFL*/	{0, 0, 0},
+		/*BFR*/	{1, 0, 0},
+		/*BRR*/	{1, 1, 0},
+		/*BRL*/	{0, 1, 0},
+		/*UFL*/	{0, 0, 1},
+		/*UFR*/	{1, 0, 1},
+		/*URR*/	{1, 1, 1},
+		/*URL*/	{0, 1, 1}
+		};
+		
+		assert(c < 8); // (Corner::N_CORNERS == 8) MUST hold
+		
+		return Eigen::Vector3d(
+			minMax(0, minMaxLookupCol[c][0]),
+			minMax(1, minMaxLookupCol[c][1]),
+			minMax(2, minMaxLookupCol[c][2])
+		);
+	}
 	
 };
 

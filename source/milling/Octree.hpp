@@ -25,62 +25,6 @@
 #include <Eigen/Geometry>
 
 #include "octree_nodes.hpp"
-#include "Voxel.hpp"
-
-
-class SimpleBoxCache {
-	
-private:
-	typedef std::map<u_int, SimpleBox::ConstPtr> CacheMap;
-	typedef boost::shared_ptr< CacheMap > CacheMapPtr;
-	typedef boost::shared_ptr< const CacheMap > CacheMapConstPtr;
-	
-	const u_int MAX_DEPTH;
-	const CacheMapConstPtr CACHE;
-	
-public:
-	SimpleBoxCache(const Eigen::Vector3d &extent, u_int maxDepth) :
-		MAX_DEPTH(maxDepth), CACHE(buildCache(extent, maxDepth))
-	{
-		GeometryUtils::checkExtent(extent);
-	}
-	
-	virtual ~SimpleBoxCache() { }
-	
-	SimpleBox::ConstPtr getSimpleBox(u_int depth) const {
-		assert(depth <= MAX_DEPTH);
-		
-		std::map<u_int, SimpleBox::ConstPtr>::const_iterator elm = CACHE->find(depth);
-		return elm->second;
-	}
-	
-	ShiftedBox::ConstPtr getShiftedBox(u_int depth, const Eigen::Translation3d &shift) const {
-		return boost::make_shared< ShiftedBox >(getSimpleBox(depth), shift);
-	}
-	
-private:
-	static CacheMapPtr buildCache(const Eigen::Vector3d &extent, u_int maxDepth) {
-		
-		CacheMapPtr cache = boost::make_shared< CacheMap >();
-		/* build cache: it should not use too much memory because
-		 * usually max depths are some tens, moreover we cannot afford a lazy
-		 * initialization of each simple-box due to problems in the C++
-		 * memory model (in fact there's no memory model in current C++
-		 * specification) that can cause a lot of troubles and unespected
-		 * behaviours. For more informations see
-		 * http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html
-		 */
-		for (u_int i = 0; i <= maxDepth; ++i) {
-			/* used pow function and not bit shift operator because this way
-			 * i may go beyond maxDepth = 32 or 64.
-			 */
-			double rate = pow(2.0, (double)i);
-			(*cache)[i] = boost::make_shared< SimpleBox >(extent / rate);
-		}
-		
-		return cache;
-	}
-};
 
 class Octree {
 	
@@ -91,23 +35,17 @@ public:
 	typedef BranchNode::Ptr BranchPtr;
 	typedef BranchNode::ConstPtr BranchConstPtr;
 	
-	typedef typename SimpleBox::ConstPtr SimpleBoxPtr;
-	
 	typedef OctreeNode::VersionInfo VersionInfo;
 	
 private:
 	
 	const Eigen::Vector3d EXTENT;
-	const u_int MAX_DEPTH;
-	const SimpleBoxCache BOX_CACHE;
 	BranchPtr ROOT;
 	
 public:
 	
-	Octree(Eigen::Vector3d extent, u_int maxDepth) :
-			EXTENT(extent),
-			MAX_DEPTH(maxDepth),
-			BOX_CACHE(extent, maxDepth)
+	Octree(Eigen::Vector3d extent) :
+			EXTENT(extent)
 	{
 		
 		GeometryUtils::checkExtent(EXTENT);
@@ -116,9 +54,14 @@ public:
 		 * it to get a branch (REAL root) and it's first children level
 		 */
 		VersionInfo fakeVinfo(1, 1);
-		boost::shared_ptr< LeafNode > fakeRoot = 
-				boost::make_shared< LeafNode >(BOX_CACHE.getShiftedBox(0,
-						Eigen::Translation3d::Identity()), fakeVinfo);
+		
+		ShiftedBox::Ptr initialBox(new ShiftedBox(
+				Eigen::Vector3d::Zero(),
+				EXTENT
+		));
+		
+		boost::shared_ptr< LeafNode > fakeRoot = boost::make_shared< LeafNode >(
+				initialBox, fakeVinfo);
 		
 		ROOT = createLevel(fakeRoot.get(), fakeVinfo);
 	}
@@ -172,6 +115,7 @@ public:
 	}
 	
 private:
+	
 	void deleteNode(OctreeNode::Ptr node) {
 		// tells father to forget its children
 		BranchNode::Ptr bnp = static_cast< BranchNode::Ptr >(node->getFather());
@@ -207,61 +151,45 @@ private:
 		}
 		
 		// create some variables needed in the following leaves-generation loop
-		u_int newDepth = leaf->getDepth() + 1;
 		
-		SimpleBox::ConstPtr thisLvlBox = BOX_CACHE.getSimpleBox(newDepth);
-		ShiftedBox baseSBox = leaf->getBox()->getResized(thisLvlBox);
-		// base translation needed to build all the others
-		Eigen::Vector3d baseTraslation(thisLvlBox->getHalfExtent());
+		/* we have to create new shift boxes for each child
+		 * thanks to "OpenSceneGraph3 Cookbook" for the if-free code
+		 */
+		int s[3];
+		Eigen::Vector3d extentSet[3] = {
+			leaf->getBox()->getMin(),
+			leaf->getBox()->getShift(),
+			leaf->getBox()->getMax()
+		};
+		int childIdx = 0;
 		
-		for (u_char i = 0; i < BranchNode::N_CHILDREN; i++) {
-			// calculate child traslation
-			Eigen::Vector3d traslation(baseTraslation);
-			
-			switch (i) {
-				case 0:
-					traslation *= -1;
-					break;
-				case 1:
-					traslation[1] *= -1;
-					traslation[2] *= -1;
-					break;
-				case 2:
-					traslation[2] *= -1;
-					break;
-				case 3:
-					traslation[0] *= -1;
-					traslation[2] *= -1;
-					break;
-				case 4:
-					traslation[0] *= -1;
-					traslation[1] *= -1;
-					break;
-				case 5:
-					traslation[1] *= -1;
-					break;
-				case 6:
-					// all positive
-					break;
-				case 7:
-					traslation[0] *= -1;
-					break;
+		for ( s[0]=0; s[0]<2; ++s[0] ) {
+			for ( s[1]=0; s[1]<2; ++s[1] ) {
+				for ( s[2]=0; s[2]<2; ++s[2] ) {
 					
-				default:
-					throw std::runtime_error("too much children");
-					break;
+					// create shifted box for the child
+					ShiftedBox::Ptr newBox(new ShiftedBox());
+					ShiftedBox::MinMaxMatrix &minMax = newBox->getMatrix();
+					
+					for ( int a=0; a<3; ++a ) {
+						minMax(a, ShiftedBox::MIN_IDX) = (extentSet[s[a] + 0])[a]; // min
+						minMax(a, ShiftedBox::MAX_IDX) = (extentSet[s[a] + 1])[a]; // max
+					}
+					
+					newBox->calculateExtentsAndVolume();
+					
+					// build child idx
+					LeafPtr child = new LeafNode(
+							newBranch,
+							childIdx,
+							newBox,
+							vinfo);
+					
+					newBranch->setChild(childIdx, child);
+					
+					childIdx++;
+				}
 			}
-			
-			// create shifted box for the child
-			ShiftedBox newBox = baseSBox.getShifted(Eigen::Translation3d(traslation));
-			
-			LeafPtr child = new LeafNode(
-					newBranch,
-					i,
-					boost::make_shared< ShiftedBox >(newBox),
-					vinfo);
-			
-			newBranch->setChild(i, child);
 		}
 		
 		return newBranch;

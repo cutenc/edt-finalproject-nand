@@ -15,20 +15,12 @@
 
 #include "VoxelInfo.hpp"
 #include "ShiftedBox.hpp"
+#include "graphics_info.hpp"
 
 class StoredData {
 	
 public:
-	struct VoxelPair {
-		VoxelPair(const ShiftedBox::ConstPtr &sBox, const VoxelInfo::Ptr vInfo) :
-			sBox(sBox), vInfo(vInfo)
-		{}
-		virtual ~VoxelPair() { }
-		
-		const ShiftedBox::ConstPtr sBox;
-		const VoxelInfo::Ptr vInfo;
-	};
-	
+	typedef GraphicData VoxelPair;
 	typedef std::deque< VoxelPair > VoxelData;
 	typedef boost::shared_ptr< VoxelData > VoxelDataPtr;
 	

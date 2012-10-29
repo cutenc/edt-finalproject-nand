@@ -25,6 +25,9 @@ public:
 	static osg::ref_ptr< osg::ShapeDrawable > buildCylinder(const osg::Vec3 &origin, float radius, float height);
 	static osg::ref_ptr< osg::ShapeDrawable > buildCylinder(float radius, float height);
 	
+	static osg::ref_ptr< osg::ShapeDrawable > buildSphere(const osg::Vec3 &origin, float radius);
+	static osg::ref_ptr< osg::ShapeDrawable > buildSphere(float radius);
+	
 	static osg::ref_ptr< osg::ShapeDrawable > buildBox(const osg::Vec3 &origin, float x, float y, float z);
 	static osg::ref_ptr< osg::ShapeDrawable > buildBox(float x, float y, float z);
 	

@@ -11,6 +11,7 @@
 #include <osg/NodeCallback>
 #include <osg/PositionAttitudeTransform>
 #include <osgText/Text>
+#include <osg/Timer>
 
 #include "milling/Stock.hpp"
 #include "milling/Cutter.hpp"
@@ -35,7 +36,14 @@ private:
 	
 	const Stock::Ptr stockPtr;
 	const Cutter::Ptr cutterPtr;
+	const double stockVolume;
 	
+	u_long nFrames;
+	u_int nMoves;
+	double totWaste;
+	bool waterFlag;
+	
+	osg::Timer timer;
 	SignalInfoProcesser PROCESSERS[3];
 	
 public:
@@ -53,6 +61,7 @@ private:
 	void buildInitialScene();
 	
 	void updateScene(const SignaledInfo &info);
+	void updateText();
 	void millingEnd(const SignaledInfo &info);
 	void timeoutExpired(const SignaledInfo &info);
 };

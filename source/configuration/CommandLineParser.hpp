@@ -12,6 +12,7 @@
 #include <iostream>
 
 #include <boost/program_options.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "common/constants.hpp"
 
@@ -19,23 +20,55 @@ namespace bpo = boost::program_options;
 
 class CommandLineParser {
 	
+public:
+	enum VideoMode {
+		NONE,
+		BOX,
+		MESH
+	};
+	
+	// overload istream>> operator in order to accept VideoModes
+	friend std::istream &operator>>(std::istream &is, CommandLineParser::VideoMode &vm) {
+		std::string token;
+		is >> token;
+		
+		if (boost::iequals(token, "none")) {
+			vm = CommandLineParser::NONE;
+		} else if (boost::iequals(token, "box")) {
+			vm = CommandLineParser::BOX;
+		} else if (boost::iequals(token, "mesh")) {
+			vm = CommandLineParser::MESH;
+		} else {
+			throw std::runtime_error("Invalid video type '" + token + "'");
+		}
+		
+		return is;
+	}
+	
+private:
 	const bpo::options_description OPTIONS;
 	const bpo::positional_options_description POSITIONALS;
 	const std::string PROG_NAME;
 	
 	std::string filename;
-	int octreeHeight;
+	VideoMode videoMode;
+	float minVoxelSize;
+	float waterFlux;
+	float waterThreshold;
 	bool helpAsked;
-	u_char verbosity;
+	bool paused;
 	
 public:
 	CommandLineParser(int argc, const char **argv);
 	virtual ~CommandLineParser();
 	
 	std::string getConfigFile() const;
-	int getMaxOctreeHeight() const;
+	float getMinVoxelSize() const;
+	float getWaterFlux() const;
+	float getWaterThreshold() const;
 	bool isHelpAsked() const;
-	u_char verbosityLevel() const;
+	bool startPaused() const;
+	VideoMode getVideoMode() const;
 	void printUsage(std::ostream &os) const;
 	
 private:
@@ -52,8 +85,11 @@ private:
 		description.add_options()
 				("help,h", "produces this help message")
 				("config,c", bpo::value< std::string >(&filename)->default_value(CMDLN_CONFFILE_NAME), "position of the configuration file")
-				("max-height,o", bpo::value< int >(&octreeHeight)->default_value(CMDLN_MAX_OCTREE_HEIGHT), "max octree height: this also defines minimum voxel size")
-				("verbose,v", "the output will be verbose")
+				("vsize,s", bpo::value< float >(&minVoxelSize)->default_value(CMDLN_MIN_VOXEL_SIZE), "minimum voxel size: all voxel dimensions should be equal or less then specified value")
+				("video,v", bpo::value< VideoMode >(&videoMode)->default_value(CMDLN_VIDEO_MODE), "set video mode: 'box', 'mesh', 'none' (default)")
+				("paused,p", "starts program in paused mode, you'll need to press RUN to start milling")
+				("wflux,f", bpo::value< float >(&waterFlux)->default_value(ALG_WATER_REMOTION_RATE), "set water remotion rate (in u^3 of waste)")
+				("wthreshold,t", bpo::value< float >(&waterThreshold)->default_value(ALG_WATER_THRESHOLD), "set amount of waste to mill before enabling water (in u^3)")
 		;
 		
 		return description;

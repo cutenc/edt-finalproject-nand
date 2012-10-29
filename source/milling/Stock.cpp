@@ -11,7 +11,6 @@
 #include <deque>
 #include <stdexcept>
 #include <cmath>
-#include <cassert>
 
 #include <boost/utility.hpp>
 #include <boost/chrono.hpp>
@@ -23,16 +22,14 @@
 
 #include <osg/PositionAttitudeTransform>
 
-#include "SimpleBox.hpp"
 #include "Corner.hpp"
 #include "StoredData.hpp"
 
 Stock::Stock(const StockDescription &desc, u_int maxDepth, MesherType::Ptr mesher) :
 	MAX_DEPTH(maxDepth),
-	EXTENT(desc.getGeometry()->X, desc.getGeometry()->Y, desc.getGeometry()->Z),
+	EXTENT(desc.getGeometry()->asEigen()),
 	STOCK_MODEL_TRASLATION(EXTENT / 2.0),
-	MODEL(EXTENT, maxDepth),
-	deletedData(boost::make_shared< StoredData::DeletedData >()),
+	MODEL(EXTENT), intersectionTester(maxDepth),
 	MESHER(mesher), lastRetrievedVersion(0), versioner(2)
 {
 	GeometryUtils::checkExtent(EXTENT);
@@ -71,43 +68,15 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 	 */
 	
 	Eigen::Isometry3d cutterIsom_model = STOCK_MODEL_TRASLATION.inverse() * rototras;
-	
 	Eigen::Isometry3d bboxIsom_model = cutterIsom_model * bboxInfo.rototraslation;
 	
-	CutterInfos::ConstPtr cutterInfo = boost::make_shared< const CutterInfos >(
-			cutter, bboxInfo.extents, cutterIsom_model, bboxIsom_model);
+	ShiftedBox::MinMaxMatrix cutterBboxMinMax;
+	ShiftedBox::calculateMinMax(cutterBboxMinMax, bboxIsom_model, bboxInfo.extents);
 	
-		
-//		static ShiftedBox::MinMaxVector getBoundingBoxMinMax(
-//				const SimpleBox &obb,
-//				const Eigen::Isometry3d &isom)
-//				{
-//			
-//			SimpleBox::CornerMatrixConstPtr matrix = obb.getCorners(isom);
-//			Eigen::Vector3d min, max;
-//			
-//			min = max = matrix->col(0);
-//			
-//			for (int c = 1; c < 8; ++c) {
-//				for (int r = 0; r < 3; ++r) {
-//					double v = (*matrix)(r, c);
-//					if (v < min[r]) {
-//						min[r] = v;
-//					} else if (v > max[r]) {
-//						max[r] = v;
-//					}
-//				}
-//			}
-//			return ShiftedBox::MinMaxVector(min, max);
-//		}
-//		
-//		static bool isIntersecting(OctreeNode::ConstPtr node,
-//				const ShiftedBox::MinMaxVector &boxMinMax) {
-//			
-//			const ShiftedBox::ConstPtr &currBox = node->getBox();
-//			return currBox->isIntersecting(boxMinMax);
-//		}
-
+	CutterInfos cutterInfo(cutter, &bboxInfo.extents, &cutterIsom_model, &bboxIsom_model,
+			&cutterBboxMinMax
+	);
+	
 	IntersectionResult results;
 	
 	BranchNode::Ptr root = MODEL.getRoot();
@@ -115,7 +84,7 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 	{
 		LockGuard l(mutex);
 		VersionInfo vinfo(lastRetrievedVersion, versioner.get() + 1);
-		processTreeRecursive(root, *cutterInfo, vinfo, results);
+		processTreeRecursive(root, cutterInfo, vinfo, results);
 		/* we completed the production of the new version so now we can 
 		 * update versioner. It would have been wrong to update versioner
 		 * during VersionInfo creation because the new version wouldn't have
@@ -136,20 +105,18 @@ void Stock::processTreeRecursive(OctreeNode::Ptr branchNode,
 	
 	BranchNode::Ptr branch = static_cast< BranchNode::Ptr >(branchNode);
 	
-	for (u_char i = 0; i < BranchNode::N_CHILDREN; ++i) {
+	for (int i = 0; i < BranchNode::N_CHILDREN; ++i) {
 		if (!branch->hasChild(i)) {
 			continue;
 		}
 		
 		OctreeNode::Ptr child = branch->getChild(i);
-		if (!isNodeIntersecting(child, cutInfo, true)) {
+		if (!intersectionTester.isIntersecting(child, cutInfo)) {
 			continue;
 		}
 		
 		int procIdx = static_cast< int >(child->getType());
-		
 		assert(procIdx >= 0 && procIdx < 2);
-		
 		(this->*(PROCESSERS[procIdx]))(child, cutInfo, vinfo, results);
 	}
 	
@@ -157,10 +124,6 @@ void Stock::processTreeRecursive(OctreeNode::Ptr branchNode,
 		MODEL.deleteBranch(branch);
 	}
 	
-}
-
-bool Stock::isNodeIntersecting(OctreeNode::ConstPtr node, const CutterInfos &cutInfo, bool accurate) const {
-	return node->getBox()->isIntersecting(cutInfo.bbox, *cutInfo.bboxIsom_model, accurate);
 }
 
 void Stock::analyzeLeaf(OctreeNode::Ptr leaf, 
@@ -192,7 +155,7 @@ void Stock::analyzeLeaf(OctreeNode::Ptr leaf,
 		results.waste += calculateNewWaste(currLeaf, waste);
 		
 		// add stored info to the deleted data deque
-		deletedData->push_back(currLeaf->getData());
+		deletedQueuer.enqueue(currLeaf->getData());
 		
 		// then delete currLeaf from the model
 		MODEL.deleteLeaf(currLeaf);
@@ -206,7 +169,7 @@ void Stock::analyzeLeaf(OctreeNode::Ptr leaf,
 			results.pushed_leaves++;
 			
 			// pushing cause current leaf to be deleted
-			deletedData->push_back(currLeaf->getData());
+			deletedQueuer.enqueue(currLeaf->getData());
 			
 			// we can push another level so let's do it...
 			BranchNode::Ptr newBranch = MODEL.pushLeaf(currLeaf, vinfo);
@@ -226,11 +189,9 @@ void Stock::analyzeLeaf(OctreeNode::Ptr leaf,
 			
 			results.updated_data_leaves++;
 			
-			double newWaste = calculateNewWaste(currLeaf, waste);
-			results.waste += newWaste;
+			results.waste += calculateNewWaste(currLeaf, waste);
 			
-			if (newWaste > 0)
-				MODEL.updateData(currLeaf, vinfo);
+			MODEL.updateData(currLeaf, vinfo);
 			
 		} // if (canPushLevel)
 	} // if (isContained)	
@@ -248,7 +209,7 @@ void Stock::cutVoxel(const LeafPtr &leaf,
 	 * cutter points.
 	 */
 	const ShiftedBox::ConstPtr &box = leaf->getBox();
-	const Eigen::Isometry3d modelIsom_cutter = cutterInfo.cutterIsom_model->inverse();
+	Eigen::Isometry3d modelIsom_cutter = cutterInfo.cutterIsom_model->inverse();
 	
 	VoxelInfo::Ptr info = leaf->getData();
 	waste.reset();
@@ -263,14 +224,13 @@ void Stock::cutVoxel(const LeafPtr &leaf,
 		
 		bool newInside = info->updateInsideness(*cit, distance);
 		
-		if (newInside) {
-			++waste.newInsideCorners;
-		}
+		// note that a true bool casted to int is always converted to 1, 0 otherwise
+		waste.newInsideCorners += (int)newInside;
 	}
 }
 
 double Stock::calculateNewWaste(const LeafPtr &currLeaf, const WasteInfo &info) {
-	return currLeaf->getBox()->getSimpleBox()->getVolume() * 
+	return currLeaf->getBox()->getVolume() * 
 			info.newInsideCorners / (double) Corner::N_CORNERS;
 }
 
@@ -298,7 +258,6 @@ std::ostream & operator<<(std::ostream &os, const Stock &stock) {
 			<< "];maxDepth=" << stock.MAX_DEPTH
 			<< ";minBlockSize=[" << stock.getResolution().transpose()
 			<< "])"
-//			<< std::endl << stock.MODEL
 			;
 	
 	return os;
@@ -348,8 +307,9 @@ Mesh::Ptr Stock::getMeshing() {
 			STOCK_MODEL_TRASLATION.translation()[2]
 	);
 	
+	deletedQueuer.activate();
 	StoredData::VoxelDataPtr data = boost::make_shared< StoredData::VoxelData >();
-	StoredData::DeletedDataPtr newDeleted = boost::make_shared< StoredData::DeletedData >();
+	StoredData::DeletedDataPtr newDeleted;
 	BranchNode::ConstPtr root = MODEL.getRoot();
 	{
 		// acquire lock
@@ -374,7 +334,7 @@ Mesh::Ptr Stock::getMeshing() {
 		 */
 		
 		// renew deletedDataPtr
-		deletedData.swap(newDeleted);
+		newDeleted = deletedQueuer.renewQueue();
 		
 		// release lock
 	}

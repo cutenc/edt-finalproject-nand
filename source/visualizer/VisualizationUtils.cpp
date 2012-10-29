@@ -21,8 +21,8 @@ VisualizationUtils::~VisualizationUtils() {
 osg::ref_ptr<osg::ShapeDrawable> VisualizationUtils::buildCylinder(
 		const osg::Vec3& center, float radius, float height) {
 	
-	osg::ref_ptr< osg::Cylinder > cyl = new osg::Cylinder(center, radius, height);
-	osg::ref_ptr< osg::ShapeDrawable > sdraw = new osg::ShapeDrawable(cyl.get());
+	osg::Cylinder *cyl = new osg::Cylinder(center, radius, height);
+	osg::ref_ptr< osg::ShapeDrawable > sdraw = new osg::ShapeDrawable(cyl);
 	
 	return sdraw.get();
 }
@@ -32,11 +32,24 @@ osg::ref_ptr<osg::ShapeDrawable> VisualizationUtils::buildCylinder(float radius,
 	return buildCylinder(osg::Vec3(), radius, height);
 }
 
+osg::ref_ptr<osg::ShapeDrawable> VisualizationUtils::buildSphere(
+		const osg::Vec3& center, float radius) {
+	
+	osg::Sphere *sph = new osg::Sphere(center, radius);
+	osg::ref_ptr< osg::ShapeDrawable > sdraw = new osg::ShapeDrawable(sph);
+	
+	return sdraw.get();
+}
+
+osg::ref_ptr<osg::ShapeDrawable> VisualizationUtils::buildSphere(float radius) {
+	return buildSphere(osg::Vec3(), radius);
+}
+
 osg::ref_ptr<osg::ShapeDrawable> VisualizationUtils::buildBox(
 		const osg::Vec3& center, float x, float y, float z) {
 	
-	osg::ref_ptr< osg::Box > box = new osg::Box(center, x, y, z);
-	osg::ref_ptr< osg::ShapeDrawable > sdraw = new osg::ShapeDrawable(box.get());
+	osg::Box *box = new osg::Box(center, x, y, z);
+	osg::ref_ptr< osg::ShapeDrawable > sdraw = new osg::ShapeDrawable(box);
 	
 	return sdraw.get();	
 }

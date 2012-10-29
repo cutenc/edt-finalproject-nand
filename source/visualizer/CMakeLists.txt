@@ -4,8 +4,12 @@ SET (visualizer_SRC
 Display.cpp
 Display.hpp
 DisplayInfo.hpp
+DisplayTextual.cpp
+DisplayTextual.hpp
 InputDeviceStateType.cpp
 InputDeviceStateType.hpp
+KeyboardHandler.cpp
+KeyboardHandler.hpp
 KeyboardManager.cpp
 KeyboardManager.hpp
 MillerRunnable.cpp

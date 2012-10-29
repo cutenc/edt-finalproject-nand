@@ -23,7 +23,7 @@ CommandLineParser::CommandLineParser(int argc, const char** argv) :
 	bpo::notify(vm);
 	
 	this->helpAsked = vm.count("help");
-	this->verbosity = vm.count("verbose");
+	this->paused = vm.count("paused");
 }
 
 CommandLineParser::~CommandLineParser() {
@@ -34,16 +34,28 @@ std::string CommandLineParser::getConfigFile() const {
 	return this->filename;
 }
 
-int CommandLineParser::getMaxOctreeHeight() const {
-	return this->octreeHeight;
+float CommandLineParser::getMinVoxelSize() const {
+	return this->minVoxelSize;
 }
 
 bool CommandLineParser::isHelpAsked() const {
 	return this->helpAsked;
 }
 
-u_char CommandLineParser::verbosityLevel() const {
-	return this->verbosity;
+CommandLineParser::VideoMode CommandLineParser::getVideoMode() const {
+	return this->videoMode;
+}
+
+bool CommandLineParser::startPaused() const {
+	return this->paused;
+}
+
+float CommandLineParser::getWaterFlux() const {
+	return this->waterFlux;
+}
+
+float CommandLineParser::getWaterThreshold() const {
+	return this->waterThreshold;
 }
 
 void CommandLineParser::printUsage(std::ostream& os) const {

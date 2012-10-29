@@ -12,6 +12,7 @@
 
 #include <Eigen/Geometry>
 
+#include <osg/Object>
 #include <osg/Geometry>
 
 #include "milling/ShiftedBox.hpp"
@@ -19,9 +20,13 @@
 class MeshingUtils : boost::noncopyable {
 public:
 	
-	static bool isBorderVoxel(const Eigen::Vector3d halfExtents, const ShiftedBox &sbox);
+	static bool isBorderVoxel(const Eigen::Vector3d &halfExtents, const ShiftedBox &sbox);
 	
-	static osg::Vec3d toOsg(const Eigen::Vector3d &vec);
+	template < typename DataT > inline
+	static DataT * getUserData(osg::Object * node) {
+		assert(dynamic_cast< DataT * >(node->getUserData()) != NULL);
+		return static_cast< DataT * >(node->getUserData());
+	}
 	
 private:
 	MeshingUtils();

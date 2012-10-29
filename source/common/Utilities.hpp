@@ -16,6 +16,8 @@
 
 #include <Eigen/Geometry>
 
+#include <osg/Geometry>
+
 class FileUtils {
 	
 public:
@@ -90,6 +92,11 @@ public:
 			
 			throw std::invalid_argument(ss.str());
 		}
+	}
+	
+	inline
+	static osg::Vec3d toOsg(const Eigen::Vector3d &vec) {
+		return osg::Vec3d(vec[0], vec[1], vec[2]);
 	}
 	
 };

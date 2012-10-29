@@ -8,8 +8,8 @@
 #ifndef STOCK_HPP_
 #define STOCK_HPP_
 
+#include <cassert>
 #include <ostream>
-#include <sstream>
 
 #include <boost/chrono.hpp>
 #include <boost/shared_ptr.hpp>
@@ -20,11 +20,9 @@
 #include "common/AtomicNumber.hpp"
 #include "configuration/StockDescription.hpp"
 #include "meshing/Mesher.hpp"
-#include "meshing/Meshing.hpp"
 #include "Cutter.hpp"
 #include "VoxelInfo.hpp"
 #include "Octree.hpp"
-#include "SimpleBox.hpp"
 #include "IntersectionResult.hpp"
 #include "StoredData.hpp"
 
@@ -40,24 +38,114 @@ public:
 	
 private:
 	struct CutterInfos {
-		typedef boost::shared_ptr< CutterInfos > Ptr;
-		typedef boost::shared_ptr< const CutterInfos > ConstPtr;
-		
 		const Cutter::ConstPtr cutter;
-		const SimpleBox bbox;
-		const boost::shared_ptr< Eigen::Isometry3d > cutterIsom_model, bboxIsom_model;
+		const Eigen::Vector3d *extents;
+		const Eigen::Isometry3d *cutterIsom_model;
+		const Eigen::Isometry3d *bboxIsom_model;
+		const ShiftedBox::MinMaxMatrix *minMax;
 		
 		CutterInfos(const Cutter::ConstPtr &cutter,
-				const Eigen::Vector3d &bboxExtents,
-				const Eigen::Isometry3d &cutterIsom_model,
-				const Eigen::Isometry3d &bboxIsom_model) :
-					cutter(cutter), bbox(bboxExtents),
-					cutterIsom_model(boost::allocate_shared< Eigen::Isometry3d, Eigen::aligned_allocator< Eigen::Isometry3d > >(Eigen::aligned_allocator< Eigen::Isometry3d >(), cutterIsom_model)),
-					bboxIsom_model(boost::allocate_shared< Eigen::Isometry3d, Eigen::aligned_allocator< Eigen::Isometry3d > >(Eigen::aligned_allocator< Eigen::Isometry3d >(), bboxIsom_model))
+				const Eigen::Vector3d *bboxExtents,
+				const Eigen::Isometry3d *cutterIsom_model,
+				const Eigen::Isometry3d *bboxIsom_model,
+				const ShiftedBox::MinMaxMatrix *minMax) :
+					cutter(cutter), extents(bboxExtents),
+					cutterIsom_model(cutterIsom_model),
+					bboxIsom_model(bboxIsom_model),
+					minMax(minMax)
 		{
 		}
 		
 		virtual ~CutterInfos() { }
+	};
+	
+	class DeletedDataQueuer {
+	private:
+		typedef void (DeletedDataQueuer::* Queuer)(const VoxelInfo::Ptr &);
+		
+	private:
+		StoredData::DeletedDataPtr deletedData;
+		int queuerIdx;
+		Queuer queuers[2];
+		
+	public:
+		DeletedDataQueuer() :
+			deletedData(boost::make_shared< StoredData::DeletedData >()),
+			queuerIdx(0)
+		{
+			queuers[0] = &DeletedDataQueuer::stubQueuer;
+			queuers[1] = &DeletedDataQueuer::realQueuer;
+		}
+		virtual ~DeletedDataQueuer() { }
+		
+		void activate() {
+			queuerIdx = 1;
+		}
+		
+		void enqueue(const VoxelInfo::Ptr &data) {
+			assert(queuerIdx < 2);
+			(this->*(queuers[queuerIdx]))(data);
+		}
+		
+		StoredData::DeletedDataPtr renewQueue() {
+			StoredData::DeletedDataPtr oldQueue = boost::make_shared< StoredData::DeletedData >();
+			deletedData.swap(oldQueue);
+			return oldQueue;
+		}
+		
+	private:
+		void stubQueuer(const VoxelInfo::Ptr &) {
+			// do nothing
+		}
+		
+		void realQueuer(const VoxelInfo::Ptr &data) {
+			deletedData->push_back(data);
+		}
+	};
+	
+	class IntersectionTester {
+		
+	private:
+		typedef bool (IntersectionTester::* TestFoo)(const ShiftedBox &, const CutterInfos &) const;
+		
+	private:
+		static const int N_DIVISIONS = 2;
+		const u_int depthSwitch;
+		TestFoo TESTS[N_DIVISIONS];
+		
+	public:
+		IntersectionTester(u_int maxDepth) :
+			depthSwitch( fmin(4.0, maxDepth) )
+		{
+			int i = 0;
+			TESTS[i++] = &IntersectionTester::accurateInt;
+			TESTS[i++] = &IntersectionTester::fastInt;
+			assert(i == N_DIVISIONS);
+		}
+		
+		bool isIntersecting(const OctreeNode::Ptr &node, const CutterInfos &cutInfo) const {
+			/* chose the intersection test based upon tree depth: use more
+			 * accurate tests at higher levels and then switch to faster ones
+			 * when depth increase (and the number of leaves to analyze explode)
+			 */
+			int idx = node->getDepth() >= depthSwitch;
+			
+			assert(idx < N_DIVISIONS);
+			return (this->*(TESTS[idx]))(*node->getBox(), cutInfo);
+		}
+		
+	private:
+//		bool veryAccurateInt(const ShiftedBox &sbox, const CutterInfos &cutInfo) const {
+//			return sbox.isIntersecting(*cutInfo.extents, *cutInfo.bboxIsom_model, true);
+//		}
+		
+		bool accurateInt(const ShiftedBox &sbox, const CutterInfos &cutInfo) const {
+			return sbox.isIntersecting(*cutInfo.extents, *cutInfo.bboxIsom_model, false);
+		}
+		
+		bool fastInt(const ShiftedBox &sbox, const CutterInfos &cutInfo) const {
+			return sbox.isIntersecting(*cutInfo.minMax);
+		}
 	};
 	
 	typedef Octree::VersionInfo VersionInfo;
@@ -76,14 +164,14 @@ private:
 	const Eigen::Vector3d EXTENT;
 	const Eigen::Translation3d STOCK_MODEL_TRASLATION;
 	OctreeType MODEL;
-	Processer PROCESSERS[2];
-	StoredData::DeletedDataPtr deletedData;
+	const IntersectionTester intersectionTester;
 	MesherType::Ptr MESHER;
+	u_int lastRetrievedVersion;
+	Versioner versioner;
 	
 	mutable boost::mutex mutex;
-	u_int lastRetrievedVersion;
-	
-	Versioner versioner;
+	Processer PROCESSERS[2];
+	DeletedDataQueuer deletedQueuer;
 	
 public:
 	Stock(const StockDescription &desc, u_int maxDepth, MesherType::Ptr mesher);
@@ -116,18 +204,14 @@ private:
 			const CutterInfos &cutInfo, const VersionInfo &vinfo,
 			IntersectionResult &result);
 	
-	bool isNodeIntersecting(OctreeNode::ConstPtr node,
-			const CutterInfos &cutInfo, bool accurate) const;
-	
 	void buildChangedNodesQueue(BranchNode::ConstPtr node,
 			const VersionInfo &vinfo, StoredData::VoxelData &queue) const;
 	
 	struct WasteInfo {
-		u_char newInsideCorners;
-		u_char currentIntersectingCorners;
+		int newInsideCorners;
 		
 		void reset() {
-			newInsideCorners = currentIntersectingCorners = 0;
+			newInsideCorners = 0;
 		}
 	};
 	void cutVoxel(const LeafPtr &leaf, const CutterInfos &cutterInfo, WasteInfo &wasteInfo) const;

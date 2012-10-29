@@ -40,6 +40,14 @@ public:
 		this->color = color;
 	}
 	
+	/**
+	 * 
+	 * @param point
+	 * @return a value >= 0 if given point is inside the surface, a value < 0
+	 * if given point is outside the surface. In order to optimize test
+	 * performance, returned value cannot be used as the REAL distance between
+	 * \c point and cutter surface
+	 */
 	virtual double getDistance(const Point3D &point) const {
 		return getDistance(point.asVector());
 	}

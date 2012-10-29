@@ -30,13 +30,60 @@
 
 class SphereCutter : public Cutter {
 
+private:
+	const double RADIUS;
+	const double DIAMETER;
+	const double SQUARE_RADIUS;
+	
 public:
+	SphereCutter(const Sphere &geom, const Color &color):
+		Cutter(color), RADIUS(geom.RADIUS), DIAMETER(RADIUS * 2.0),
+		SQUARE_RADIUS(RADIUS * RADIUS)
+	{
+		if (RADIUS <= std::numeric_limits<double>::epsilon())
+			throw std::invalid_argument("negative diameter (or too small)");
+	}
+	
+	
+	virtual BoundingBoxInfo getBoundingBox() const {
+		static const Eigen::Vector3d EXTENTS(DIAMETER, DIAMETER, DIAMETER);
+		return BoundingBoxInfo(EXTENTS, Eigen::Isometry3d::Identity());
+	}
+	
+	virtual double getDistance(const Eigen::Vector3d &point) const {
+		/* in our specification <0 means "outside" and >0 "inside"
+		 */
+		
+//		double squaredNorm = 0;
+//		for (int i = 0; i < 3; ++i) {
+//			squaredNorm += boost::math::pow<2>((double)point[i]);
+//		}
+		
+		return SQUARE_RADIUS - point.squaredNorm();
+	}
+	
+	virtual std::ostream & toOutStream(std::ostream &os) const {
+		os << "SPHERE(diameter=" << this->DIAMETER << ")";
+		
+		return os;
+	}
 	
 	virtual Mesh::Ptr getMeshing() {
+		static const Mesh::Ptr mesh = buildMesh();
 		
-		// TODO implement meshing method
-		throw std::runtime_error("NOT IMPLEMENTED YET");
+		return mesh;
+	}
+	
+private:
+	Mesh::Ptr buildMesh() const {
+	
+		osg::ref_ptr< osg::ShapeDrawable > sphere = VisualizationUtils::buildSphere(RADIUS);
+		sphere->setColor(getColor().asOSG());
 		
+		osg::ref_ptr< osg::Geode > geode = new osg::Geode;
+		geode->addDrawable(sphere.get());
+		
+		return boost::make_shared< Mesh >(geode.get());
 	}
 	
 };
@@ -74,13 +121,25 @@ public:
 	
 	virtual double getDistance(const Eigen::Vector3d &point) const {
 		if (point[2] < 0)
-			return boost::math::changesign(CommonUtils::INFINITE());
+			return -1;
+		
+		/* Optimization trials:
+		 * - tryed to optimize away the calculation of one of the terms
+		 * by checking wether firstTerm is already outside (exploiting fmax
+		 * behavior); it seems that introduced 'if' (i.e. if (firstTerm > 0) )
+		 * breaks pipelining very often resulting in worse overall
+		 * performance (+0.40)
+		 * EDIT: rimesso perchè sembra cambiare qualcosina in meglio... :)
+		 */
 		
 		/* following implicit function given in "Adaptive NC Simulation 
 		 * for Multi-axis Solid Machining" for a flat endmill aligned with
 		 * Z-axis we can write:
 		 */
 		double firstTerm = fabs((double)point[2] - HALF_LENGTH) - HALF_LENGTH;
+		
+		if (firstTerm >= 0)
+			return -firstTerm;
 		
 		/* in order to reduce floating point approximation errors we will
 		 * rewrite
@@ -92,13 +151,14 @@ public:
 		double secondTerm = boost::math::pow< 2 >((double)point[0])
 				+ (point[1] + RADIUS) * (point[1] - RADIUS);
 		
-		double distance = fmax(firstTerm, secondTerm);
+		
+//		double distance = fmax(firstTerm, secondTerm);
 		
 		/* I have to add a minus sign because in paper specification
 		 * distance <0 means "inside surface" and >0 "outside surface" but,
 		 * in our specification <0 means "outside" and >0 "inside"
 		 */
-		return boost::math::changesign(distance);
+		return -secondTerm;
 	}
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const {
