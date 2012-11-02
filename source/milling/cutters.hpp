@@ -136,7 +136,7 @@ public:
 		 * for Multi-axis Solid Machining" for a flat endmill aligned with
 		 * Z-axis we can write:
 		 */
-		double firstTerm = fabs((double)point[2] - HALF_LENGTH) - HALF_LENGTH;
+		double firstTerm = fabs(point(2) - HALF_LENGTH) - HALF_LENGTH;
 		
 		if (firstTerm >= 0)
 			return -firstTerm;
@@ -148,11 +148,11 @@ public:
 		 * 
 		 * http://docs.oracle.com/cd/E19957-01/806-3568/ncg_goldberg.html
 		 */
-		double secondTerm = boost::math::pow< 2 >((double)point[0])
+		double secondTerm = boost::math::pow< 2 >(point[0])
 				+ (point[1] + RADIUS) * (point[1] - RADIUS);
 		
 		
-//		double distance = fmax(firstTerm, secondTerm);
+//		double distance = std::max(firstTerm, secondTerm);
 		
 		/* I have to add a minus sign because in paper specification
 		 * distance <0 means "inside surface" and >0 "outside surface" but,

@@ -36,8 +36,8 @@ public:
 	static bool isBorderCorner(const Eigen::Vector3d &halfExtents, const Eigen::Vector3d &corner) {
 		for (int r = 0; r < 3; ++r) {
 			if (CommonUtils::doubleEquals(
-					(double)halfExtents(r),
-					fabs((double)corner(r)))
+					halfExtents(r),
+					fabs(corner(r)))
 			) {
 				return true;
 			}

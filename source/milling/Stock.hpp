@@ -9,6 +9,7 @@
 #define STOCK_HPP_
 
 #include <cassert>
+#include <algorithm>
 #include <ostream>
 
 #include <boost/chrono.hpp>
@@ -115,7 +116,7 @@ private:
 		
 	public:
 		IntersectionTester(unsigned int maxDepth) :
-			depthSwitch( fmin(4.0, maxDepth) )
+			depthSwitch( std::min(4u, maxDepth) )
 		{
 			int i = 0;
 			TESTS[i++] = &IntersectionTester::accurateInt;

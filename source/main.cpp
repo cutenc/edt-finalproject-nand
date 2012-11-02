@@ -18,6 +18,8 @@
 #include "visualizer/DisplayTextual.hpp"
 #include "visualizer/KeyboardManager.hpp"
 
+#define LOG_2 0.69314718055994530941723212145817656807550013436025
+
 
 using namespace std;
 using namespace Eigen;
@@ -44,7 +46,7 @@ int main(int argc, const char **argv) {
 	// calculate max octree depth
 	double maxDim = cfp.getStockDescription()->getGeometry()->asEigen().maxCoeff();
 	float minSize = clp.getMinVoxelSize();
-	unsigned int max_depth = log2(maxDim / minSize) + 1;
+	unsigned int max_depth = log(maxDim / minSize) / LOG_2 + 1;
 	
 	typename Mesher< StoredData >::Ptr mesher;
 	switch (clp.getVideoMode()) {
