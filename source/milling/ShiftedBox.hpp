@@ -21,6 +21,10 @@
 
 #include "Corner.hpp"
 
+/**
+ * Class representing a volume of space shaped as a box (rectangular cuboid),
+ * aligned with stock axis, and shifted from stock center.
+ */
 class ShiftedBox : boost::noncopyable {
 	
 public:
@@ -158,7 +162,9 @@ public:
 			const Eigen::Isometry3d &rototras,
 			bool accurate) const {
 		
-		// thanks to http://www.gamasutra.com/view/feature/131790/simple_intersection_tests_for_games.php
+		/* thanks to 
+		 * http://www.gamasutra.com/view/feature/131790/simple_intersection_tests_for_games.php
+		 */
 				
 		/*ALGORITHM: Use the separating axis test for all 15 potential
 		separating axes. If a separating axis could not be found, the two

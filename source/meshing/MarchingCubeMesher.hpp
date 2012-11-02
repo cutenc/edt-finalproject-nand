@@ -20,7 +20,7 @@ private:
 public:
 	MarchingCubeMesher(const StockDescription& stock) :
 		CommonMesher(stock,
-				new MarchingCubeMesherCallback(),
+				new MarchingCubeMesherCallback(stock),
 				DEFAULT_LEAF_SIZE
 		)
 	{ }

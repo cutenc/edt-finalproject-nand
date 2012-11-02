@@ -18,6 +18,14 @@
 #include "LeafNodeData.hpp"
 #include "MeshingUtils.hpp"
 
+/**
+ * Class used to convert LeafNodeData stored inside a node into a graphic
+ * object. This conversion will be performed only each time data has been
+ * flagged as dirty by MeshOctree methods.
+ * Pay attention that a single istance of this object will be attached
+ * to all needed nodes so class attributes may be used to share informations
+ * between different nodes.
+ */
 class LeafNodeCallback : boost::noncopyable, public osg::NodeCallback {
 	
 public:
@@ -47,6 +55,8 @@ public:
 			group->setChild(NODE_IDX, childNode.get());
 			
 			data->clean();
+			
+			group->setDataVariance(osg::Node::STATIC);
 		} // else, do nothing
 		
 		this->traverse(node, nv);

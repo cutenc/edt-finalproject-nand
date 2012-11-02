@@ -53,11 +53,13 @@ bool MeshOctree::addData(const GraphicData& data) {
 void MeshOctree::updateData(const GraphicPointer& ref, const GraphicData& gdata) {
 	LeafNodeData *lnd = MeshingUtils::getUserData< LeafNodeData >(ref.node.get());
 	lnd->updateElm(ref.item, gdata);
+	ref.node->setDataVariance(osg::Node::DYNAMIC);
 }
 
 void MeshOctree::removeData(const GraphicPointer& ref) {
 	LeafNodeData *lnd = MeshingUtils::getUserData< LeafNodeData >(ref.node.get());
 	lnd->deleteElm(ref.item);
+	ref.node->setDataVariance(osg::Node::DYNAMIC);
 }
 
 osg::Group* MeshOctree::getRoot() {
@@ -159,6 +161,8 @@ void MeshOctree::processLeafGrp(osg::Group* grp, const osg::BoundingBoxd&,
 	
 	GraphicData::Elm elm = leafData->insertElm(data);
 	data.vinfo->setGraphics(GraphicPointer(elm, grp));
+	
+	grp->setDataVariance(osg::Node::DYNAMIC);
 	
 	// now check if we have to split current node
 	if ((leafData->getSize() > maxLeafSize) && (leafData->getDepth() < maxDepth)) {

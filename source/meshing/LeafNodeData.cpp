@@ -18,12 +18,12 @@ OctreeNodeData::NodeDataType LeafNodeData::getType() const {
 }
 
 GraphicData::Elm LeafNodeData::insertElm(const GraphicData& info) {
-	setDirty(); storedElms++;
+	setDirty(); ++storedElms;
 	return elements.insert(elements.end(), info);
 }
 
 void LeafNodeData::deleteElm(const GraphicData::Elm& ref) {
-	setDirty(); storedElms--;
+	setDirty(); --storedElms;
 	elements.erase(ref);
 }
 

@@ -19,7 +19,16 @@ class LeafNodeData: public OctreeNodeData {
 	
 private:
 	GraphicData::List elements;
+	
+	/**
+	 * Stores the number of elements contained in the list. This variable is
+	 * needed because <tt>list.size()</tt> may be O(N) with N number of
+	 * contained elements. This is an implementation dependant detail but
+	 * an O(1) <tt>list.splice</tt> implementation necessarily
+	 * cause <tt>list.size</tt> to be O(N).
+	 */
 	unsigned int storedElms;
+	
 	bool dirty;
 	
 public:

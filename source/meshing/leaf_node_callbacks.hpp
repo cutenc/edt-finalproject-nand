@@ -8,8 +8,6 @@
 #ifndef LEAF_NODE_CALLBACKS_HPP_
 #define LEAF_NODE_CALLBACKS_HPP_
 
-#include "LeafNodeCallback.hpp"
-
 class BoxMesherCallback;
 #include "mesherCallbacks/BoxMesherCallback.hpp"
 

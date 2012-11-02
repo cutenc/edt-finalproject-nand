@@ -11,6 +11,8 @@
 #ifndef BOXMESHERCALLBACK_HPP_
 #define BOXMESHERCALLBACK_HPP_
 
+#include "meshing/LeafNodeCallback.hpp"
+
 #include <cassert>
 
 #include <osg/Geometry>
@@ -19,7 +21,6 @@
 
 #include "milling/Corner.hpp"
 #include "common/Utilities.hpp"
-#include "visualizer/VisualizationUtils.hpp"
 
 class BoxMesherCallback : public LeafNodeCallback {
 	
@@ -56,10 +57,10 @@ public:
 	virtual osg::ref_ptr< osg::Node > buildNode(const LeafNodeData &data) {
 		assert(data.isDirty() && !data.isEmpty());
 		
-		osg::ref_ptr< osg::Geometry > geom = new osg::Geometry;
+		osg::Geometry *geom = new osg::Geometry;
 		unsigned int nElm = 0, totElm = data.getElements().size();
 		
-		ensureEnoughNormalAndColors(totElm);
+		ensureEnoughNormalsAndColors(totElm);
 		
 		/* face order:
 		 * left, front, bottom, rigth, rear, top
@@ -75,9 +76,14 @@ public:
 		geom->setColorIndices(colorIndexArray.get());
 		geom->setColorBinding(osg::Geometry::BIND_PER_PRIMITIVE);
 		
-		// build vertices
-		osg::ref_ptr< osg::Vec3Array > vertices = new osg::Vec3Array(Corner::N_CORNERS * totElm);
-		geom->setVertexArray(vertices.get());
+		// build vertices array
+		osg::Vec3Array *vertices = new osg::Vec3Array(Corner::N_CORNERS * totElm);
+		geom->setVertexArray(vertices);
+		
+		/* 
+		 * BUILD FACES
+		 */
+		osg::DrawElementsUInt *faces = new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS);
 		
 		GraphicData::List::const_iterator dataIt = data.getElements().begin();
 		for (; dataIt != data.getElements().end(); ++dataIt) {
@@ -88,12 +94,6 @@ public:
 			for (; cit != CornerIterator::end(); ++cit) {
 				(*vertices)[*cit + shift] = GeometryUtils::toOsg(dataIt->sbox->getCorner(*cit));
 			}
-			
-			/* 
-			 * BUILD FACES
-			 */
-			osg::ref_ptr< osg::DrawElementsUInt > faces = 
-					new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS);
 			
 			// left face
 			faces->push_back(0 + shift);
@@ -131,14 +131,13 @@ public:
 			faces->push_back(7 + shift);
 			faces->push_back(4 + shift);
 			
-			geom->addPrimitiveSet(faces);
-			
 			++nElm;
 		}
 
+		geom->addPrimitiveSet(faces);
 		
 		osg::ref_ptr< osg::Geode > geode = new osg::Geode;
-		geode->addDrawable(geom.get());
+		geode->addDrawable(geom);
 		
 		return geode.get();
 	}
@@ -147,7 +146,7 @@ protected:
 	virtual ~BoxMesherCallback() { }
 	
 private:
-	void ensureEnoughNormalAndColors(unsigned int totElms) {
+	void ensureEnoughNormalsAndColors(unsigned int totElms) {
 		assert(normalIndexArray->size() == colorIndexArray->size());
 		assert(normalIndexArray->size() % 6 == 0);
 		

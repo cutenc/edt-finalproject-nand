@@ -11,24 +11,44 @@
 #ifndef MARCHINGCUBEMESHERCALLBACK_HPP_
 #define MARCHINGCUBEMESHERCALLBACK_HPP_
 
+#include "meshing/LeafNodeCallback.hpp"
+
 #include <cassert>
 
-#include <osg/Geode>
+#include <Eigen/Geometry>
+
+#include <osg/Array>
+
+#include "configuration/StockDescription.hpp"
+#include "MeshingVoxel.hpp"
 
 class MarchingCubeMesherCallback : public LeafNodeCallback {
 	
+private:
+	static const int edgeTable[256];
+	static const int triTable[256][16];
+	
+	/**
+	 * Tells which two corners are adjacent a given edge 
+	 */
+	static const int cornerAdjTable[12][2];
+	
+	const osg::ref_ptr< osg::Vec4Array > colorArray;
+	const Eigen::Vector3d STOCK_HALF_EXTENTS;
+	
+	Eigen::Vector3d tmpVertices[12];
+	
 public:
-	MarchingCubeMesherCallback() { }
+	MarchingCubeMesherCallback(const StockDescription &desc);
 	
-	virtual osg::ref_ptr< osg::Node > buildNode(const LeafNodeData &data) {
-		assert(data.isDirty());
-		
-		throw std::runtime_error("Not implemented yet");
-	}
-	
+	virtual osg::ref_ptr< osg::Node > buildNode(const LeafNodeData &data);
 	
 protected:
-	virtual ~MarchingCubeMesherCallback() { }
+	virtual ~MarchingCubeMesherCallback();
+	
+private:
+	
+	Eigen::Vector3d vertInterp(const MeshingVoxel &grid, int edgeIdx);
 	
 };
 

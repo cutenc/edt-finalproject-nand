@@ -11,6 +11,7 @@
 #include <cmath>
 #include <sstream>
 
+#include <boost/thread.hpp>
 #include <boost/date_time.hpp>
 
 #include <osg/Geometry>
@@ -156,7 +157,7 @@ void SceneUpdater::operator()(osg::Node* node, osg::NodeVisitor* nv) {
 		assert(procIdx < 3);
 		(this->*(PROCESSERS[procIdx]))(infos);
 	} else {
-		usleep(1000 * WAIT_TIME.total_milliseconds());
+		boost::this_thread::sleep(WAIT_TIME);
 	}
 	
 	// MUST BE CALLED to continue traversing

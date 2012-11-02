@@ -5,9 +5,6 @@
  *      Author: socket
  */
 
-#include <cmath>
-
-#include "common/Utilities.hpp"
 #include "MeshingUtils.hpp"
 
 MeshingUtils::MeshingUtils() { }
@@ -20,7 +17,7 @@ bool MeshingUtils::isBorderVoxel(const Eigen::Vector3d &halfExtents,
 	const ShiftedBox::MinMaxMatrix &minMax = sbox.getMatrix();
 
 	for(int r = 0; r < 3; ++r) {
-		for (int c = 0; c < 2; c++) {
+		for (int c = 0; c < 2; ++c) {
 			if (CommonUtils::doubleEquals(
 					(double)halfExtents[r],
 					fabs((double)minMax(r, c)))) {
