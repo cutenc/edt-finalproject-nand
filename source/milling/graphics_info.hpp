@@ -12,7 +12,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include <osg/LOD>
+#include <osg/Node>
 
 #include "ShiftedBox.hpp"
 
