@@ -59,7 +59,7 @@ private:
 	bool paused;
 	
 public:
-	CommandLineParser(int argc, const char **argv);
+	CommandLineParser(int argc, char **argv);
 	virtual ~CommandLineParser();
 	
 	std::string getConfigFile() const;

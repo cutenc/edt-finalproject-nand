@@ -32,6 +32,13 @@ void DisplayTextual::doCycle() throw() {
 	
 	SignaledInfo sInfo = signaler->awaitMiller();
 	
+	/* TODO qui c'è da controllare perchè l'awaitMiller ritorna con un TIMEOUT
+	 * mentre dovrebbe aspettare all'infinito (max(long) secondi). Dentro il
+	 * signaler è stata usata anche la versione con il predicato che quindi
+	 * dovrebbe arrangiarsi a gestire gli spurious wakeups ma sul PC di
+	 * Alberto sembra non funzionare...
+	 */
+	
 	switch (sInfo.state) {
 	case SignaledInfo::HAS_DATA:
 		if (idst->shouldUpdateScene()) {

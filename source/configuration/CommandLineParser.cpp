@@ -11,7 +11,7 @@
 
 namespace bpo = boost::program_options;
 
-CommandLineParser::CommandLineParser(int argc, const char** argv) : 
+CommandLineParser::CommandLineParser(int argc, char** argv) : 
 		OPTIONS(buildOptions()), POSITIONALS(buildPositionals()), 
 		PROG_NAME(argv[0]) {
 	

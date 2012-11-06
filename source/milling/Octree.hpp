@@ -29,8 +29,8 @@
 class Octree {
 	
 public:
-	typedef typename LeafNode::Ptr LeafPtr;
-	typedef typename LeafNode::ConstPtr LeafConstPtr;
+	typedef LeafNode::Ptr LeafPtr;
+	typedef LeafNode::ConstPtr LeafConstPtr;
 	
 	typedef BranchNode::Ptr BranchPtr;
 	typedef BranchNode::ConstPtr BranchConstPtr;

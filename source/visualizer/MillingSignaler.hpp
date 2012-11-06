@@ -61,8 +61,8 @@ private:
 	};
 	
 private:
-	boost::condition_variable millingReady;
-	boost::mutex mutex;
+	mutable boost::condition_variable millingReady;
+	mutable boost::mutex mutex;
 	
 	/*
 	 * Guarded-by #mutex

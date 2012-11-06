@@ -24,7 +24,7 @@
 using namespace std;
 using namespace Eigen;
 
-int main(int argc, const char **argv) {
+int main(int argc, char **argv) {
 	
 	cout 	<< "****************************************" << endl
 			<< "************* CNCSimulator *************" << endl
@@ -48,7 +48,7 @@ int main(int argc, const char **argv) {
 	float minSize = clp.getMinVoxelSize();
 	unsigned int max_depth = log(maxDim / minSize) / LOG_2 + 1;
 	
-	typename Mesher< StoredData >::Ptr mesher;
+	Mesher< StoredData >::Ptr mesher;
 	switch (clp.getVideoMode()) {
 		case CommandLineParser::NONE:
 			mesher = boost::make_shared< StubMesher< StoredData > >();

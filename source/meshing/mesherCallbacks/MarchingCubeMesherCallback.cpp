@@ -102,8 +102,12 @@ osg::ref_ptr<osg::Node> MarchingCubeMesherCallback::buildNode(const LeafNodeData
 			vertices->push_back(GeometryUtils::toOsg(tmpVertices[thirdIdx]));
 			
 			// a new face has been added, now calculate its normal
-			Eigen::Vector3d norm;
-			norm.noalias() = tmpVertices[firstIdx].cross(tmpVertices[secondIdx]).normalized();
+			Eigen::Vector3d norm; norm.noalias() = 
+					(tmpVertices[secondIdx] - tmpVertices[firstIdx]) // first vector
+						.cross
+					(tmpVertices[thirdIdx] - tmpVertices[firstIdx]) // second vector
+						.normalized();
+			
 			normals->push_back(GeometryUtils::toOsg(norm));
 		}
 		
@@ -140,17 +144,20 @@ Eigen::Vector3d MarchingCubeMesherCallback::vertInterp(const MeshingVoxel& grid,
 	
 	int p1idx = MarchingCubeMesherCallback::cornerAdjTable[edgeIdx][0],
 			p2idx = MarchingCubeMesherCallback::cornerAdjTable[edgeIdx][1];
+//	
+//	double valp1 = grid.getWeight(p1idx);
+//	if (CommonUtils::doubleEquals(valp1, MC_THRESHOLD_LEVEL)) return(grid.getCornerEigen(p1idx));
+//	double valp2 = grid.getWeight(p2idx);
+//	if (CommonUtils::doubleEquals(valp2, MC_THRESHOLD_LEVEL)) return(grid.getCornerEigen(p2idx));
+//	if (CommonUtils::doubleEquals(valp1, valp2)) return(grid.getCornerEigen(p1idx));
+//
+//	double mu = (MC_THRESHOLD_LEVEL - valp1) / (valp2 - valp1);
+//	
+//	Eigen::Vector3d p1Corner(grid.getCornerEigen(p1idx));
+//	return 	p1Corner + mu * (p1Corner - grid.getCornerEigen(p2idx));
 	
-	double valp1 = grid.getWeight(p1idx);
-	if (CommonUtils::doubleEquals(valp1, MC_THRESHOLD_LEVEL)) return(grid.getCornerEigen(p1idx));
-	double valp2 = grid.getWeight(p2idx);
-	if (CommonUtils::doubleEquals(valp2, MC_THRESHOLD_LEVEL)) return(grid.getCornerEigen(p2idx));
-	if (CommonUtils::doubleEquals(valp1, valp2)) return(grid.getCornerEigen(p1idx));
-
-	double mu = (MC_THRESHOLD_LEVEL - valp1) / (valp2 - valp1);
-	
-	Eigen::Vector3d p1Corner(grid.getCornerEigen(p1idx));
-	return 	p1Corner + mu * (p1Corner - grid.getCornerEigen(p2idx));
+	// ritorna sempre il punto mediano dell'edge
+	return (grid.getCornerEigen(p1idx) + grid.getCornerEigen(p2idx)) * 0.5;
 }
 
 

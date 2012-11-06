@@ -20,7 +20,7 @@ class VoxelInfo;
 
 struct GraphicData {
 	typedef std::list< GraphicData > List;
-	typedef typename List::iterator Elm;
+	typedef List::iterator Elm;
 	typedef boost::shared_ptr< VoxelInfo > VoxelInfoPtr;
 	
 	
