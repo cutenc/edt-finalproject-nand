@@ -34,7 +34,7 @@ ENDIF()
 
 # BOOST libraries
 SET(Boost_USE_MULTITHREADED         ON)
-SET(Boost_USE_STATIC_LIBS       	OFF)
+SET(Boost_USE_STATIC_LIBS       	OFF) #mettere a on questo se link statico
 SET(Boost_USE_STATIC_RUNTIME    	OFF)
 SET(Boost_MIN_VERSION               "1.48.0")
 
@@ -43,8 +43,11 @@ INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 ADD_DEFINITIONS(${Boost_DEFINITIONS})
 SET (MY_LIBS ${MY_LIBS} ${Boost_LIBRARIES})
 
+# commentare le seguenti se build statico (ci sono le librerie statiche?)
 ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
-ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK)
+#ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK)
+ADD_DEFINITIONS(-DBOOST_PROGRAM_OPTIONS_DYN_LINK)
+
 
 
 # OpenSceneGraph
