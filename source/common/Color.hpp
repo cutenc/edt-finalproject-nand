@@ -29,6 +29,13 @@ public:
 	virtual ~Color();
 	
 	const osg::Vec4f &asOSG() const;
+	
+	/**
+	 * Color string in the format 0xRRGGBB
+	 * @param colorStr
+	 * @return
+	 */
+	static osg::Vec4f buildColor(const std::string &colorStr);
 };
 
 #endif /* COLOR_HPP_ */

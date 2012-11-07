@@ -30,7 +30,7 @@ public:
 	typedef const OctreeNode * ConstPtr;
 	
 	enum OctreeNodeType {
-		BRANCH_NODE,
+		BRANCH_NODE = 0,
 		LEAF_NODE
 	};
 	

@@ -36,8 +36,8 @@ Stock::Stock(const StockDescription &desc, unsigned int maxDepth, MesherType::Pt
 	if(MAX_DEPTH <= 0)
 		throw std::invalid_argument("max depth should be >0");
 	
-	PROCESSERS[0] = &Stock::processTreeRecursive;
-	PROCESSERS[1] = &Stock::analyzeLeaf;
+	PROCESSERS[OctreeNode::BRANCH_NODE] = &Stock::processTreeRecursive;
+	PROCESSERS[OctreeNode::LEAF_NODE] = &Stock::analyzeLeaf;
 }
 
 Stock::~Stock() { }
@@ -84,7 +84,8 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 	{
 		LockGuard l(mutex);
 		VersionInfo vinfo(lastRetrievedVersion, versioner.get() + 1);
-		processTreeRecursive(root, cutterInfo, vinfo, results);
+		RecursionInfo recInfo(cutterInfo, vinfo, results);
+		processTreeRecursive(root, recInfo);
 		/* we completed the production of the new version so now we can 
 		 * update versioner. It would have been wrong to update versioner
 		 * during VersionInfo creation because the new version wouldn't have
@@ -98,10 +99,7 @@ IntersectionResult Stock::intersect(const Cutter::ConstPtr &cutter,
 	return results;
 }
 
-void Stock::processTreeRecursive(OctreeNode::Ptr branchNode,
-		const CutterInfos &cutInfo,
-		const VersionInfo &vinfo,
-		IntersectionResult &results) {
+void Stock::processTreeRecursive(OctreeNode::Ptr branchNode, RecursionInfo &info) {
 	
 	BranchNode::Ptr branch = static_cast< BranchNode::Ptr >(branchNode);
 	
@@ -111,13 +109,13 @@ void Stock::processTreeRecursive(OctreeNode::Ptr branchNode,
 		}
 		
 		OctreeNode::Ptr child = branch->getChild(i);
-		if (!intersectionTester.isIntersecting(child, cutInfo)) {
+		if (!intersectionTester.isIntersecting(child, info.cutterInfo)) {
 			continue;
 		}
 		
 		int procIdx = static_cast< int >(child->getType());
 		assert(procIdx >= 0 && procIdx < 2);
-		(this->*(PROCESSERS[procIdx]))(child, cutInfo, vinfo, results);
+		(this->*(PROCESSERS[procIdx]))(child, info);
 	}
 	
 	if (branch->isEmpty()) {
@@ -126,16 +124,13 @@ void Stock::processTreeRecursive(OctreeNode::Ptr branchNode,
 	
 }
 
-void Stock::analyzeLeaf(OctreeNode::Ptr leaf, 
-		const CutterInfos &cutterInfo,
-		const VersionInfo &vinfo,
-		IntersectionResult &results) {
+void Stock::analyzeLeaf(OctreeNode::Ptr leaf, RecursionInfo &info) {
 	
 	LeafPtr currLeaf = static_cast< LeafPtr >(leaf);
 	
 	assert(!currLeaf->getData()->isContained());
 	
-	results.analyzed_leaves++;
+	info.results.analyzed_leaves++;
 	
 	/* by now we only know that cutter bounding box is intersecting
 	 * currLeaf (if the test has set to be faster but inaccurate it may
@@ -147,12 +142,12 @@ void Stock::analyzeLeaf(OctreeNode::Ptr leaf,
 	 */
 	
 	WasteInfo waste;
-	cutVoxel(currLeaf, cutterInfo, waste);
+	cutVoxel(currLeaf, info.cutterInfo, waste);
 	
 	if (currLeaf->getData()->isContained()) {
 		
-		results.purged_leaves++;
-		results.waste += calculateNewWaste(currLeaf, waste);
+		info.results.purged_leaves++;
+		info.results.waste += calculateNewWaste(currLeaf, waste);
 		
 		// add stored info to the deleted data deque
 		deletedQueuer.enqueue(currLeaf->getData());
@@ -166,16 +161,16 @@ void Stock::analyzeLeaf(OctreeNode::Ptr leaf,
 		
 		if (canPushLevel(currLeaf)) {
 			
-			results.pushed_leaves++;
+			info.results.pushed_leaves++;
 			
 			// pushing cause current leaf to be deleted
 			deletedQueuer.enqueue(currLeaf->getData());
 			
 			// we can push another level so let's do it...
-			BranchNode::Ptr newBranch = MODEL.pushLeaf(currLeaf, vinfo);
+			BranchNode::Ptr newBranch = MODEL.pushLeaf(currLeaf, info.vinfo);
 			
 			// ... and recursively process it
-			processTreeRecursive(newBranch, cutterInfo, vinfo, results);
+			processTreeRecursive(newBranch, info);
 			
 		} else {
 			
@@ -187,17 +182,15 @@ void Stock::analyzeLeaf(OctreeNode::Ptr leaf,
 			 * resolution or we stuck upon a bounding-box approximation error;
 			 */
 			
-			results.updated_data_leaves++;
+			info.results.updated_data_leaves++;
 			
-			results.waste += calculateNewWaste(currLeaf, waste);
+			info.results.waste += calculateNewWaste(currLeaf, waste);
 			
-			MODEL.updateData(currLeaf, vinfo);
+			MODEL.updateData(currLeaf, info.vinfo);
 			
 		} // if (canPushLevel)
 	} // if (isContained)	
-	
 }
-
 
 void Stock::cutVoxel(const LeafPtr &leaf,
 		const CutterInfos &cutterInfo, WasteInfo &waste) const {

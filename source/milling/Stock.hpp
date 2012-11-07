@@ -150,11 +150,22 @@ private:
 	};
 	
 	typedef Octree::VersionInfo VersionInfo;
+	
+	struct RecursionInfo {
+		const CutterInfos &cutterInfo;
+		const VersionInfo &vinfo;
+		IntersectionResult &results;
+		
+		RecursionInfo(const CutterInfos &cutterInfo,
+				const VersionInfo &vinfo,
+				IntersectionResult &results) :
+			cutterInfo(cutterInfo), vinfo(vinfo), results(results)
+		{ }
+	};
+
+	
 	typedef LeafNode::Ptr LeafPtr;
-	typedef void (Stock::* Processer)(OctreeNode::Ptr,
-			const CutterInfos &,
-			const VersionInfo &,
-			IntersectionResult &);
+	typedef void (Stock::* Processer)(OctreeNode::Ptr, RecursionInfo &recInfo);
 	
 	typedef boost::lock_guard< boost::mutex > LockGuard;
 	
@@ -197,13 +208,9 @@ public:
 	
 private:
 	
-	void analyzeLeaf(OctreeNode::Ptr currLeaf, 
-			const CutterInfos &cutterInfo, const VersionInfo &vinfo,
-			IntersectionResult &results);
+	void analyzeLeaf(OctreeNode::Ptr currLeaf, RecursionInfo &info);
 	
-	void processTreeRecursive(OctreeNode::Ptr branch,
-			const CutterInfos &cutInfo, const VersionInfo &vinfo,
-			IntersectionResult &result);
+	void processTreeRecursive(OctreeNode::Ptr branch, RecursionInfo &info);
 	
 	void buildChangedNodesQueue(BranchNode::ConstPtr node,
 			const VersionInfo &vinfo, StoredData::VoxelData &queue) const;

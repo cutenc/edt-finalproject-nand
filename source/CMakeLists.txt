@@ -43,10 +43,11 @@ INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 ADD_DEFINITIONS(${Boost_DEFINITIONS})
 SET (MY_LIBS ${MY_LIBS} ${Boost_LIBRARIES})
 
-# commentare le seguenti se build statico (ci sono le librerie statiche?)
-ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
-#ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK)
-ADD_DEFINITIONS(-DBOOST_PROGRAM_OPTIONS_DYN_LINK)
+IF (${WIN32})
+    # commentare le seguenti se build statico (ci sono le librerie statiche?)
+    ADD_DEFINITIONS(-DBOOST_ALL_NO_LIB)
+    ADD_DEFINITIONS(-DBOOST_PROGRAM_OPTIONS_DYN_LINK)
+ENDIF()
 
 
 

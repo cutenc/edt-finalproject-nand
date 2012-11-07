@@ -9,10 +9,11 @@
 #define UTILITIES_HPP_
 
 #include <iostream>
+#include <fstream>
 #include <stdexcept>
 #include <limits>
 #include <cmath>
-#include <iosfwd>
+#include <ios>
 
 #include <Eigen/Geometry>
 
@@ -24,11 +25,12 @@ public:
 	
 	struct ReadData {
 		std::string validLine;
-		std::streampos lastReadPos;
+		std::streamoff lastReadPos;
 		
 		ReadData() { }
-		ReadData(const std::string &line, std::streampos lastReadPos) :
-				validLine(line), lastReadPos(lastReadPos) { }
+		ReadData(const std::string &line, const std::streamoff &lastPos) :
+				validLine(line), lastReadPos(lastPos) { }
+		virtual ~ReadData() { }
 	};
 	
 	static void openFile(const std::string &filename, std::ifstream &ifs);
@@ -96,7 +98,7 @@ public:
 	
 	inline
 	static osg::Vec3d toOsg(const Eigen::Vector3d &vec) {
-		return osg::Vec3d(vec[0], vec[1], vec[2]);
+		return osg::Vec3d(vec(0), vec(1), vec(2));
 	}
 	
 };

@@ -8,6 +8,7 @@
 #ifndef CONFIGURATIONMANAGER_HPP_
 #define CONFIGURATIONMANAGER_HPP_
 
+#include <fstream>
 #include <string>
 #include <map>
 
@@ -27,7 +28,7 @@ class ConfigFileParser {
 	const ParsersMap PARSERS;
 	StockDescription::ConstPtr stock;
 	CutterDescription::ConstPtr cutter;
-	std::streampos firstPointPos;
+	std::streamoff firstPointPos;
 	bool foundPoints, foundCutter, foundStock;
 	
 public:

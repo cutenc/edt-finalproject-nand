@@ -5,9 +5,10 @@
  *      Author: socket
  */
 
-#include <iostream>
+#include <istream>
 #include <fstream>
 #include <sstream>
+#include <string>
 
 #include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
@@ -31,17 +32,15 @@ void FileUtils::openFile(const std::string &filename, std::ifstream &ifs) {
 
 FileUtils::ReadData FileUtils::readNextValidLine(std::istream& ifs) throw(std::runtime_error) {
 	std::string str;
-	std::streampos lastReadPos;
 	
-	lastReadPos = ifs.tellg();
+	std::streamoff lastReadPos = ifs.tellg();
 	
 	while(std::getline(ifs, str)) {
-		if (!isSkippableLine(str)) {
-			return FileUtils::ReadData(str, lastReadPos);
-		} else {
+		if (isSkippableLine(str)) {
 			lastReadPos = ifs.tellg();
+		} else {
+			return FileUtils::ReadData(str, lastReadPos);
 		}
-		
 	}
 	
 	throw std::runtime_error("EOF reached");

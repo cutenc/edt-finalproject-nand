@@ -110,14 +110,14 @@ private:
 				
 			} catch (const std::exception &e) {
 				std::cerr << "bad rototraslation spec: " << e.what() << std::endl;
-				is.seekg(data.lastReadPos);
+				is.seekg(data.lastReadPos, std::ios_base::beg);
 				is.setstate(std::ios_base::failbit);
 			}
 			
 		} else {
 			// given line seems not to be a rototraslation -> states the error
 			std::cerr << "not enough tokens for a rototraslation: " << tokens.size() << std::endl;
-			is.seekg(data.lastReadPos);
+			is.seekg(data.lastReadPos, std::ios_base::beg);
 			is.setstate(std::ios_base::failbit);
 		}
 

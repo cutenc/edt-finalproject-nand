@@ -85,7 +85,7 @@ CNCMoveIterator ConfigFileParser::CNCMoveBegin() const {
 		throw std::runtime_error("File " + this->FILENAME + " is disappeared");
 	}
 	
-	ifsp->seekg(this->firstPointPos);
+	ifsp->seekg(this->firstPointPos, std::ios_base::beg);
 	
 	return CNCMoveIterator(ifsp);
 }
@@ -103,6 +103,8 @@ void ConfigFileParser::abortParsing(const std::string &cause) const
 		throw(std::runtime_error) {
 	
 	std::string str("[" + FILENAME + "] malformed configuration file: " + cause);
+	std::cerr << str << std::endl;
+	
 	throw std::runtime_error(str);
 }
 
@@ -147,6 +149,7 @@ void ConfigFileParser::sectionParser_tool(std::ifstream& ifs) {
 		geometry = boost::make_shared<Sphere>(Sphere(diameter * 0.5));
 		
 	} else if (type == "mesh") {
+		
 		// TODO need to be implemented
 		throw std::runtime_error("Not implemented yet");
 		
@@ -157,12 +160,11 @@ void ConfigFileParser::sectionParser_tool(std::ifstream& ifs) {
 	FileUtils::ReadData data = FileUtils::readNextValidLine(ifs);
 	try {
 		std::string colorStr = StringUtils::extractProperty(data.validLine, "color", "0x[\\da-f]{6}", true);
-		
 		color = Color(colorStr);
 		
 	} catch (const std::exception &e) {
 		// means no color is present => revert ifs back to the previous line
-		ifs.seekg(data.lastReadPos);
+		ifs.seekg(data.lastReadPos, std::ios_base::beg);
 	}
 	
 	this->cutter = boost::make_shared<CutterDescription>(CutterDescription(geometry, color));
