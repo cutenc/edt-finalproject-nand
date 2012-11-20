@@ -33,7 +33,11 @@ private:
 	 */
 	static const int cornerAdjTable[12][2];
 	
-	const osg::ref_ptr< osg::Vec4Array > colorArray;
+	const osg::ref_ptr< osg::Vec4Array > mcColorArray;
+	
+	const osg::ref_ptr< osg::Vec4Array > boxColorArray;
+	const osg::ref_ptr< osg::Vec3Array > boxNormals;
+	
 	const Eigen::Vector3d STOCK_HALF_EXTENTS;
 	
 	Eigen::Vector3d tmpVertices[12];

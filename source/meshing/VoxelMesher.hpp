@@ -20,7 +20,7 @@ private:
 public:
 	VoxelMesher(const StockDescription& stock) :
 		CommonMesher(stock,
-				new BoxMesherCallback(),
+				new BoxMesherCallback(stock),
 				DEFAULT_LEAF_SIZE
 		)
 	{ }

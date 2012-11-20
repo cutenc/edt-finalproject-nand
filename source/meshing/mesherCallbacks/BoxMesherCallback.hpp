@@ -21,36 +21,37 @@
 
 #include "milling/Corner.hpp"
 #include "common/Utilities.hpp"
+#include "meshing/Face.hpp"
 
 class BoxMesherCallback : public LeafNodeCallback {
 	
 	const osg::ref_ptr< osg::Vec3Array > normalArray;
 	const osg::ref_ptr< osg::Vec4Array > colorArray;
-	const osg::ref_ptr< osg::UByteArray > normalIndexArray;
-	const osg::ref_ptr< osg::UByteArray > colorIndexArray;
+	
+	const Eigen::Vector3d STOCK_HALF_EXTENTS;
 	
 public:
-	BoxMesherCallback() :
-		normalArray(new osg::Vec3Array), colorArray(new osg::Vec4Array),
-		normalIndexArray(new osg::UByteArray), colorIndexArray(new osg::UByteArray)
+	BoxMesherCallback(const StockDescription& desc) :
+		normalArray(new osg::Vec3Array(Face::N_FACES)), colorArray(new osg::Vec4Array(Face::N_FACES)),
+		STOCK_HALF_EXTENTS(desc.getGeometry()->asEigen() * 0.5)
 	{
 		
 		/* build normal and color array: they will be shared among all builded
 		 * objects
 		 */
-		normalArray->push_back(osg::Vec3(-1, 0, 0));
-		normalArray->push_back(osg::Vec3(0, -1, 0));
-		normalArray->push_back(osg::Vec3(0, 0, -1));
-		normalArray->push_back(osg::Vec3(+1, 0, 0));
-		normalArray->push_back(osg::Vec3(0, +1, 0));
-		normalArray->push_back(osg::Vec3(0, 0, +1));
+		(*normalArray)[Face::LEFT] = osg::Vec3(-1, 0, 0);
+		(*normalArray)[Face::FRONT] = osg::Vec3(0, -1, 0);
+		(*normalArray)[Face::BOTTOM] = osg::Vec3(0, 0, -1);
+		(*normalArray)[Face::RIGHT] = osg::Vec3(+1, 0, 0);
+		(*normalArray)[Face::REAR] = osg::Vec3(0, +1, 0);
+		(*normalArray)[Face::TOP] = osg::Vec3(0, 0, +1);
 		
-		colorArray->push_back(osg::Vec4(1, 0, 0, 1));
-		colorArray->push_back(osg::Vec4(0, 1, 0, 1));
-		colorArray->push_back(osg::Vec4(0, 0, 1, 1));
-		colorArray->push_back(osg::Vec4(.5, .5, 0, 1));
-		colorArray->push_back(osg::Vec4(0, .5, .5, 1));
-		colorArray->push_back(osg::Vec4(.5, 0, .5, 1));
+		(*colorArray)[Face::LEFT] = osg::Vec4(1, 0, 0, 1);
+		(*colorArray)[Face::FRONT] = osg::Vec4(0, 1, 0, 1);
+		(*colorArray)[Face::BOTTOM] = osg::Vec4(0, 0, 1, 1);
+		(*colorArray)[Face::RIGHT] = osg::Vec4(.5, .5, 0, 1);
+		(*colorArray)[Face::REAR] = osg::Vec4(0, .5, .5, 1);
+		(*colorArray)[Face::TOP] = osg::Vec4(.5, 0, .5, 1);
 		
 	}
 	
@@ -58,9 +59,6 @@ public:
 		assert(data.isDirty() && !data.isEmpty());
 		
 		osg::Geometry *geom = new osg::Geometry;
-		unsigned int nElm = 0, totElm = data.getElements().size();
-		
-		ensureEnoughNormalsAndColors(totElm);
 		
 		/* face order:
 		 * left, front, bottom, rigth, rear, top
@@ -68,72 +66,57 @@ public:
 		
 		// build normal & its indices
 		geom->setNormalArray(normalArray.get());
-		geom->setNormalIndices(normalIndexArray.get());
+		osg::UByteArray *normalIndexArray = new osg::UByteArray;
+		geom->setNormalIndices(normalIndexArray);
 		geom->setNormalBinding(osg::Geometry::BIND_PER_PRIMITIVE);
 		
 		// build colors & its indices
 		geom->setColorArray(colorArray.get());
-		geom->setColorIndices(colorIndexArray.get());
+		osg::UByteArray *colorIndexArray = new osg::UByteArray;
+		geom->setColorIndices(colorIndexArray);
 		geom->setColorBinding(osg::Geometry::BIND_PER_PRIMITIVE);
 		
 		// build vertices array
-		osg::Vec3Array *vertices = new osg::Vec3Array(Corner::N_CORNERS * totElm);
+		osg::Vec3Array *vertices = new osg::Vec3Array;
 		geom->setVertexArray(vertices);
 		
 		/* 
 		 * BUILD FACES
 		 */
-		osg::DrawElementsUInt *faces = new osg::DrawElementsUInt(osg::PrimitiveSet::QUADS);
-		
 		GraphicData::List::const_iterator dataIt = data.getElements().begin();
 		for (; dataIt != data.getElements().end(); ++dataIt) {
 			
-			unsigned int shift = nElm * Corner::N_CORNERS;
-			
-			CornerIterator cit = CornerIterator::begin();
-			for (; cit != CornerIterator::end(); ++cit) {
-				(*vertices)[*cit + shift] = GeometryUtils::toOsg(dataIt->sbox->getCorner(*cit));
+			FaceIterator fit = FaceIterator::begin();
+			for (; fit != FaceIterator::end(); ++fit) {
+				
+				if (! (Face::isBorderFace(*fit, STOCK_HALF_EXTENTS, *dataIt->sbox)
+						|| dataIt->vinfo->isIntersecting()
+					)) {
+					continue;
+				}
+				
+				// build current face
+				for (int i = 0; i < 4; ++i) {
+					vertices->push_back(
+						GeometryUtils::toOsg(
+							dataIt->sbox->getCorner(Face::FACE_ADJACENCY[*fit][i])
+						)
+					);
+				}
+				
+				// add proper normal & color
+				normalIndexArray->push_back(*fit);
+				colorIndexArray->push_back(*fit);
 			}
-			
-			// left face
-			faces->push_back(0 + shift);
-			faces->push_back(4 + shift);
-			faces->push_back(7 + shift);
-			faces->push_back(3 + shift);
-			
-			// front face
-			faces->push_back(1 + shift);
-			faces->push_back(5 + shift);
-			faces->push_back(4 + shift);
-			faces->push_back(0 + shift);
-			
-			// bottom face
-			faces->push_back(3 + shift);
-			faces->push_back(2 + shift);
-			faces->push_back(1 + shift);
-			faces->push_back(0 + shift);
-			
-			// rigth face
-			faces->push_back(2 + shift);
-			faces->push_back(6 + shift);
-			faces->push_back(5 + shift);
-			faces->push_back(1 + shift);
-			
-			// rear face
-			faces->push_back(2 + shift);
-			faces->push_back(6 + shift);
-			faces->push_back(7 + shift);
-			faces->push_back(3 + shift);
-			
-			// top face
-			faces->push_back(5 + shift);
-			faces->push_back(6 + shift);
-			faces->push_back(7 + shift);
-			faces->push_back(4 + shift);
-			
-			++nElm;
 		}
-
+		
+		assert(vertices->size() % 4 == 0);
+		
+		osg::DrawArrays *faces = new osg::DrawArrays(
+				osg::PrimitiveSet::QUADS,
+				0,
+				vertices->size()
+		);
 		geom->addPrimitiveSet(faces);
 		
 		osg::ref_ptr< osg::Geode > geode = new osg::Geode;
@@ -144,27 +127,6 @@ public:
 	
 protected:
 	virtual ~BoxMesherCallback() { }
-	
-private:
-	void ensureEnoughNormalsAndColors(unsigned int totElms) {
-		assert(normalIndexArray->size() == colorIndexArray->size());
-		assert(normalIndexArray->size() % 6 == 0);
-		
-		unsigned int availElms = normalIndexArray->size() / 6;
-		if (totElms <= availElms) {
-			return;
-		}
-		
-		for (unsigned int count = availElms; count < totElms; ++count) {
-			for (unsigned char i = 0; i < 6; ++i) {
-				// normals are always 0, 1, 2, ..., 5
-				normalIndexArray->push_back(i);
-				// colors are always 0, 1, 2, ..., 5
-				colorIndexArray->push_back(i);
-			}
-		}
-		
-	}
 	
 };
 

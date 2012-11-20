@@ -4,6 +4,8 @@ SET (meshing_SRC
 BranchNodeData.hpp
 CommonMesher.cpp
 CommonMesher.hpp
+Face.cpp
+Face.hpp
 leaf_node_callbacks.hpp
 mesherCallbacks/BoxMesherCallback.hpp
 mesherCallbacks/MarchingCubeConstants.hpp

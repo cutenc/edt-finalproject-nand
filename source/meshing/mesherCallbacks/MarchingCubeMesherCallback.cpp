@@ -13,16 +13,32 @@
 #include <osg/Geometry>
 
 #include "common/Utilities.hpp"
+#include "meshing/Face.hpp"
 #include "MarchingCubeConstants.hpp"
 
 
 MarchingCubeMesherCallback::MarchingCubeMesherCallback(const StockDescription& desc) :
-		colorArray(new osg::Vec4Array), STOCK_HALF_EXTENTS(desc.getGeometry()->asEigen() * 0.5)
+		mcColorArray(new osg::Vec4Array(1)), boxColorArray(new osg::Vec4Array(Face::N_FACES)), 
+		boxNormals(new osg::Vec3Array(Face::N_FACES)), STOCK_HALF_EXTENTS(desc.getGeometry()->asEigen() * 0.5)
 {
 	assert(Corner::N_CORNERS == 8); // this class is full of bitwise operations that needs it
 	// another assertion is that a box has 12edges...
 	
-	colorArray->push_back(osg::Vec4f(0.8, 0.8, 0.8, 1));
+	(*mcColorArray)[0] = osg::Vec4f(0.8, 0.8, 0.8, 1);
+	
+	(*boxNormals)[Face::LEFT] = osg::Vec3(-1, 0, 0);
+	(*boxNormals)[Face::FRONT] = osg::Vec3(0, -1, 0);
+	(*boxNormals)[Face::BOTTOM] = osg::Vec3(0, 0, -1);
+	(*boxNormals)[Face::RIGHT] = osg::Vec3(+1, 0, 0);
+	(*boxNormals)[Face::REAR] = osg::Vec3(0, +1, 0);
+	(*boxNormals)[Face::TOP] = osg::Vec3(0, 0, +1);
+	
+	(*boxColorArray)[Face::LEFT] = osg::Vec4(1, 0, 0, 1);
+	(*boxColorArray)[Face::FRONT] = osg::Vec4(0, 1, 0, 1);
+	(*boxColorArray)[Face::BOTTOM] = osg::Vec4(0, 0, 1, 1);
+	(*boxColorArray)[Face::RIGHT] = osg::Vec4(.5, .5, 0, 1);
+	(*boxColorArray)[Face::REAR] = osg::Vec4(0, .5, .5, 1);
+	(*boxColorArray)[Face::TOP] = osg::Vec4(.5, 0, .5, 1);
 }
 
 MarchingCubeMesherCallback::~MarchingCubeMesherCallback() {
@@ -31,89 +47,138 @@ MarchingCubeMesherCallback::~MarchingCubeMesherCallback() {
 osg::ref_ptr<osg::Node> MarchingCubeMesherCallback::buildNode(const LeafNodeData& data) {
 	assert(data.isDirty() && !data.isEmpty());
 	
-	osg::Geometry *geometry = new osg::Geometry;
+	/* MARCHING CUBES geometry */
+	osg::Geometry *mcGeom = new osg::Geometry;
 	
 	// color (just one)
-	geometry->setColorArray(colorArray.get());
-	geometry->setColorBinding(osg::Geometry::BIND_OVERALL);
+	mcGeom->setColorArray(mcColorArray.get());
+	mcGeom->setColorBinding(osg::Geometry::BIND_OVERALL);
 	
 	// vertices array
-	osg::Vec3Array *vertices = new osg::Vec3Array;
-	geometry->setVertexArray(vertices);
+	osg::Vec3Array *mcVertices = new osg::Vec3Array;
+	mcGeom->setVertexArray(mcVertices);
 	
 	// normals array
-	osg::Vec3Array *normals = new osg::Vec3Array;
-	geometry->setNormalArray(normals);
-	geometry->setNormalBinding(osg::Geometry::BIND_PER_PRIMITIVE);
+	osg::Vec3Array *mcNormals = new osg::Vec3Array;
+	mcGeom->setNormalArray(mcNormals);
+	mcGeom->setNormalBinding(osg::Geometry::BIND_PER_PRIMITIVE);
+	
+	/* BOX GEOMETRY */
+	osg::ref_ptr< osg::Geometry > boxGeom = new osg::Geometry;
+	
+	boxGeom->setColorArray(boxColorArray.get());
+	osg::UByteArray *boxColorIndices = new osg::UByteArray;
+	boxGeom->setColorIndices(boxColorIndices);
+	boxGeom->setColorBinding(osg::Geometry::BIND_PER_PRIMITIVE);
+	
+	boxGeom->setNormalArray(boxNormals.get());
+	osg::UByteArray *boxNormalsIndices = new osg::UByteArray;
+	boxGeom->setNormalIndices(boxNormalsIndices);
+	boxGeom->setNormalBinding(osg::Geometry::BIND_PER_PRIMITIVE);
+	
+	osg::Vec3Array *boxVertices = new osg::Vec3Array;
+	boxGeom->setVertexArray(boxVertices);
+	
+	/* DATA ANALYSIS */
 	
 	/* build vertices, normals and facets */
 	GraphicData::List::const_iterator dataIt = data.getElements().begin();
 	for(; dataIt != data.getElements().end(); ++dataIt) {
 		
-		/* marching cube meshing algorithm adapted from
-		 * http://paulbourke.net/geometry/polygonise/
-		 */
-		
-		/*
-		  Given a grid Cell and an isolevel, calculate the triangular
-		  facets required to represent the isosurface through the Cell.
-		  The array "vertices" will be loaded up with the vertices of at most
-		  5 triangular facets. Nothing will be added if the grid Cell is
-		  either totally above or totally below the cutterThreshold.
-		*/
-		
-		MeshingVoxel gridCell(dataIt->sbox.get(), dataIt->vinfo.get(), STOCK_HALF_EXTENTS);
-		
-		/* Determine the index into the edge table which
-		 * tells us which vertices are inside of the surface
-		 */
-		int cubeindex = 0x00;
-		for (int i = 0; i < Corner::N_CORNERS; ++i) {
-			cubeindex |= ((int)(gridCell.getWeight(i) < MC_THRESHOLD_LEVEL)) << i;
-		}
-
-		/* Cube is entirely in/out of the surface */
-		if (MarchingCubeMesherCallback::edgeTable[cubeindex] == 0) {
-			continue;
-		}
-		
-		/* Find the edges where the surface intersects the cube and push back
-		 * appropriate vertices
-		 */
-		int edgeMask = MarchingCubeMesherCallback::edgeTable[cubeindex];
-		for (int i = 0; i < 12; ++i) {
-			if (edgeMask & (0x01 << i)) {
-				tmpVertices[i] = vertInterp(gridCell, i);
+		if (dataIt->vinfo->isIntersecting()) {
+			/* Given data must be processed with marching cubes */
+			
+			/* marching cube meshing algorithm adapted from
+			 * http://paulbourke.net/geometry/polygonise/
+			 */
+			
+			/*
+			  Given a grid Cell and an isolevel, calculate the triangular
+			  facets required to represent the isosurface through the Cell.
+			  The array "vertices" will be loaded up with the vertices of at most
+			  5 triangular facets. Nothing will be added if the grid Cell is
+			  either totally above or totally below the cutterThreshold.
+			*/
+			
+			MeshingVoxel gridCell(dataIt->sbox.get(), dataIt->vinfo.get(), STOCK_HALF_EXTENTS);
+			
+			/* Determine the index into the edge table which
+			 * tells us which vertices are inside of the surface
+			 */
+			int cubeindex = 0x00;
+			for (int i = 0; i < Corner::N_CORNERS; ++i) {
+				cubeindex |= ((int)(gridCell.getWeight(i) < MC_THRESHOLD_LEVEL)) << i;
 			}
+	
+			/* Cube is entirely in/out of the surface */
+			if (MarchingCubeMesherCallback::edgeTable[cubeindex] == 0) {
+				continue;
+			}
+			
+			/* Find the edges where the surface intersects the cube and push back
+			 * appropriate vertices
+			 */
+			int edgeMask = MarchingCubeMesherCallback::edgeTable[cubeindex];
+			for (int i = 0; i < 12; ++i) {
+				if (edgeMask & (0x01 << i)) {
+					tmpVertices[i] = vertInterp(gridCell, i);
+				}
+			}
+			
+			/* Create all needed triangle facets */
+			for (int i = 0; MarchingCubeMesherCallback::triTable[cubeindex][i] != -1; i += 3) {
+				unsigned int firstIdx = MarchingCubeMesherCallback::triTable[cubeindex][i],
+						secondIdx = MarchingCubeMesherCallback::triTable[cubeindex][i+1],
+						thirdIdx = MarchingCubeMesherCallback::triTable[cubeindex][i+2];
+				
+				assert(MarchingCubeMesherCallback::triTable[cubeindex][i] != -1 && 
+						MarchingCubeMesherCallback::triTable[cubeindex][i+1] != -1 &&
+						MarchingCubeMesherCallback::triTable[cubeindex][i+2] != -1);
+				
+				mcVertices->push_back(GeometryUtils::toOsg(tmpVertices[firstIdx]));
+				mcVertices->push_back(GeometryUtils::toOsg(tmpVertices[secondIdx]));
+				mcVertices->push_back(GeometryUtils::toOsg(tmpVertices[thirdIdx]));
+				
+				// a new face has been added, now calculate its normal
+				Eigen::Vector3d norm; norm.noalias() = 
+						(tmpVertices[secondIdx] - tmpVertices[firstIdx]) // first vector
+							.cross
+						(tmpVertices[thirdIdx] - tmpVertices[firstIdx]) // second vector
+							.normalized();
+				
+				mcNormals->push_back(GeometryUtils::toOsg(norm));
+			}
+			
+		} else {
+			/* given data must be processed as a border voxel */
+			
+			FaceIterator fit = FaceIterator::begin();
+			for (; fit != FaceIterator::end(); ++fit) {
+				
+				if (! Face::isBorderFace(*fit, STOCK_HALF_EXTENTS, *dataIt->sbox)) {
+					continue;
+				}
+				
+				// build current face
+				for (int i = 0; i < 4; ++i) {
+					boxVertices->push_back(
+						GeometryUtils::toOsg(
+							dataIt->sbox->getCorner(Face::FACE_ADJACENCY[*fit][i])
+						)
+					);
+				}
+				
+				// add proper normal & color
+				boxNormalsIndices->push_back(*fit);
+				boxColorIndices->push_back(*fit);
+			}
+			
 		}
-		
-		/* Create all needed triangle facets */
-		for (int i = 0; MarchingCubeMesherCallback::triTable[cubeindex][i] != -1; i += 3) {
-			unsigned int firstIdx = MarchingCubeMesherCallback::triTable[cubeindex][i],
-					secondIdx = MarchingCubeMesherCallback::triTable[cubeindex][i+1],
-					thirdIdx = MarchingCubeMesherCallback::triTable[cubeindex][i+2];
-			
-			assert(MarchingCubeMesherCallback::triTable[cubeindex][i] != -1 && 
-					MarchingCubeMesherCallback::triTable[cubeindex][i+1] != -1 &&
-					MarchingCubeMesherCallback::triTable[cubeindex][i+2] != -1);
-			
-			vertices->push_back(GeometryUtils::toOsg(tmpVertices[firstIdx]));
-			vertices->push_back(GeometryUtils::toOsg(tmpVertices[secondIdx]));
-			vertices->push_back(GeometryUtils::toOsg(tmpVertices[thirdIdx]));
-			
-			// a new face has been added, now calculate its normal
-			Eigen::Vector3d norm; norm.noalias() = 
-					(tmpVertices[secondIdx] - tmpVertices[firstIdx]) // first vector
-						.cross
-					(tmpVertices[thirdIdx] - tmpVertices[firstIdx]) // second vector
-						.normalized();
-			
-			normals->push_back(GeometryUtils::toOsg(norm));
-		}
-		
 	}
 	
-	assert(vertices->size() % 3 == 0);
+	/* CREATING GEODE */
+	
+	osg::ref_ptr< osg::Geode > geode = new osg::Geode;
 	
 	/* si è deciso di disegnare direttamente i vertici senza passare attraverso
 	 * gli indici in quanto mediamente la versione indicizzata usa più spazio!
@@ -126,15 +191,26 @@ osg::ref_ptr<osg::Node> MarchingCubeMesherCallback::buildNode(const LeafNodeData
 	 * -memory unit- corrisponde allo spazio occupato da un float ovvero lo
 	 * spazio occupato da un GL_INT ovvero 4byte)
 	 */
+	assert(mcVertices->size() % 3 == 0);
 	osg::DrawArrays *triangleDrawer = new osg::DrawArrays(
 			osg::PrimitiveSet::TRIANGLES,
 			0,
-			vertices->size()
+			mcVertices->size()
 	);
-	geometry->addPrimitiveSet(triangleDrawer);
+	mcGeom->addPrimitiveSet(triangleDrawer);
+	geode->addDrawable(mcGeom);
 	
-	osg::ref_ptr< osg::Geode > geode = new osg::Geode;
-	geode->addDrawable(geometry);
+	
+	if (!boxVertices->empty()) {
+		assert(boxVertices->size() % 4 == 0);
+		osg::DrawArrays *boxDrawer = new osg::DrawArrays(
+				osg::PrimitiveSet::QUADS,
+				0,
+				boxVertices->size()
+		);
+		boxGeom->addPrimitiveSet(boxDrawer);
+		geode->addDrawable(boxGeom.get());
+	}
 	
 	return geode.get();
 }
