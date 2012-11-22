@@ -1,8 +1,10 @@
-/*
- * Display.cpp
+/**
+ * @file Display.cpp
  *
- *  Created on: 27/set/2012
- *      Author: alberto
+ * Created on: 27/set/2012
+ * Author: alberto
+ *
+ * creates che viewer and renders the scene
  */
 
 #include "Display.hpp"
@@ -21,6 +23,15 @@
 #include "KeyboardHandler.hpp"
 #include "SceneUpdater.hpp"
 
+/**
+ * constructor
+ *
+ * @param stock : pointer to the Stock object
+ * @param cutter : pointer to the Cutter object
+ * @param signaler : pointer to the MillingSignaler object
+ * @param millingCtrl : pointer to the SteppableController object
+ *
+ */
 Display::Display(
 		Stock::Ptr stock, Cutter::Ptr cutter,
 		MillingSignaler::Ptr signaler, SteppableController::Ptr millingCtrl) :
@@ -32,7 +43,12 @@ Display::Display(
 Display::~Display() {
 }
 
-//crea la scena e lancia il viewer
+/**
+ * creates the scene and renders it
+ *
+ * no parameters needed, recognizes the screen characteristics, creates the OSG Viewer object,
+ * creates the scene tree and renders it, running until the window in closed
+ */
 void Display::draw() {
 	
 	// get screen resolution
