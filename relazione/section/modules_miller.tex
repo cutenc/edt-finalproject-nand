@@ -1,0 +1,12 @@
+\subsection{Miller}
+Il miller è il componente che ricostrisce la fresatura vera e propria, verificando dove e come l'utensile della macchina compenetra il blocco e rimuove del materiale.
+
+Per gestire in maniera efficiente l'intero processo, è necessario usare come struttura dati di appoggio un Octree non bilanciato, ovvero un albero di arietà 8 che rappresenta molto efficacemente uno spazio tridimensionale. Ogni foglia dell’Octree rappresenta un parallelepipedo di volume e su di esso vengono salvate primariamente le informazioni sullo stato di erosione dei vertici, a cui si aggiungono, per motivi di performance, un rapido accesso alle informazioni sulle coordinate dei propri vertici e un collegamento alla struttura che visualizzerà quel voxel.
+
+Si è deciso di non condividere i vertici comuni tra voxel contigui in quanto il concetto di vicinanza spaziale non viene modellato bene dalla struttura octree, soprattutto se sbilanciata, quindi, il costo computazionale di recuperare i voxel ``vicini'' sarebbe stato superiore ai vantaggi portati dalla condivisione.
+
+Man mano che l'utensile si muove, il miller converte le rototraslazioni lette da file in una isometria tridimensionale del cutter nei confronti del prodotto. Per ogni ``mossa'' l’algoritmo di milling discende l’octree scegliendo i rami da percorrere in base a diverse funzioni di intersezione che diventano via via meno precise, ma più veloci, man mano che la profondità aumenta. Giunti alle foglie si verifica se alcuni dei loro vertici risultano interni alla superficie di taglio del cutter, venendo quindi erosi. Le foglie rimaste prive di vertici vengono quindi eliminate dall’albero, mentre per le altre, se la profondità massima non è ancora stata raggiunta, si effettua una divisione in otto parti del loro volume di competenza, aggiungendo un nuovo livello all’albero.
+
+Le operazione effettuate, ovvero rimozione di materiale e modifica della forma del blocco, devono venir comunicate al processo di meshing, il quale, tuttavia, ha tempi di lavorazione differenti dal miller. Per gestire in maniera efficiente l'accesso concorrente ai dati, ogniqualvolta una foglia viene cancellata essa è inserita dal miller in una lista opportuna. Per le foglie aggiunte o modificate, invece, il percorso da esse alla radice viene marcato con un numero di versione incrementale: così facendo il processo di meshing potrà ricavare rapidamente tutte e sole le foglie modificate dalla sua ultima visita.
+
+

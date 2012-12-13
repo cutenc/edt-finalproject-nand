@@ -1,0 +1,69 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage{enumitem}
+\usepackage[utf8]{inputenc}
+\usepackage{textcomp}
+\usepackage{xspace}
+\usepackage[english,italian]{babel}
+\usepackage[pdftex]{graphicx}
+\usepackage{fullpage}
+\usepackage{amsmath}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage{amsfonts}
+
+\usepackage{listings}
+\lstset{
+	basicstyle=\fontsize{8}{12}\ttfamily,
+	inputencoding=utf8,
+	language=C++,
+	numbers=left,
+	numberstyle=\tiny,
+	tabsize=2,
+	frame=single,
+	backgroundcolor=\color{gray},
+}
+
+\setenumerate[2]{label=\alph*.}
+
+\usepackage{color}
+\definecolor{gray}{gray}{0.9}
+
+\usepackage{hyperref}
+\hypersetup{
+	colorlinks=true
+}
+\usepackage{hypcap}
+
+\include{commands}
+
+\begin{document}
+
+\include{titlepage}
+
+\begingroup
+	\hypersetup{linkcolor=black}
+	\setcounter{tocdepth}{2}
+	\tableofcontents
+\endgroup
+
+\newpage
+
+\include{section/introduzione}
+
+\include{section/modules}
+
+\include{section/strumenti-compilazione}
+
+\input{section/conclusione.tex}
+
+% %aggiunge la bibliografia all'indice
+ %%niente sezioni anche qui, ovvio....
+\clearpage
+
+% \bibliographystyle{plain}
+% \bibliography{biblio}
+% \addcontentsline{toc}{section}{Bibliografia}
+
+\end{document}
