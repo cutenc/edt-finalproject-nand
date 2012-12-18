@@ -3,10 +3,10 @@ Sin dalle prime fasi della progettazione il programma è stato suddiviso in modu
 
 
 \subsection{UML del moduli}
-Per meglio comprendere le scelte progettuali fatte, viene presentato in figura \ref{fig:uml_cncsimulator} il diagramma UML dei moduli e delle classi principali che compongono il software.
+Per meglio comprendere le scelte progettuali fatte, viene presentato ora il diagramma UML dei moduli e delle classi principali che compongono il software.
 \begin{figure}[htp]
 	\centering
-	\includegraphics[width=.9\textheight, angle=90]{img/uml_cncsimulator}
+	\includegraphics[width=\textheight, angle=90]{img/uml_cncsimulator}
 	\caption{UML dei moduli e delle classi principali del software.}
 	\label{fig:uml_cncsimulator}
 \end{figure}
