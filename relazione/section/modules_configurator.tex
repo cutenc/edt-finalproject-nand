@@ -1,4 +1,13 @@
 \subsection{Configurator}
-Il configurator è il modulo che si occupa di leggere i dati di ingresso. Il suo compito è quello di aprire il file contenente le posizioni del blocco e dell'utensile in ogni step registrato della lavorazione originale, e trasferirli al miller.
+\code{configurator} è il modulo che si occupa di leggere i dati di ingresso e trasformarli in strutture dati comprensibili al resto del programma. Le fonti da cui attinge le informazioni sono la linea di comando, attraverso la classe \code{CommandLineParser}, e il file di configurazione, attraverso la classe \code{ConfigFileParser}.
 
+\code{CommandLineParser} deve tutta la sua flessibilità nell'acquisizione della linea di comando alla libreria \boost \code{program_options} di cui la classe è un semplice wrapper. Altro discorso va fatto per \code{ConfigFileParser}, classe scritta ad-hoc, in quanto il file da interpretare era di tipo \emph{plain-text} non strutturato. Per garantire una certa flessibilità al contenuto del file, questa classe permette di:
+\begin{itemize}
+	\item invertire la posizione delle sezioni \code{[PRODUCT]} e \code{[TOOL]}, fermo restando che la sezione \code{[POINTS]} deve rimanere l'ultima del file;
+	\item gestire correttamente linee vuote o di commento, ovvero righe in cui il primo carattere non di spaziatura è ``\code{#}'';
+	\item gestire parametri opzionali come la presenza o meno della direttiva \code{COLOR} nella sezione \code{[TOOL]}.
+\end{itemize}
+Individuata la sezione \code{[POINTS]}, \code{ConfigFileParser} demanda il compito di interpretare la lista delle posizioni a \code{CNCMoveIterator}. Questa classe estende \code{std::istream_iterator}, che a sua volta incarna il pattern \code{InputIterator}, proprio del \cpp: può perciò essere usata come un iteratore che, ad ogni dereferenziazione, legge la riga successiva del file e la interpreta come una coppia di roto-traslazioni, ritornando al chiamante queste informazioni con oggetti opportuni.
 
+\paragraph{Sviluppi futuri.}
+L'implementazione della classe \code{ConfigFileParser} utilizza solo funzioni definite nello standard \cpp{}03 ma, nonostante questo, esistono delle incongruenze nella gestione dei file testuali da parte di Windows e Linux, dovute in primo luogo al diverso marcatore di fine riga dei due sistemi operativi. Queste incongruenze interessano per lo più la gestione dei parametri opzionali e, in ambiente Windows, portano ad una errata interpretazione del file di configurazione. Per evitare problemi di questo tipo ed aumentare la flessibilità della configurazione, si consiglia di scomporre il file attuale in due parti: un primo file contenente la configurazione della fresatura, codificata in formato XML e un secondo file contenente la lista dei ``punti'' che, dovendo essere letta in modo sequenziale, può mantenere l'attuale formato.
