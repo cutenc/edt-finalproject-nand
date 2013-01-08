@@ -11,3 +11,5 @@ Individuata la sezione \code{[POINTS]}, \code{ConfigFileParser} demanda il compi
 
 \paragraph{Sviluppi futuri.}
 L'implementazione della classe \code{ConfigFileParser} utilizza solo funzioni definite nello standard \cpp{}03 ma, nonostante questo, esistono delle incongruenze nella gestione dei file testuali da parte di Windows e Linux, dovute in primo luogo al diverso marcatore di fine riga dei due sistemi operativi. Queste incongruenze interessano per lo più la gestione dei parametri opzionali e, in ambiente Windows, portano ad una errata interpretazione del file di configurazione. Per evitare problemi di questo tipo ed aumentare la flessibilità della configurazione, si consiglia di scomporre il file attuale in due parti: un primo file contenente la configurazione della fresatura, codificata in formato XML e un secondo file contenente la lista dei ``punti'' che, dovendo essere letta in modo sequenziale, può mantenere l'attuale formato.
+
+\begin{LARGE}scrivere del custom cutter da qualche parte, dicendo che basta creare una nuova classe per il calcolo della distanza e tutto va a suo posto\end{LARGE}
