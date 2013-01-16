@@ -1,0 +1,19 @@
+./CNCSimulator -v none -s 1 ../positions.txt
+****************************************
+************* CNCSimulator *************
+**** Nicola Gobbo & Alberto Franzin ****
+********************************* v0.1 *
+Setup info: 
+	Position file: ../positions.txt
+	Cutter: CYLINDER(diameter=30; height=40)
+	Stock: STOCK(extent=[260 260 300];maxDepth=9;minBlockSize=[0.507812 0.507812 0.585938])
+#move	water	  waste	#analyzed #purged #updated #pushed #elapsedTime(ms)
+    1     n	179.655	     4240       0     3120    1120           12.066
+    2     n	      0	     3120       0     3120       0            1.527
+    3     n	      0	     3120       0     3120       0            1.375
+    4     y	359.311	     6240    2269     3971       0            3.875
+    5     n	      0	     3971       0     3971       0            1.589
+    6     n	      0	     3971       0     3971       0            1.549
+    7     y	359.311	     7901    2269     4822     810           11.551
+    8     y	      0	     4822       0     4822       0            2.334
+
