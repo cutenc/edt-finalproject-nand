@@ -115,7 +115,7 @@ void Display::draw() {
 	// *** VIEWER ***
 	osg::ref_ptr<osgViewer::Viewer> viewer = new osgViewer::Viewer;
 	viewer->setUpViewOnSingleScreen(0);
-//	viewer->setUpViewInWindow(0, 0, displayInfo.winWidth, displayInfo.winHeight, 0);
+	viewer->setUpViewInWindow(0, 0, 800, 600, 0);
 	
 	osgGA::TrackballManipulator *tbmp = new osgGA::TrackballManipulator;
 	osg::Vec3d initPos = GeometryUtils::toOsg(stockPtr->getExtents() * 3);

@@ -1,27 +1,29 @@
 \section{Strumenti usati, prerequisiti e istruzioni}
 \subsection{Strumenti usati}
-Il progetto è stato sviluppato in C++. Per lo sviluppo in ambiente Linux abbiamo usato Eclipse su Ubuntu 12.04, mentre per l'ambiente Windows è stato usato Visual Studio 2010. Lo strumento usato per la compilazione è CMake ($\geq 2.6$).
+Il progetto è stato sviluppato in \cpp. Per lo sviluppo in ambiente Linux abbiamo usato Eclipse su Ubuntu 12.04, mentre per l'ambiente Windows è stato usato Visual Studio 2010. Lo strumento usato per la compilazione è CMake ($\geq 2.6$).
 
 \subsection{Prerequisiti}
 Il progetto è stato sviluppato usando le seguenti librerie:
 \begin{itemize}[noitemsep]
-  \item Boost ($\geq 1.48$)
-  \item Eigen ($\geq 3.1.1$)
-  \item OpenSceneGraph ($\geq 3.0.0$)
+  \item Boost ($\geq 1.48$): è una libreria che fornisce diverse funzioni per molteplici scopi, come ad esempio gestione dei thread e gestione dei parametri.
+  \item Eigen ($\geq 3.1.1$): è una libreria che mette a disposizione funzioni di algebra lineare;
+  \item OpenSceneGraph ($\geq 3.0.0$): è un framework che permette di interfacciarsi alle librerie OpenGL in maniera semplificata ed efficiente.
 \end{itemize}
 
 \subsection{Istruzioni}
+Il codice è disponibile all'indirizzo \url{http://code.google.com/p/edt-finalproject-nand/}.
+
 Per compilare il progetto bisogna seguire i seguenti passi:
 \begin{enumerate}
-  \item portarsi nella cartella \verb!/path/del/progetto/!
-  \item lanciare il comando \verb!cmake source/CMakeLists.txt!
+  \item portarsi nella cartella \verb!/path/del/progetto/!;
+  \item lanciare il comando \verb!cmake flags source/CMakeLists.txt!, dove i \verb!flags! di compilazione possono essere:
     \begin{itemize}[noitemsep]
-      \item se in Windows, aggiungere il flag \verb!-G"Visual Studio 10"!
-      \item se in linux, aggiugnere il flag \verb!-G"Unix Makefiles"!
+      \item \verb!-G"Visual Studio 10"! per la compilazione in ambiente Windows;
+      \item \verb!-G"Unix Makefiles"! per la compilazione in ambiente Linux;
     \end{itemize}
     \begin{itemize}[noitemsep]
-      \item se si vuole compilare in modalità \verb!debug!, aggiungere il flag \verb!-D CMAKE_BUILD_TYPE=Debug!
-      \item se si vuole compilare in modalità \verb!release!, aggiungere il flag \verb!-D CMAKE_BUILD_TYPE=Release!
+      \item \verb!-D CMAKE_BUILD_TYPE=Debug! per compilare in modalità \verb!debug!;
+      \item \verb!-D CMAKE_BUILD_TYPE=Release! per compilare in modalità \verb!release!;
     \end{itemize}
   \item lanciare il comando \verb!make! per compilare.
 \end{enumerate}
@@ -30,15 +32,12 @@ Per eseguire il progetto, lanciare il comando\\ \verb!/path/del/progetto/CNCSimu
 \begin{itemize}
   \item le opzioni possono essere:
     \begin{enumerate}[noitemsep]
-      \item \verb!-s x!, dove \verb!x! è la dimensione minima dei voxel. Minore è \verb!x!, maggiore è la precisione della simulazione
-      \item \verb!-v box|mesh|none!, per specificare il tipo di visualizzazione
-      \item \verb!-p! lancia il simulatore in pausa
-      \item \verb!-f x!, dove \verb!x! indica il rate di apertura del getto d'acqua per la rimozione dei detriti in eccesso
-      \item \verb!-t x!, dove \verb!x! indica la quantità di materiale da rimuovere prima di attivare il getto d'acqua
-      \item \verb!-h!, per visualizzare il menu di help completo
+      \item \verb!-s x!, dove \verb!x! è la dimensione minima dei voxel. Minore è \verb!x!, maggiori saranno la precisione della simulazione e il tempo impiegato per completare l'esecuzione;
+      \item \verb!-v box|mesh|none!, per specificare il tipo di visualizzazione, rappresentando i voxel come cubi (\texttt{box}), approssimando in maniera più precisa il taglio con l'algoritmo MarchingCubes (\texttt{mesh}) o in modalità solo testuale (\texttt{none});
+      \item \verb!-p! lancia il simulatore in pausa;
+      \item \verb!-f x!, dove \verb!x! indica il rate di apertura del getto d'acqua per la rimozione dei detriti in eccesso;
+      \item \verb!-t x!, dove \verb!x! indica la quantità di materiale da rimuovere prima di attivare il getto d'acqua;
+      \item \verb!-h!, per visualizzare il menu di help completo.
     \end{enumerate}
   \item \verb!file_positions! è il file contenente i movimenti da riprodurre.
 \end{itemize}
-
-\section{Esempio di lavorazione}
-

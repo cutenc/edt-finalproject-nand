@@ -26,7 +26,7 @@ using namespace Eigen;
 
 
 int main(int argc, char **argv) {
-	
+
 	cout 	<< "****************************************" << endl
 			<< "************* CNCSimulator *************" << endl
 			<< "**** Nicola Gobbo & Alberto Franzin ****" << endl
@@ -123,12 +123,13 @@ int main(int argc, char **argv) {
 		}
 		
 		default:
-			throw std::runtime_error("Unknonw video mode");
+			throw std::runtime_error("Unknown video mode");
 	}
-	
+
 	controller->stop(); // ... just in case someone forgot to call it ...
+
 	millerThrd.join();
-	
+
 	return 0;
 }
 

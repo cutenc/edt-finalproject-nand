@@ -37,14 +37,19 @@ private:
 	 * Tells which two corners are adjacent a given edge 
 	 */
 	static const int cornerAdjTable[12][2];
-	
+
+	/**  */
 	const osg::ref_ptr< osg::Vec4Array > mcColorArray;
 	
+	/** colors of the newly generated block faces */
 	const osg::ref_ptr< osg::Vec4Array > boxColorArray;
+	/** normals for the newly generated block faces */
 	const osg::ref_ptr< osg::Vec3Array > boxNormals;
 	
+	/** distances from the center of the stock block to the faces */
 	const Eigen::Vector3d STOCK_HALF_EXTENTS;
 	
+	/** used to calculate the normals */
 	Eigen::Vector3d tmpVertices[12];
 	
 public:

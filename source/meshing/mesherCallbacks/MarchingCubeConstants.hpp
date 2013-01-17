@@ -1,8 +1,10 @@
-/*
- * MarchingCubeConstants.hpp
+/**
+ * @file MarchingCubeConstants.hpp
  *
- *  Created on: 30/ott/2012
- *      Author: socket
+ * Created on: 30/ott/2012
+ * Author: socket
+ *
+ * constants for Marching Cubes
  */
 
 #ifndef MARCHINGCUBECONSTANTS_HPP_

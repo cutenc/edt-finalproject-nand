@@ -1,8 +1,10 @@
-/*
- * MeshingVoxel.hpp
+/**
+ * @file MeshingVoxel.hpp
  *
- *  Created on: 22/ott/2012
- *      Author: alberto
+ * Created on: 22/ott/2012
+ * Author: alberto
+ *
+ * describes the voxel for Marching Cubes algorithm
  */
 
 #ifndef MESHINGVOXEL_HPP_
@@ -28,9 +30,11 @@ private:
 	 */
 	static const Corner::CornerType CORNER_CONVERSION[8];
 	
+	/** the ShiftedBox object for the voxel */
 	const ShiftedBox *sbox;
 	
-	/* char => float conversion is automatic but this way i should not care
+	/**
+	 *  char => float conversion is automatic but this way i should not care
 	 * about +/-0 float problem
 	 */
 	char weights[8];
@@ -77,6 +81,12 @@ public:
 		
 	}
 	
+	/**
+	 * returns desired corner in an OSG fashion
+	 *
+	 * @param i : selects the (i+1)-th corner
+	 * @return the OSG coords of the corner
+	 */
 	inline
 	osg::Vec3 getCornerOsg(int i) const {
 		assert(i < Corner::N_CORNERS);
@@ -84,6 +94,12 @@ public:
 		return GeometryUtils::toOsg(sbox->getCorner(CORNER_CONVERSION[i]));
 	}
 	
+	/**
+	 * returns desired corner in an Eigen fashion
+	 *
+	 * @param i : selects the (i+1)-th corner
+	 * @return the Eigen coords of the corner
+	 */
 	inline
 	Eigen::Vector3d getCornerEigen(int i) const {
 		assert(i < Corner::N_CORNERS);

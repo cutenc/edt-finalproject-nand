@@ -1,8 +1,8 @@
-/*
- * BoxMesherCallback.hpp
+/**
+ * @file BoxMesherCallback.hpp
  *
- *  Created on: 29/ott/2012
- *      Author: socket
+ * Created on: 29/ott/2012
+ * Author: socket
  *      
  * DO NOT INCLUDE THIS FILE DIRECTLY, YOU SHOULD USE
  * "leaf_node_callbacks.hpp"
