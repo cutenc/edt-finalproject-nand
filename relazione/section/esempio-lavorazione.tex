@@ -10,11 +10,12 @@ Vediamo innanzitutto (tabelle \ref{tab:positionsnone} e \ref{tab:positions2none}
   \begin{table}[h]
     \begin{minipage}{.5\linewidth}
       \vspace{0pt}
+      \centering
       \begin{tabular}{ccc}
         \toprule
           \shortstack{Dimensione\\ Voxel} & \shortstack{Tempo \\\texttt{[s]}} & \shortstack{Memoria \\\texttt{[MiB]}}\\
         \midrule
-          3   & 0.517  & -\footnote{termina troppo presto perché io riesca a vedere quanto occupa... TODO spiegare in maniera potabile sta roba - o trovare una maniera per leggere quanto occupa prima che la riga sparisca dal monitor di sistema}     \\
+          3   & 0.517  & -     \\
           2.5 & 0.543  & -     \\
           2   & 1.632  & 17.2  \\
           1.5 & 1.607  & -     \\
@@ -27,6 +28,7 @@ Vediamo innanzitutto (tabelle \ref{tab:positionsnone} e \ref{tab:positions2none}
     \end{minipage}
     \begin{minipage}{.5\linewidth}
       \vspace{0pt}\raggedright
+      \centering
       \begin{tabular}{ccc}
         \toprule
           \shortstack{Dimensione\\ Voxel} & \shortstack{Tempo \\\texttt{[s]}} & \shortstack{Memoria \\\texttt{[MiB]}}\\
@@ -36,7 +38,7 @@ Vediamo innanzitutto (tabelle \ref{tab:positionsnone} e \ref{tab:positions2none}
           2   & 11.478  & 90.6   \\
           1.5 & 11.613  & 95.0   \\
           1   & 99.785  & 463.4  \\
-          0.5 & 973.191 & 2764.8\footnote{ha swappato, non so se per il monitor di sistema cambi qualcosa.} \\
+          0.5 & 973.191 & 2764.8 \\
         \bottomrule
       \end{tabular}
       \caption{Test con file \texttt{positions2.txt}.}
@@ -47,13 +49,15 @@ Vediamo innanzitutto (tabelle \ref{tab:positionsnone} e \ref{tab:positions2none}
   \end{table}
 \end{center}
 
-Vediamo come con voxel grandi i tempi di esecuzione sono molto ridotti e molto simili, con poca occupazione di memoria, mentre con voxel più piccoli i tempi crescono compatibilmente con un fattore 8 (l'arietà dell'Octree). Questo è segno che con voxel grandi l'albero generato è poco profondo e viene analizzato molto velocemente, con un impatto poco significativo sul tempo di esecuzione totale. Al diminuire della dimensione dei voxel, l'Octree è invece più profondo, e la sua scansione occupa una parte sempre più consistente del tempo di esecuzione totale.% In particolare, l'albero generato usando il file \texttt{positions2.txt} genera un albero quasi completo.
+Vediamo come con voxel grandi i tempi di esecuzione sono molto ridotti e molto simili, con poca occupazione di memoria, mentre con voxel più piccoli i tempi crescono compatibilmente con un fattore 8 (l'arietà dell'Octree). Questo è segno che con voxel grandi l'albero generato è poco profondo e viene analizzato molto velocemente, con un impatto poco significativo sul tempo di esecuzione totale. Al diminuire della dimensione dei voxel, l'Octree è invece più profondo, e la sua scansione occupa una parte sempre più consistente del tempo di esecuzione totale.
+
+Per quanto riguarda i tempi rilevati per la lavorazione del file \texttt{positions2.txt} con dimensione voxel pari a $0.5$, si segnala che la lavorazione è stata rallentata dalle operazioni di swap occorse a causa dell'elevata quantità di memoria richiesta.
 
 \subsection{Modalità grafica \texttt{box}}
-La modalità grafica \texttt{box} è la modalità che non utilizza l'algoritmo MarchingCubes per il taglio dei voxel, ma usa l'oggetto \texttt{Box} di OpenSceneGraph per rappresentare ciascun voxel.
+La modalità grafica \texttt{box} è la modalità che non utilizza l'algoritmo Marching Cubes per il taglio dei voxel, ma usa l'oggetto \texttt{Box} di OpenSceneGraph per rappresentare ciascun voxel.
 
 \subsection{Modalità grafica \texttt{mesh}}
-La terza modalità di visualizzazione è quella che utilizza l'algoritmo MarchingCubes per estrarre la mesh tridimensionale dai voxel.
+La terza modalità di visualizzazione è quella che utilizza l'algoritmo Marching Cubes per estrarre la mesh tridimensionale dai voxel.
 
 \subsection{Confronto tra \texttt{box} e \texttt{mesh}}
 Mettiamo ora a confronto la visualizzazione della lavorazione con la modalità di visualizzazione \texttt{box} e la modalità \texttt{mesh} (le immagini sono zoomate per apprezzare le differenze).
@@ -68,7 +72,7 @@ Mettiamo ora a confronto la visualizzazione della lavorazione con la modalità d
 \end{table}
 \end{center}
 
-In \ref{tab:confrontobm1} vediamo la differenza nell'approssimazione della fresatura da parte del cilindro in modalità \texttt{box} (a sx) e \texttt{mesh} (a dx) con dimensione minima dei voxel pari a $2$. Vediamo come, nella modalità \texttt{mesh}, l'algoritmo MarchingCubes approssimi meglio la lavorazione, pur mantenendo visibile la struttura ``a cubi'' del rendering.
+In \ref{tab:confrontobm1} vediamo la differenza nell'approssimazione della fresatura da parte del cilindro in modalità \texttt{box} (a sx) e \texttt{mesh} (a dx) con dimensione minima dei voxel pari a $2$. Vediamo come, nella modalità \texttt{mesh}, l'algoritmo Marching Cubes approssimi meglio la lavorazione, pur mantenendo visibile la struttura ``a cubi'' del rendering.
 
 \begin{center}
 \begin{table}[h]
@@ -92,85 +96,49 @@ In \ref{tab:confrontobm1} vediamo la differenza nell'approssimazione della fresa
 \end{table}
 \end{center}
 
-In \ref{tab:confrontobm2} e \ref{tab:confrontobm3} invece vediamo la stessa lavorazione, effettuata con dimensione dei voxel pari a, rispettivamente, $1$ e $0.5$. Vediamo come man mano che la dimensione dei voxel diminuisce, entrambe le modalità, ovviamente, approssimano in maniera sempre più precisa la fresatura. Tuttavia, mentre la modalità \texttt{box} approssima la lavorazione in modo sempre più preciso ma rimane comunque visibile la quadrettatura, l'algoritmo MarchingCubes che lavora alla stessa profondità dell'Octree fornisce risultati sempre più precisi e realistici.
+In \ref{tab:confrontobm2} e \ref{tab:confrontobm3} invece vediamo la stessa lavorazione, effettuata con dimensione dei voxel pari a, rispettivamente, $1$ e $0.5$. Vediamo come man mano che la dimensione dei voxel diminuisce, entrambe le modalità, ovviamente, approssimano in maniera sempre più precisa la fresatura. Tuttavia, mentre la modalità \texttt{box} approssima la lavorazione in modo sempre più preciso ma rimane comunque visibile la quadrettatura, l'algoritmo Marching Cubes che lavora alla stessa profondità dell'Octree fornisce risultati sempre più precisi e realistici.
 
-Vediamo, invece, dalle tabelle seguenti (\ref{tab:positionsBox} $\div$ \ref{tab:positions2Mesh}) come l'implementazione con MarchingCubes sia più veloce, seppur di poco, in lavorazioni veloci e che comportino la generazione di un Octree poco bilanciato e poco profondo. All'aumentare della profondità dell'albero, invece, la semplicità della generazione dei \texttt{Box} di OSG risulta più veloce. Per lavorazioni più complesse, che richiedono un Octree più completo, l'approccio \texttt{box} è più veloce rispetto alla generazione della \texttt{mesh} in tutti i test effettuati.
+Vediamo, invece, dalla tabella \ref{tab:confrontoBoxMesh} come l'implementazione con Marching Cubes sia più veloce, seppur di poco, in lavorazioni veloci e che comportino la generazione di un Octree poco bilanciato e poco profondo. All'aumentare della profondità dell'albero, invece, la semplicità della generazione dei \texttt{Box} di OSG risulta più veloce. Per lavorazioni più complesse, che richiedono un Octree più completo, l'approccio \texttt{box} è più veloce rispetto alla generazione della \texttt{mesh} in tutti i test effettuati.
+
+Segnaliamo che, per dimensioni del voxel sufficientemente grandi, la lavorazione termina in tempi talmente brevi che risulta impossibile misurare un tempo attendibile, per questo.
 
 \begin{center}
   \begin{table}[h]
-    \begin{minipage}{.5\linewidth}
-      \vspace{0pt}
-      \begin{tabular}{ccc}
+   \centering
+      \begin{tabular}{cccccc}
         \toprule
-          \shortstack{Dimensione\\ Voxel} & \shortstack{Tempo \\\texttt{[s]}} \\
+        & \multicolumn{2}{c}{file \texttt{positions.txt}} & & \multicolumn{2}{c}{file \texttt{positions2.txt}}\\
+        \cmidrule(r){2-3}\cmidrule(r){5-6}
+          \shortstack{Dimensione\\ Voxel} & \shortstack{Tempo \\con \texttt{box} \texttt{[s]}} & \shortstack{Tempo \\con \texttt{mesh} \texttt{[s]}} & & \shortstack{Tempo \\con \texttt{box} \texttt{[s]}} & \shortstack{Tempo \\con \texttt{mesh} \texttt{[s]}}\\
         \midrule
-          3   & - \\
-          2.5 & - \\
-          2   & 2.090 \\
-          1.5 & 2.093 \\
-          1   & 10.267 \\
-          0.5 & 81.466 \\
+          3   & -      & -      & & 2.381    & 2.690    \\
+          2.5 & -      & -      & & 2.510    & 2.581    \\
+          2   & 2.090  & 1.988  & & 12.719   & 16.221   \\
+          1.5 & 2.093  & 1.971  & & 12.581   & 19.051   \\
+          1   & 10.267 & 9.807  & & 126.827  & 127.073  \\
+          0.5 & 81.466 & 94.821 & & arriva.. & 1684.734 \\
         \bottomrule
       \end{tabular}
-      \caption{Test sul file \texttt{positions.txt} in modalità \texttt{box}.}
-      \label{tab:positionsBox}
-    \end{minipage}
-    \begin{minipage}{.5\linewidth}
-      \vspace{0pt}\raggedright
-      \begin{tabular}{ccc}
-        \toprule
-          \shortstack{Dimensione\\ Voxel} & \shortstack{Tempo \\\texttt{[s]}}\\
-        \midrule
-          3   & - \\
-          2.5 & -  \\
-          2   & 1.988  \\
-          1.5 & 1.971 \\
-          1   & 9.807  \\
-          0.5 & 94.821 \\
-        \bottomrule
-      \end{tabular}
-      \caption{Test sul file \texttt{positions.txt} in modalità \texttt{mesh}.}      \label{tab:positionsMesh}
-    \end{minipage}
-    %\caption{Riepilogo dei test effettuati in modalità testuale.}
-    %\label{tab:graphicsnone}
-%   \end{table}
-% \end{center}
-
-% \begin{center}
-%   \begin{table}[h]
-    \begin{minipage}{.5\linewidth}
-      \vspace{0pt}
-      \begin{tabular}{ccc}
-        \toprule
-          \shortstack{Dimensione\\ Voxel} & \shortstack{Tempo \\\texttt{[s]}} \\
-        \midrule
-          3   & 2.381 \\
-          2.5 & 2.510 \\
-          2   & 12.719  \\
-          1.5 & 12.581 \\
-          1   & 126.827 \\
-          0.5 & arriva... \\
-        \bottomrule
-      \end{tabular}
-      \caption{Test sul file \texttt{positions2.txt} in modalità \texttt{box}.}
-      \label{tab:positions2Box}
-    \end{minipage}
-    \begin{minipage}{.5\linewidth}
-      \vspace{0pt}\raggedright
-      \begin{tabular}{ccc}
-        \toprule
-          \shortstack{Dimensione\\ Voxel} & \shortstack{Tempo \\\texttt{[s]}}\\
-        \midrule
-          3   & 2.690 \\
-          2.5 & 2.581 \\
-          2   & 16.221 \\
-          1.5 & 19.051 \\
-          1   & 127.073 \\
-          0.5 & 1684.734 \\
-        \bottomrule
-      \end{tabular}
-      \caption{Test sul file \texttt{positions2.txt} in modalità \texttt{mesh}.}
-      \label{tab:positions2Mesh}
-    \end{minipage}
+      \caption{Confronto delle prestazioni tra modalità \texttt{box} e \texttt{mesh}.}
+      \label{tab:confrontoBoxMesh}
   \end{table}
 \end{center}
+
+\subsection{Carico relativo dei moduli}
+Analizziamo ora cosa succede \textit{all'interno} di un'esecuzione del simulatore. Per farlo, osserviamo il grafico delle chiamate in figura \ref{fig:callgraph}. Questo grafico è stato ottenuto a partire dal una lavorazione in modalità \texttt{mesh} con dimensione dei voxel pari a $2$, con gli strumenti di debug e profiling \texttt{valgrind}, \texttt{callgrind} e \texttt{kcachegrind}.
+
+\begin{figure}[htp]
+	\centering
+	\includegraphics[width=.97\textwidth]{./img/callgraph.pdf}
+	\caption{Grafico delle chiamate del simulatore.}
+	\label{fig:callgraph}
+\end{figure}
+
+Il modulo che lavora per la maggior parte del tempo è chiaramente il Miller, che consuma circa i 3/4 di cicli processore impiegati in totale. Il metodo \texttt{CyclicRunnable::run()} chiama infatti \texttt{MillerRunnable::doCycle()} per 7443 volte, ovvero il numero di iterazioni dell'algoritmo di milling. Questa è chiaramente l'operazione più onerosa eseguita dall'algoritmo, e quella in cui si dovrebbero concentrare eventuali sforzi di ottimizzazione per ottenere un prodotto più performante.
+
+La visualizzazione grafica, che inizia con l'invocazione del metodo \texttt{Display::draw()} è invece responsabile del 15\% circa del tempo di calcolo.
+
+Per quanto riguarda i rimanenti moduli, se il configuratore viene eseguito solo preliminarmente alla lavorazione e con compiti di setup, e ci aspettiamo quindi un impatto limitato sul tempo totale, notiamo invece come il Meshing sia assente dal grafo, segno di come anche il suo impatto sia limitato rispetto al Milling, conseguenza dell'efficienza dell'algoritmo Marching Cubes e della bontà della sua implementazione.
+
+%\subsubsection{Carico dei metodi}
+Come si può facilmente evincere dai risultati appena presentati, i metodi che vengono maggiormente invocati sono quelli che permettono l'interazione tra cutter e Octree. Il metodo in assouto più chiamato è infatti \texttt{CylinderCutter::getDistance()} che misura la distanza tra il cutter (che in tutti i test effettuati era appunto di forma cilindrica) e il voxel più vicino, per determinare se c'è intersezione e quindi rimozione di materiale. Segue, con circa metà invocazioni, la gestione degli smart pointers di Boost e, con poco più di un terzo di chiamate, il metodo \texttt{Stock::IntersectionTester::fastInt()} che esegue i calcoli per determinare se c'è intersezione tra cutter e voxel.
