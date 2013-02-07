@@ -1,4 +1,15 @@
 \section{Conclusioni}
 Il simulatore mostra come procede passo dopo passo il lavoro di fresatura, permettendo di regolare precisione della lavorazione e del rendering e la velocità di visualizzazione.
 
-Con i file di esempio messi a disposizione, le operazioni vengono portate a termine correttamente e con buone prestazioni, nonostante non sia stato possibile sfruttare CUDA perché nessuno di noi ha a disposizione una scheda grafica Nvidia.
+Con i file di esempio messi a disposizione, le operazioni vengono portate a termine correttamente e con buone prestazioni, nonostante non sia stato possibile sfruttare CUDA perché nessuno di noi ha a disposizione una scheda grafica nVidia.
+
+La lavorazione in modalità testuale è, come ci si può ragionevolmente attendere, più veloce rispetto alle due modalità con grafica. Per lavorazioni poco impegnative dal punto di vista computazionale la modalità \texttt{box} e la modalità \texttt{mesh} hanno prestazioni comparabili, mentre man mano che la computazione si fa più onerosa l'attivazione del modulo Mesher nella modalità \texttt{mesh} comporta un incremento sia del tempo di calcolo che della memoria necessaria a contenere l'Octree. Questo ovviamente è il costo che è necessario sostenere per una visualizzazione più realistica della lavorazione.
+
+Come si può facilmente inferire osservando le tempistiche di esecuzione e osservando quali sono i moduli più time-demanding, i fattori che più influiscono sul tempo di calcolo sono certamente la completezza (o meno) e la profondità dell'Octree. Mentre quest'ultima è determinata dalla dimensione dei voxel, la prima è invece fortemente dipendente dalla lavorazione, in quanto una lavorazione limitata ad una porzione piuttosto ristretta di blocco (file \texttt{positions.txt}) ha tempi ed occupazione di memoria di molto inferiori ad una lavorazione estesa a tutto il blocco (file \texttt{positions2.txt}): pur contenendo poco più di un terzo delle posizioni di quest'ultimo, il trend dei tempi è molto inferiore a questo fattore (e, sommando il contributo dato dalla profondità dell'Octree, vediamo come il rapporto dei tempi a parità di profondità si riduca sempre di più -- con un leggero abuso di notazione, $\lim_{\mbox{{\scriptsize dim. voxel}} \rightarrow 0}\frac{\mbox{\footnotesize{tempi \texttt{positions.txt}}}}{\mbox{\footnotesize{tempi \texttt{positions2.txt}}}} = 0$).
+
+%\subsection{Sviluppi futuri}
+Come indicato man mano nella relazione, è possibile effettuare alcuni interventi per migliorare il progetto.
+
+In primo luogo, è possibile migliorare il comportamento multipiattaforma per la gestione dell'input modificando il formato dei dati di configurazione della lavorazione.
+
+È invece possibile migliorare le prestazioni di Miller e Mesher rendendo il primo parallelo e ``rallentando'' il secondo per snellire l'occupazione di memoria e consentire l'uso di strutture dati più leggere e performanti.

@@ -41,3 +41,16 @@ Per eseguire il progetto, lanciare il comando\\ \verb!/path/del/progetto/CNCSimu
     \end{enumerate}
   \item \verb!file_positions! è il file contenente i movimenti da riprodurre.
 \end{itemize}
+
+In fase di esecuzione, è possibile modificare il comportamento del simulatore interagendo con esso mediante i seguenti comandi, visibili sul terminale premendo \texttt{h}:
+\begin{itemize}[noitemsep]
+  \item \verb'r'		esegue la simulazione alla massima velocità possibile, aggiornando il visualizzazore quando possibile;
+  \item \verb'1'		aggiorna il visualizzatore ad ogni iterazione;
+  \item \verb'2'		aggiorna il visualizzatore ogni $10$ iterazioni;
+  \item \verb'3'		aggiorna il visualizzatore ogni $50$ iterazioni;
+  \item \verb'p'		pausa;
+  \item \verb't'		blocca/attiva gli aggiornamenti delle informazioni;
+  \item \verb'k'		termina il milling;
+  \item \verb'h'		mostra il menu di help;
+  \item \verb'ESC'	esce dal simulatore.
+\end{itemize}
