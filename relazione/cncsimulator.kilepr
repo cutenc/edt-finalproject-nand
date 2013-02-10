@@ -4,7 +4,7 @@ img_extIsRegExp=false
 img_extensions=.eps .jpg .jpeg .png .pdf .ps .fig .gif
 kileprversion=2
 kileversion=2.1.0
-lastDocument=section/modules_visualizer.tex
+lastDocument=section/esempio-lavorazione.tex
 masterDocument=CNCSimulator_relazione.tex
 name=CNC Simulator
 pkg_extIsRegExp=false
@@ -47,6 +47,16 @@ Mode=LaTeX
 ReadWrite=true
 
 [document-settings,item:section/conclusione.tex]
+Bookmarks=
+Encoding=UTF-8
+FoldedColumns=
+FoldedLines=
+Highlighting=LaTeX
+Indentation Mode=normal
+Mode=LaTeX
+ReadWrite=true
+
+[document-settings,item:section/esempio-lavorazione.tex]
 Bookmarks=
 Encoding=UTF-8
 FoldedColumns=
@@ -138,10 +148,10 @@ ReadWrite=true
 
 [item:CNCSimulator_relazione.tex]
 archive=true
-column=19
+column=9
 encoding=UTF-8
 highlight=LaTeX
-line=54
+line=43
 mode=LaTeX
 open=true
 order=1
@@ -168,10 +178,10 @@ order=-1
 
 [item:commands.tex]
 archive=true
-column=32
+column=47
 encoding=UTF-8
 highlight=LaTeX
-line=3
+line=4
 mode=LaTeX
 open=true
 order=2
@@ -186,6 +196,16 @@ mode=LaTeX
 open=false
 order=4
 
+[item:section/esempio-lavorazione.tex]
+archive=true
+column=11
+encoding=UTF-8
+highlight=LaTeX
+line=5
+mode=LaTeX
+open=true
+order=11
+
 [item:section/introduzione.tex]
 archive=true
 column=0
@@ -198,17 +218,17 @@ order=4
 
 [item:section/modules.tex]
 archive=true
-column=27
+column=17
 encoding=UTF-8
 highlight=LaTeX
-line=8
+line=9
 mode=LaTeX
 open=true
 order=5
 
 [item:section/modules_configurator.tex]
 archive=true
-column=129
+column=719
 encoding=UTF-8
 highlight=LaTeX
 line=14
@@ -218,40 +238,40 @@ order=6
 
 [item:section/modules_mesher.tex]
 archive=true
-column=324
+column=781
 encoding=UTF-8
 highlight=LaTeX
-line=2
+line=30
 mode=LaTeX
 open=true
 order=8
 
 [item:section/modules_miller.tex]
 archive=true
-column=1678
+column=14
 encoding=UTF-8
 highlight=LaTeX
-line=12
+line=28
 mode=LaTeX
 open=true
 order=7
 
 [item:section/modules_visualizer.tex]
 archive=true
-column=0
+column=546
 encoding=UTF-8
 highlight=LaTeX
-line=16
+line=21
 mode=LaTeX
 open=true
 order=9
 
 [item:section/strumenti-compilazione.tex]
 archive=true
-column=0
+column=68
 encoding=UTF-8
 highlight=LaTeX
-line=22
+line=49
 mode=LaTeX
 open=true
 order=10
@@ -267,8 +287,8 @@ open=true
 order=3
 
 [view-settings,view=0,item:CNCSimulator_relazione.tex]
-CursorColumn=19
-CursorLine=54
+CursorColumn=9
+CursorLine=43
 JumpList=
 ViMarks=
 
@@ -279,14 +299,20 @@ JumpList=
 ViMarks=
 
 [view-settings,view=0,item:commands.tex]
-CursorColumn=32
-CursorLine=3
+CursorColumn=47
+CursorLine=4
 JumpList=
 ViMarks=
 
 [view-settings,view=0,item:section/conclusione.tex]
 CursorColumn=0
 CursorLine=4
+JumpList=
+ViMarks=
+
+[view-settings,view=0,item:section/esempio-lavorazione.tex]
+CursorColumn=11
+CursorLine=5
 JumpList=
 ViMarks=
 
@@ -297,38 +323,38 @@ JumpList=
 ViMarks=
 
 [view-settings,view=0,item:section/modules.tex]
-CursorColumn=27
-CursorLine=8
+CursorColumn=17
+CursorLine=9
 JumpList=
 ViMarks=
 
 [view-settings,view=0,item:section/modules_configurator.tex]
-CursorColumn=129
+CursorColumn=719
 CursorLine=14
 JumpList=
 ViMarks=
 
 [view-settings,view=0,item:section/modules_mesher.tex]
-CursorColumn=324
-CursorLine=2
+CursorColumn=781
+CursorLine=30
 JumpList=
 ViMarks=
 
 [view-settings,view=0,item:section/modules_miller.tex]
-CursorColumn=1678
-CursorLine=12
+CursorColumn=14
+CursorLine=28
 JumpList=
 ViMarks=
 
 [view-settings,view=0,item:section/modules_visualizer.tex]
-CursorColumn=0
-CursorLine=16
+CursorColumn=546
+CursorLine=21
 JumpList=
 ViMarks=
 
 [view-settings,view=0,item:section/strumenti-compilazione.tex]
-CursorColumn=0
-CursorLine=22
+CursorColumn=68
+CursorLine=49
 JumpList=
 ViMarks=
 

@@ -18,7 +18,7 @@ Il processo di \emph{meshing} si articola in due fasi: una prima fase di aggiorn
 
 Marching Cubes ha a disposizione un array di $256$ ($ = 2^{\mbox{\# di vertici di un voxel}}$) possibili configurazioni, che indicano quali vertici sono interni alla mesh e quali sono esterni. Ad ogni vertice è associato un bit in una determinata posizione di un byte, per poter essere trattato come intero. Per ogni vertice viene controllata la sua posizione rispetto alla superficie, e al termine del procedimento, cioè quando si conosce la posizione di tutti i vertici, si ricava la combinazione di configurazioni che meglio approssimano la superficie.
 
-\paragraph{Sviluppi futuri.}
+\subsubsection{Sviluppi futuri.}
 La figura \ref{fig:meshing_octree} mostra che garantire performance $O(1)$ nella cancellazione e nell'aggiornamento di dati costa molto in termini di spazio occupato, in quanto necessita di una lista doppiamente concatenata e, per ciascun voxel salvato, di una coppia di \emph{shared pointer}.
 \begin{figure}[htp]
 	\centering
@@ -26,5 +26,6 @@ La figura \ref{fig:meshing_octree} mostra che garantire performance $O(1)$ nella
 	\caption{Octree usato dal mesher per visualizzare l'oggetto lavorato.}
 	\label{fig:meshing_octree}
 \end{figure}
-
 Un possibile sviluppo futuro consiste nel portare le operazioni di cancellazione e aggiornamento a complessità logaritmica, limitando la prima fase a marcare come ``modificate'' quelle liste di voxel interessate dai cambiamenti; sarà poi la seconda fase che si occuperà di riallineare il contenuto dell'albero con lo stato di fatto. Così facendo le liste possono essere sostituite da array e le coppie di puntatori con singoli \emph{weak pointer}\footnote{I concetti di \emph{shared} e \emph{weak pointer} sono mutuati dalla libreria boost e spiegati nella relativa documentazione, reperibile all'url \url{http://www.boost.org/doc/libs/1_52_0/libs/smart_ptr/smart_ptr.htm}} che puntano al voxel, risparmiando così memoria RAM.
+
+Una strada che non è stata praticata consiste nell'uso di \cuda per le operazioni di meshing. Date le peculiarità del calcolo parallelo su scheda grafica\footnote{Per un utilizzo ottimale del pipelining il numero di salti condizionali all'interno del codice deve essere limitato, nonché il lavoro da portare a termine deve essere più processor che memory intensive: questi sono i motivi per cui è stata abbandonata l'idea di sfruttare \cuda anche nel \emph{milling}.}, la generazione delle mesh potrebbe trarre vantaggio dalla potenza di calcolo messa a disposizione da queste librerie, a patto di prestare a come i dati vengono scambiati tra la memoria di sistema e quella grafica: questi trasferimenti, infatti, possono diventare velocemente un collo di bottiglia per l'algoritmo.

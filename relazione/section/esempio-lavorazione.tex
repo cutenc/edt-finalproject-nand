@@ -2,43 +2,40 @@
 Mostriamo ora alcuni esempi di lavorazione, per vedere come i tempi di esecuzione catalogati variano a seconda dei parametri scelti.
 
 Le prove sono state effettuate usando i due file messi a disposizione per i testing, chiamati \texttt{positions.txt} e \texttt{positions2.txt}. Il primo file contiene oltre $7000$ posizioni, e riproduce una fresatura limitata ad una ristretta porzione di blocco, generando quindi un Octree poco bilanciato. Il secondo file invece contiene oltre $20000$ posizioni e riproduce una fresatura che scava ``tutto attorno'' al blocco, generando quindi un Octree più bilanciato e risultando quindi più onerosa dal punto di vista della computazione. In \ref{tab:lavfinali} vediamo il risultato delle due lavorazioni.
-\begin{center}
 \begin{table}[h]
-  \begin{tabular}{cc}
-   \includegraphics[width=0.48\textwidth]{img/screenshots/pos_box_v05_1.png} &%
-   \includegraphics[width=0.48\textwidth]{img/screenshots/pos2_box_v1_2.png}\\
-  \end{tabular}
-  \caption{Risultato delle lavorazioni contenute nei file \texttt{positions.txt} e \texttt{positions2.txt}.}
-  \label{tab:lavfinali}
+	\centering
+	\begin{tabular}{cc}
+	\includegraphics[width=0.48\textwidth]{img/screenshots/pos_box_v05_1.png} &%
+	\includegraphics[width=0.48\textwidth]{img/screenshots/pos2_box_v1_2.png}\\
+	\end{tabular}
+	\caption{Risultato delle lavorazioni contenute nei file \texttt{positions.txt} e \texttt{positions2.txt}.}
+	\label{tab:lavfinali}
 \end{table}
-\end{center}
 I tempi riportati si riferiscono a test effettuati usando una macchina con Ubuntu Linux 12.04 a 64 bit, con processore Intel i7 a 1.73 GHz e 4GB di RAM, con il simulatore compilato in modalità \verb!release! e lanciato, salvo dove indicato, per completare la lavorazione alla massima velocità possibile. Per il profiling invece si è reso necessario compilare on modalità \verb!debug!. Abbiamo effettuato varie prove per ciascuna configurazione, e abbiamo qui riportato i valori mediani.
 
 \subsection{Modalità testuale}
 Vediamo innanzitutto% (tabelle \ref{tab:positionsnone} e \ref{tab:positions2none})
 (tabella \ref{tab:graphicsnone}) come si comporta il simulatore quando viene eseguito in modalità solo testuale.
-\begin{center}
-  \begin{table}[h]
-       \centering
-      \begin{tabular}{cccccc}
-        \toprule
-        & \multicolumn{2}{c}{file \texttt{positions.txt}} & & \multicolumn{2}{c}{file \texttt{positions2.txt}}\\
-        \cmidrule(r){2-3}\cmidrule(r){5-6}
-          \shortstack{Dimensione\\ Voxel} & \shortstack{Tempo \\\texttt{[s]}} & \shortstack{Memoria \\\texttt{[MB]}} & & \shortstack{Tempo \\\texttt{[s]}} & \shortstack{Memoria \\\texttt{[MB]}}\\
-        \midrule
-          3   & 0.517  & -     & & 2.446   & 22.7   \\
-          2.5 & 0.543  & -     & & 2.558   & 12.2   \\
-          2   & 1.632  & 17.2  & & 11.478  & 90.6   \\
-          1.5 & 1.607  & -     & & 11.613  & 95.0   \\
-          1   & 8.437  & 70.0  & & 99.785  & 463.4  \\
-          0.5 & 67.691 & 334.7 & & 973.191 & 2764.8 \\
-        \bottomrule
-      \end{tabular}
-      \caption{Riepilogo dei test effettuati in modalità testuale.}
-      \label{tab:graphicsnone}
-  \end{table}
-\end{center}
-Vediamo come con voxel grandi i tempi di esecuzione sono molto ridotti e molto simili, mentre con voxel più piccoli i tempi crescono compatibilmente con un fattore 8 (l'arietà dell'Octree). La mancanza di alcuni valori di memoria in tabella è causata dal fatto che la lavorazione contenuta nel file \texttt{positions.txt} con voxel grandi termina prima che sia possibile leggere la quantità di RAM occupata. Osservando però i valori rilevati per lo stesso file con voxel più piccoli, e paragonandoli con i valori osservati nella lavorazione riportata nel file \texttt{positions2.txt} possiamo inferire che l'occupazione si limita a pochi \texttt{MB}.
+\begin{table}[h]
+	\centering
+	\begin{tabular}{cccccc}
+		\toprule
+		& \multicolumn{2}{c}{file \texttt{positions.txt}} & & \multicolumn{2}{c}{file \texttt{positions2.txt}}\\
+		\cmidrule(r){2-3}\cmidrule(r){5-6}
+			\shortstack{Dimensione\\ Voxel} & \shortstack{Tempo \\\texttt{[s]}} & \shortstack{Memoria \\\texttt{[MB]}} & & \shortstack{Tempo \\\texttt{[s]}} & \shortstack{Memoria \\\texttt{[MB]}}\\
+		\midrule
+			3   & 0.517  & -     & & 2.446   & 22.7   \\
+			2.5 & 0.543  & -     & & 2.558   & 12.2   \\
+			2   & 1.632  & 17.2  & & 11.478  & 90.6   \\
+			1.5 & 1.607  & -     & & 11.613  & 95.0   \\
+			1   & 8.437  & 70.0  & & 99.785  & 463.4  \\
+			0.5 & 67.691 & 334.7 & & 973.191 & 2764.8 \\
+		\bottomrule
+	\end{tabular}
+	\caption{Riepilogo dei test effettuati in modalità testuale.}
+	\label{tab:graphicsnone}
+\end{table}
+Con voxel grandi i tempi di esecuzione sono molto ridotti e molto simili, mentre con voxel più piccoli i tempi crescono compatibilmente con un fattore 8 (l'arietà dell'Octree). La mancanza di alcuni valori di memoria in tabella è causata dal fatto che la lavorazione contenuta nel file \texttt{positions.txt} con voxel grandi termina prima che sia possibile leggere la quantità di RAM occupata. Osservando però i valori rilevati per lo stesso file con voxel più piccoli, e paragonandoli con i valori osservati nella lavorazione riportata nel file \texttt{positions2.txt} possiamo inferire che l'occupazione si limita a pochi \texttt{MB}.
 
 Questo è segno che con voxel grandi l'albero generato è poco profondo e viene analizzato molto velocemente, con un impatto poco significativo sul tempo di esecuzione totale. Al diminuire della dimensione dei voxel, l'Octree è invece più profondo, e la sua scansione occupa una parte sempre più consistente del tempo di esecuzione totale.
 
