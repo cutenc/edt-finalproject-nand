@@ -154,7 +154,7 @@ Analizzando i risultati ottenuti, notiamo come per profondità dell'Octree non t
 
 Vediamo inoltre come l'aggiornamento ogni $10$ posizioni dia risultati migliori, in termini di FPS, rispetto agli altri (quando disponibile, ogni $50$, ogni aggiornamento). Infine, è interessante notare come la visualizzazione in modalità \texttt{mesh} comporti una visualizzazione più rapida rispetto alla modalità \texttt{box}, a parità di parametri. Questo è probabilmente indice di una migliore gestione da parte di OpenSceneGraph delle figure costituite da semplici poligoni rispetto ai \texttt{Box}, che sono oggetti più pesanti, tale da compensare anche l'overhead dovuto a Marching Cubes.
 
-Per dimensione dei voxel pari a $0.5$ invece si osserva come la lavorazione diventi talmente onerosa da penalizzare in maniera consistente anche l'aggiornamento della scena video.
+Per dimensione dei voxel pari a $0.5$ invece si osserva come la lavorazione diventi talmente onerosa da penalizzare in maniera consistente anche l'aggiornamento della scena video: le prestazioni del rendering quando l'Octree è molto profondo sono infatti le peggiori. Probabilmente potrebbero essere migliorate sfruttando le librerie Cuda, che noi non abbiamo usato non avendo a disposizione una scheda grafica nVidia.
 
 \subsection{Carico relativo dei moduli}
 Analizziamo infine cosa succede \textit{all'interno} di un'esecuzione del simulatore. Per farlo, osserviamo il grafico delle chiamate in figura \ref{fig:callgraph}. Questo grafico è stato ottenuto a partire dal una lavorazione in modalità \texttt{mesh} con dimensione dei voxel pari a $2$, con gli strumenti di debug e profiling \texttt{valgrind}, \texttt{callgrind} e \texttt{kcachegrind}.
