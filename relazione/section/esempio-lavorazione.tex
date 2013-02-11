@@ -1,7 +1,7 @@
 \section{Esempi di lavorazione}
 Mostriamo ora alcuni esempi di lavorazione, per vedere come i tempi di esecuzione catalogati variano a seconda dei parametri scelti.
 
-Le prove sono state effettuate usando i due file messi a disposizione per i testing, chiamati \texttt{positions.txt} e \texttt{positions2.txt}. Il primo file contiene oltre $7000$ posizioni, e riproduce una fresatura limitata ad una ristretta porzione di blocco, generando quindi un Octree poco bilanciato. Il secondo file invece contiene oltre $20000$ posizioni e riproduce una fresatura che scava ``tutto attorno'' al blocco, generando quindi un Octree più bilanciato e risultando quindi più onerosa dal punto di vista della computazione. In \ref{tab:lavfinali} vediamo il risultato delle due lavorazioni.
+Le prove sono state effettuate usando i due file messi a disposizione per i testing, chiamati \texttt{positions.txt} e \texttt{positions2.txt}. Il primo file contiene oltre $7000$ posizioni, e riproduce una fresatura limitata ad una ristretta porzione di blocco, generando quindi un Octree poco bilanciato. Il secondo file invece contiene oltre $20000$ posizioni e riproduce una fresatura che scava ``tutto attorno'' al blocco, generando un Octree più bilanciato, e risultando quindi più onerosa dal punto di vista computazionale. In figura \ref{tab:lavfinali} sono presentati gli esiti delle due lavorazioni.
 \begin{table}[h]
 	\centering
 	\begin{tabular}{cc}
@@ -11,11 +11,10 @@ Le prove sono state effettuate usando i due file messi a disposizione per i test
 	\caption{Risultato delle lavorazioni contenute nei file \texttt{positions.txt} e \texttt{positions2.txt}.}
 	\label{tab:lavfinali}
 \end{table}
-I tempi riportati si riferiscono a test effettuati usando una macchina con Ubuntu Linux 12.04 a 64 bit, con processore Intel i7 a 1.73 GHz e 4GB di RAM, con il simulatore compilato in modalità \verb!release! e lanciato, salvo dove indicato, per completare la lavorazione alla massima velocità possibile. Per il profiling invece si è reso necessario compilare on modalità \verb!debug!. Abbiamo effettuato varie prove per ciascuna configurazione, e abbiamo qui riportato i valori mediani.
+I tempi riportati si riferiscono a test effettuati usando una macchina con Ubuntu Linux 12.04 a 64 bit, con processore Intel i7 a 1.73 GHz e 4GB di RAM, con il simulatore compilato in modalità \verb!release! e lanciato, salvo dove indicato, per completare la lavorazione alla massima velocità possibile. Per il profiling, invece, si è reso necessario compilare in modalità \verb!debug!. Per ciascuna configurazione sono state eseguite varie prove, le quali, una volta mediate, hanno prodotto i risultati qui presentati.
 
 \subsection{Modalità testuale}
-Vediamo innanzitutto% (tabelle \ref{tab:positionsnone} e \ref{tab:positions2none})
-(tabella \ref{tab:graphicsnone}) come si comporta il simulatore quando viene eseguito in modalità solo testuale.
+Vediamo innanzitutto (tabella \ref{tab:graphicsnone}) come si comporta il simulatore quando viene eseguito in modalità testuale.
 \begin{table}[h]
 	\centering
 	\begin{tabular}{cccccc}
@@ -35,17 +34,15 @@ Vediamo innanzitutto% (tabelle \ref{tab:positionsnone} e \ref{tab:positions2none
 	\caption{Riepilogo dei test effettuati in modalità testuale.}
 	\label{tab:graphicsnone}
 \end{table}
-Con voxel grandi i tempi di esecuzione sono molto ridotti e molto simili, mentre con voxel più piccoli i tempi crescono compatibilmente con un fattore 8 (l'arietà dell'Octree). La mancanza di alcuni valori di memoria in tabella è causata dal fatto che la lavorazione contenuta nel file \texttt{positions.txt} con voxel grandi termina prima che sia possibile leggere la quantità di RAM occupata. Osservando però i valori rilevati per lo stesso file con voxel più piccoli, e paragonandoli con i valori osservati nella lavorazione riportata nel file \texttt{positions2.txt} possiamo inferire che l'occupazione si limita a pochi \texttt{MB}.
+Con voxel grandi i tempi di esecuzione sono molto ridotti e molto simili, mentre con voxel più piccoli i tempi crescono compatibilmente con un fattore 8 (l'arietà dell'Octree). L'assenza di alcuni valori di memoria in tabella è causata dal fatto che la lavorazione contenuta nel file \texttt{positions.txt}, con voxel grandi, termina prima che sia possibile leggere la quantità di RAM occupata. Osservando però i valori rilevati per lo stesso file con voxel più piccoli, e paragonandoli con i valori osservati nella lavorazione riportata nel file \texttt{positions2.txt}, possiamo inferire che l'occupazione si limita a pochi \texttt{MB}. Da questo ragionamento si può dedurre che con voxel grandi l'albero generato è poco profondo e viene analizzato molto velocemente, con un impatto poco significativo sul tempo di esecuzione totale. Al diminuire della dimensione dei voxel, però, l'Octree diventa più profondo, e la sua scansione occupa una parte via via più consistente del tempo di esecuzione totale.
 
-Questo è segno che con voxel grandi l'albero generato è poco profondo e viene analizzato molto velocemente, con un impatto poco significativo sul tempo di esecuzione totale. Al diminuire della dimensione dei voxel, l'Octree è invece più profondo, e la sua scansione occupa una parte sempre più consistente del tempo di esecuzione totale.
-
-Per quanto riguarda i tempi rilevati per la lavorazione del file \texttt{positions2.txt} con dimensione voxel pari a $0.5$, si segnala che la lavorazione è stata rallentata dalle operazioni di swap occorse a causa dell'elevata quantità di memoria richiesta.
+Per quanto riguarda i tempi rilevati per la lavorazione del file \texttt{positions2.txt} con dimensione voxel pari a $0.5$, si segnala che la lavorazione è stata rallentata dalle operazioni di swap causate dall'elevata quantità di memoria richiesta.
 
 \subsection{Modalità grafica \texttt{box}}
-La modalità grafica \texttt{box} è la modalità che non utilizza l'algoritmo Marching Cubes per il taglio dei voxel, ma usa l'oggetto \texttt{Box} di OpenSceneGraph per rappresentare ciascun voxel. Il risultato sarà l'esecuzione dell'interfaccia grafica di OSG per la visualizzazione delle varie fasi della lavorazione, con il rendering della lavorazione mediante cubi di varie dimensioni che rappresentano i voxel dell'Octree.
+La modalità grafica definita ``\texttt{box}'' non sfrutta  Marching Cubes per la rappresentazione dei voxel, ma rappresenta ciascuno di essi con un parallelepipedo. L'esecuzione caricherà quindi l'interfaccia grafica di OSG e al suo interno verranno visualizzate le varie fasi della lavorazione: il rendering, come detto, sarà basato su cubi di varie dimensioni che rappresentano i voxel dell'Octree.
 
 \subsection{Modalità grafica \texttt{mesh}}
-La terza modalità di visualizzazione è quella che utilizza l'algoritmo Marching Cubes per estrarre la mesh tridimensionale dai voxel. Come nella modalità \texttt{box}, anche in questo caso viene lanciato il visualizzatore di OSG, ma la lavorazione viene resa in maniera più precisa mediante l'approssimazione calcolata da Marching Cubes (vedasi sezione \ref{mcalgo}) nel modulo Mesher a partire dai voxel. Un confronto tra le due modalità viene effettuato nella sezione successiva.
+La terza modalità di visualizzazione è quella che utilizza l'algoritmo Marching Cubes per estrarre la mesh tridimensionale dai voxel. Come nella modalità \texttt{box}, anche in questo caso viene lanciato il visualizzatore di OSG, ma la lavorazione viene resa in maniera più precisa mediante l'approssimazione calcolata da Marching Cubes (vedasi sezione \ref{mcalgo}). Nella sezione successiva viene fatto un confronto tra le due modalità appena presentate.
 
 \subsection{Confronto tra \texttt{box} e \texttt{mesh}}
 Mettiamo ora a confronto la visualizzazione della lavorazione con la modalità di visualizzazione \texttt{box} e la modalità \texttt{mesh} (le immagini sono zoomate per apprezzare le differenze).
@@ -84,7 +81,7 @@ Mettiamo ora a confronto la visualizzazione della lavorazione con la modalità d
 
 In \ref{tab:confrontobm1} vediamo la differenza nell'approssimazione della fresatura da parte del cilindro in modalità \texttt{box} (a sx) e \texttt{mesh} (a dx) con dimensione minima dei voxel pari a $2$. Vediamo come, nella modalità \texttt{mesh}, l'algoritmo Marching Cubes approssimi meglio la lavorazione, pur mantenendo visibile la struttura ``a cubi'' del rendering.
 
-In \ref{tab:confrontobm2} e \ref{tab:confrontobm3} invece vediamo la stessa lavorazione, effettuata con dimensione dei voxel pari a, rispettivamente, $1$ e $0.5$. Vediamo come man mano che la dimensione dei voxel diminuisce, entrambe le modalità, ovviamente, approssimano in maniera sempre più precisa la fresatura. Tuttavia, mentre la modalità \texttt{box} approssima la lavorazione in modo sempre più preciso ma rimane comunque visibile la quadrettatura, l'algoritmo Marching Cubes che lavora alla stessa profondità dell'Octree fornisce risultati sempre più precisi e realistici.
+In \ref{tab:confrontobm2} e \ref{tab:confrontobm3} invece vediamo la stessa lavorazione, effettuata con dimensione dei voxel pari a, rispettivamente, $1$ e $0.5$. Via via che la dimensione dei voxel diminuisce, entrambe le modalità, ovviamente, approssimano in maniera sempre più precisa la fresatura. Tuttavia, mentre la modalità \texttt{box} approssima la lavorazione in modo sempre più preciso ma rimane comunque visibile la quadrettatura, l'algoritmo Marching Cubes che lavora alla stessa profondità dell'Octree fornisce risultati sempre più precisi e realistici.
 
 Vediamo invece dalla tabella \ref{tab:confrontoBoxMesh} come l'implementazione con Marching Cubes possa risultare competitiva rispetto alla mera visualizzazione di cubi in lavorazioni brevi e che comportino la generazione di un Octree poco bilanciato e poco profondo. All'aumentare della profondità dell'albero, invece, la semplicità della generazione dei \texttt{Box} di OSG risulta più veloce. Per lavorazioni più complesse, che richiedono un Octree più completo, l'approccio \texttt{box} è più veloce rispetto alla generazione della \texttt{mesh} in tutti i test effettuati.
 
