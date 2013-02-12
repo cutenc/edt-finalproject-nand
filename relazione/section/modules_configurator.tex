@@ -1,7 +1,7 @@
 \subsection{Configurator}
 \code{configurator} è il modulo che si occupa di leggere i dati di ingresso e trasformarli in strutture dati comprensibili al resto del programma. Le fonti da cui attinge le informazioni sono la linea di comando, attraverso la classe \code{CommandLineParser}, e il file di configurazione, attraverso la classe \code{ConfigFileParser}.
 
-\code{CommandLineParser} deve tutta la sua flessibilità nell'acquisizione della linea di comando alla libreria \boost \code{program_options} di cui la classe è un semplice wrapper. Altro discorso va fatto per \code{ConfigFileParser}, classe scritta ad-hoc, in quanto il file da interpretare era di tipo \emph{plain-text} non strutturato. Per garantire una certa flessibilità al contenuto del file, questa classe permette di:
+\code{CommandLineParser} deve tutta la sua flessibilità nell'acquisizione della linea di comando alla libreria boost \code{program_options} di cui la classe è un semplice wrapper. Altro discorso va fatto per \code{ConfigFileParser}, classe scritta ad-hoc, in quanto il file da interpretare era di tipo \emph{plain-text} non strutturato. Per garantire una certa flessibilità al contenuto del file, questa classe permette di:
 \begin{itemize}
 	\item invertire la posizione delle sezioni \code{[PRODUCT]} e \code{[TOOL]}, fermo restando che la sezione \code{[POINTS]} deve rimanere l'ultima del file;
 	\item gestire correttamente linee vuote o di commento, ovvero righe in cui il primo carattere non di spaziatura è ``\code{#}'';
