@@ -11,6 +11,11 @@
 
 #include <osg/Geometry>
 
+/**
+ * @class Color
+ *
+ * defines colors in HTML format (0xRRGGBB) of osg format
+ */
 class Color {
 	
 private:

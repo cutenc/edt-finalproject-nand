@@ -17,6 +17,11 @@
 #include "threading/SteppableRunnable.hpp"
 #include "MillingSignaler.hpp"
 
+/**
+ * @class MillerRunnable
+ *
+ * interface for advancing the milling operations step-by-step
+ */
 class MillerRunnable: public SteppableRunnable {
 	
 private:

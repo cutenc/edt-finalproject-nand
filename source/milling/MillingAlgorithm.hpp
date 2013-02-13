@@ -19,6 +19,10 @@
 #include "MillingResult.hpp"
 #include "MillingAlgorithmConf.hpp"
 
+/**
+ * executes milling, one step a time
+ * @class MillingAlgorithm
+ */
 class MillingAlgorithm {
 
 public:
@@ -33,12 +37,24 @@ private:
 	
 	
 public:
+	/**
+	 * constructor
+	 * @param config
+	 */
 	MillingAlgorithm(const MillingAlgorithmConf &config);
 	
 	virtual ~MillingAlgorithm();
 	
+	/**
+	 * advances milling one step a time
+	 * @return
+	 */
 	StepInfo step();
 	
+	/**
+	 * checks whether milling can continue (True), or it is ended (False).
+	 * @return boolean
+	 */
 	bool hasNextStep();
 	
 	unsigned int getStepNumber();
@@ -51,6 +67,9 @@ public:
 	
 	// MeshingInfo buildCurrentMeshingInfo();
 	
+	/**
+	 * redefines operator << for print
+	 */
 	friend std::ostream & operator<<(std::ostream &os, const MillingAlgorithm &ma);
 	
 private:

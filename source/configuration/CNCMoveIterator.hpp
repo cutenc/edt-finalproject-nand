@@ -1,5 +1,5 @@
-/*
- * CNCMoveIterator.hpp
+/**
+ * @file CNCMoveIterator.hpp
  *
  *  Created on: 13/ago/2012
  *      Author: socket
@@ -22,16 +22,36 @@
 #include "common/Rototraslation.hpp"
 #include "common/Utilities.hpp"
 
+/**
+ * @class CNCMove
+ *
+ * Read and interprets a single move of the milling, that is, a line in the [POINTS] section of the position file.
+ */
 class CNCMove {
 	
 public:
+	/**
+	 * constructors
+	 */
 	CNCMove() { }
 	CNCMove(const Rototraslation &stock, const Rototraslation &cutter) :
 		STOCK(stock), CUTTER(cutter) { }
+	/**
+	 * destructor
+	 */
 	virtual ~CNCMove() { }
 	
+	/**
+	 * rototraslations of both stock and cutter (the data contained in each line of the [POINTS] section)
+	 */
 	Rototraslation STOCK, CUTTER;
 	
+	/**
+	 * redefines the << operator for printing the rototraslation
+	 * @param os the output stream
+	 * @param move the move
+	 * @return
+	 */
 	friend std::ostream & operator<<(std::ostream &os, const CNCMove &move) {
 		os << "STOCK(" << move.STOCK << "); CUTTER(" << move.CUTTER << ")";
 		
@@ -126,14 +146,23 @@ private:
 	
 };
 
+/**
+ * @class CNCMoveIterator
+ *
+ * iterator for CNC moves
+ */
 class CNCMoveIterator : public std::istream_iterator<CNCMove> {
 	
-	/* this variable is needed because we have to keep the object pointed
+	/** this variable is needed because we have to keep the object pointed
 	 * to by the smart_pointer alive until the iterator will be deleted
 	 */
 	boost::shared_ptr< std::ifstream > stream;
 	
 public:
+	/**
+	 * constructors
+	 * @param stream
+	 */
 	CNCMoveIterator(boost::shared_ptr<std::ifstream> stream) : 
 		std::istream_iterator<CNCMove>(*stream), stream(stream) {
 	}

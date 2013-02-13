@@ -4,7 +4,6 @@
  * Created on: 10/ott/2012
  * Author: alberto
  *
- * callback that updates the scene, plus the functions it uses
  */
 
 #ifndef SCENEUPDATER_HPP_
@@ -21,6 +20,11 @@
 #include "MillingSignaler.hpp"
 #include "DisplayInfo.hpp"
 
+/**
+ * @class SceneUpdater
+ *
+ * callback that updates the scene, plus the functions it uses
+ */
 class SceneUpdater : public osg::NodeCallback {
 
 private:

@@ -22,6 +22,8 @@
 #include "Corner.hpp"
 
 /**
+ * @class ShiftedBox
+ *
  * Class representing a volume of space shaped as a box (rectangular cuboid),
  * aligned with stock axis, and shifted from stock center.
  */
@@ -48,6 +50,11 @@ private:
 	double VOLUME;
 	
 public:
+	/**
+	 * constructor
+	 * @param center
+	 * @param extents
+	 */
 	ShiftedBox(const Eigen::Vector3d &center, const Eigen::Vector3d &extents) :
 		EXTENTS(extents)
 	{
@@ -59,12 +66,19 @@ public:
 		assert(VOLUME > 0);
 	}
 	
+	/**
+	 * constructor
+	 * @param minMax
+	 */
 	ShiftedBox(const MinMaxMatrix &minMax) :
 		MIN_MAX(minMax)
 	{
 		calculateExtentsAndVolume();
 	}
 	
+	/**
+	 * empty constructor
+	 */
 	ShiftedBox() { }
 	
 	virtual ~ShiftedBox() { }

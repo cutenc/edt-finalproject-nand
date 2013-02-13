@@ -1,4 +1,4 @@
-/*
+/**
  * Utilities.hpp
  *
  *  Created on: 17/ago/2012
@@ -19,6 +19,11 @@
 
 #include <osg/Geometry>
 
+/**
+ * @class FileUtils
+ *
+ * various tools for managing files
+ */
 class FileUtils {
 	
 public:
@@ -55,6 +60,11 @@ public:
 	
 };
 
+/**
+ * @class StringUtils
+ *
+ * Various tools for managing strings.
+ */
 class StringUtils {
 	
 public:

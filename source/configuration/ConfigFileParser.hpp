@@ -1,5 +1,5 @@
-/*
- * ConfigurationManager.hpp
+/**
+ * @file ConfigurationManager.hpp
  *
  *  Created on: 13/ago/2012
  *      Author: socket
@@ -21,7 +21,11 @@ class ConfigFileParser;
 typedef void (ConfigFileParser::*sectionParser)(std::ifstream &);
 typedef std::map< std::string, sectionParser > ParsersMap;
 
-
+/**
+ * @class ConfigFileParser
+ *
+ * parses the config file in order to get the settingsof the simulation.
+ */
 class ConfigFileParser {
 	
 	const std::string FILENAME;
@@ -32,12 +36,38 @@ class ConfigFileParser {
 	bool foundPoints, foundCutter, foundStock;
 	
 public:
+	/**
+	 * constructor
+	 * @param filename the path/name of the config file
+	 */
 	ConfigFileParser(const std::string filename);
+	/**
+	 * destructor
+	 */
 	virtual ~ConfigFileParser();
 	
+	/**
+	 *
+	 * @return the pointer to the StockDescription
+	 */
 	const StockDescription::ConstPtr getStockDescription() const;
+
+	/**
+	 *
+	 * @return the pointer to the CutterkDescription
+	 */
 	const CutterDescription::ConstPtr getCutterDescription() const;
+
+	/**
+	 *
+	 * @return first move
+	 */
 	CNCMoveIterator CNCMoveBegin() const;
+
+	/**
+	 *
+	 * @return last move
+	 */
 	CNCMoveIterator CNCMoveEnd() const;
 	
 private:
@@ -50,8 +80,22 @@ private:
 	 */
 	void abortParsing(const std::string &cause) const throw(std::runtime_error);
 	
+	/**
+	 * parse the [TOOL] section
+	 * @param
+	 */
 	void sectionParser_tool(std::ifstream &);
+
+	/**
+	 * parse the [PRODUCT] section
+	 * @param
+	 */
 	void sectionParser_product(std::ifstream &);
+
+	/**
+	 * parse the [POINTS] section
+	 * @param
+	 */
 	void sectionParser_points(std::ifstream &);
 	
 	ParsersMap fillParsers() {

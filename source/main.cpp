@@ -1,3 +1,9 @@
+/**
+ * @file main.cpp
+ *
+ * main file of the project
+ */
+
 #include <iostream>
 #include <cmath>
 
@@ -24,7 +30,13 @@
 using namespace std;
 using namespace Eigen;
 
-
+/**
+ * main
+ *
+ * @param argc : number of command-line parameters
+ * @param argv : the command-line parameters
+ * @return exit status of the program
+ */
 int main(int argc, char **argv) {
 
 	cout 	<< "****************************************" << endl

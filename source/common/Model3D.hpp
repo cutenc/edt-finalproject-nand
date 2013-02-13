@@ -1,5 +1,5 @@
-/*
- * Model3D.hpp
+/**
+ * @file Model3D.hpp
  *
  *  Created on: 13/ago/2012
  *      Author: socket
@@ -10,6 +10,10 @@
 
 #include "Mesh.hpp"
 
+/**
+ * @class Model3D
+ *
+ */
 class Model3D {
 
 public:

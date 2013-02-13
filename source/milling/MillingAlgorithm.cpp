@@ -63,12 +63,11 @@ Eigen::Vector3d MillingAlgorithm::getResolution() const {
 
 IntersectionResult MillingAlgorithm::doIntersection(const CNCMove &move) {
 	
-	/* given move rototraslations are in respect of world basis so we have
+	/** given move rototraslations are in respect of world basis so we have
 	 * to "merge" this two informations in order to find cutter rototraslation
-	 * in stock basis
-	 */
-	
-	/* when returned as eigen both these isometry are matrices that
+	 * in stock basis.
+	 *
+	 * When returned as eigen both these isometry are matrices that
 	 * converts point from stock/cutter coords to world ones: i.e. they
 	 * convert from stock/cutter basis to world basis; we have to create 
 	 * an isometry that converts from cutter coords to stock coords.

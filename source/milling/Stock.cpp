@@ -1,8 +1,10 @@
-/*
- * Stock.cpp
+/**
+ * @file Stock.cpp
  *
  *  Created on: 23/ago/2012
  *      Author: socket
+ *
+ *  Describes the stock and its status
  */
 
 #include "Stock.hpp"

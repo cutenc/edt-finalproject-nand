@@ -1,5 +1,5 @@
-/*
- * StockDescriptor.hpp
+/**
+ * @file StockDescriptor.hpp
  *
  *  Created on: 13/ago/2012
  *      Author: socket
@@ -12,6 +12,11 @@
 
 #include "Geometry.hpp"
 
+/**
+ * @class StockDescription
+ *
+ * geometry and color of a Stock
+ */
 class StockDescription {
 	
 public:
@@ -20,9 +25,17 @@ public:
 	typedef boost::shared_ptr<const StockDescription> ConstPtr;
 	
 public:
+	/**
+	 * costructor
+	 * @param desc the description
+	 */
 	StockDescription(const RectCuboidPtr &desc);
 	virtual ~StockDescription();
 	
+	/**
+	 *
+	 * @return the geometry (RectCuboid)
+	 */
 	const RectCuboidPtr getGeometry() const;
 	
 private:

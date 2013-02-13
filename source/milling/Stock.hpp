@@ -1,8 +1,10 @@
-/*
- * Stock.hpp
+/**
+ * @file Stock.cpp
  *
  *  Created on: 23/ago/2012
  *      Author: socket
+ *
+ *  Describes the stock and its status
  */
 
 #ifndef STOCK_HPP_
@@ -27,7 +29,11 @@
 #include "IntersectionResult.hpp"
 #include "StoredData.hpp"
 
-
+/**
+ * @class Stock
+ *
+ * Contains the infos of the stock, and its status
+ */
 class Stock : public Model3D {
 	
 public:
@@ -38,6 +44,10 @@ public:
 	typedef Mesher< StoredData > MesherType;
 	
 private:
+
+	/**
+	 * geometry and position of the cutter
+	 */
 	struct CutterInfos {
 		const Cutter::ConstPtr cutter;
 		const Eigen::Vector3d *extents;
@@ -60,6 +70,11 @@ private:
 		virtual ~CutterInfos() { }
 	};
 	
+	/**
+	 * @class DeletedDataQueuer
+	 *
+	 * internal class to manage deleted data
+	 */
 	class DeletedDataQueuer {
 	private:
 		typedef void (DeletedDataQueuer::* Queuer)(const VoxelInfo::Ptr &);
@@ -104,6 +119,11 @@ private:
 		}
 	};
 	
+	/**
+	 * @class IntersectionTester
+	 *
+	 * internal class to check whether there is intersection between the stock and the cutter or not.
+	 */
 	class IntersectionTester {
 		
 	private:
@@ -186,15 +206,23 @@ private:
 	DeletedDataQueuer deletedQueuer;
 	
 public:
+	/**
+	 * constructor
+	 *
+	 * @param desc
+	 * @param maxDepth
+	 * @param mesher
+	 */
 	Stock(const StockDescription &desc, unsigned int maxDepth, MesherType::Ptr mesher);
 	virtual ~Stock();
 	
 	/**
+	 * computes the intersection between Stock and Cutter
 	 * 
 	 * @param cutter
 	 * @param rototrasl rototraslation of the cutter in terms of this
 	 * stock basis
-	 * @return
+	 * @return IntersectionResult object
 	 */
 	IntersectionResult intersect(const Cutter::ConstPtr &cutter, const Eigen::Isometry3d &rototrasl);
 	
@@ -204,6 +232,10 @@ public:
 	
 	const Eigen::Translation3d &getStockModelTranslation() const;
 	
+	/**
+	 *
+	 * @return the Mesh object to draw
+	 */
 	virtual Mesh::Ptr getMeshing();
 	
 private:

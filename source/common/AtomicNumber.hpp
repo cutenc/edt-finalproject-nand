@@ -11,6 +11,9 @@
 #include <boost/thread.hpp>
 
 template < typename T >
+/**
+ * @class AtomicNumber
+ */
 class AtomicNumber {
 	
 private:

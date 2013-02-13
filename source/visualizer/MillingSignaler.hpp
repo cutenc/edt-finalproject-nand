@@ -17,6 +17,11 @@
 #include "configuration/CNCMoveIterator.hpp"
 #include "SignaledInfo.hpp"
 
+/**
+ * @class MillingSignaler
+ *
+ * manages data communications between milling, meshing and viewer
+ */
 class MillingSignaler {
 	
 public:
