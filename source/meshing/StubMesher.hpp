@@ -1,4 +1,4 @@
-/*
+/**
  * StubMesher.hpp
  *
  *  Created on: 27/ott/2012
@@ -11,6 +11,11 @@
 #include "Mesher.hpp"
 
 template < typename T >
+/**
+ * @class StubMesher
+ *
+ * Stub for testing purposes
+ */
 class StubMesher: public Mesher< T > {
 public:
 	StubMesher() { }

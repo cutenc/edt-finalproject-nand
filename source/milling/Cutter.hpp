@@ -1,4 +1,4 @@
-/*
+/**
  * Cutter.hpp
  *
  *  Created on: 03/set/2012
@@ -17,6 +17,11 @@
 
 class Cutter;
 
+/**
+ * @class Cutter
+ *
+ * generic cutter, to be extended in spheric and cylindric cutter
+ */
 class Cutter : public Model3D {
 	
 public:
@@ -29,13 +34,29 @@ private:
 	Color color;
 	
 public:
+	/**
+	 * constructor
+	 * @param color
+	 */
 	Cutter(Color color) : color(color) { }
+
+	/**
+	 * destructor
+	 */
 	virtual ~Cutter() { }
 	
+	/**
+	 *
+	 * @return the color
+	 */
 	const Color &getColor() const {
 		return this->color;
 	}
 	
+	/**
+	 * setter for the color
+	 * @param color
+	 */
 	void setColor(const Color &color) {
 		this->color = color;
 	}
@@ -75,14 +96,30 @@ public:
 		 */
 		Eigen::Isometry3d rototraslation;
 	};
+
+	/**
+	 *
+	 * @return Bounding Box infos
+	 */
 	virtual BoundingBoxInfo getBoundingBox() const =0;
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const =0;
 	
+	/**
+	 * overrides <<
+	 * @param os
+	 * @param c
+	 * @return
+	 */
 	friend std::ostream & operator<<(std::ostream &os, const Cutter &c) {
 		return c.toOutStream(os);
 	}
-	
+
+	/**
+	 * build the cutter
+	 * @param desc
+	 * @return
+	 */
 	static Cutter::Ptr buildCutter(const CutterDescription &desc);
 	
 };

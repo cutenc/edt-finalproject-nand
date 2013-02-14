@@ -1,4 +1,4 @@
-/*
+/**
  * VoxelMesher.hpp
  *
  *  Created on: 26/ott/2012
@@ -12,12 +12,22 @@
 
 #include "leaf_node_callbacks.hpp"
 
+/**
+ * @class VoxelMesher
+ *
+ * creates a new box
+ */
 class VoxelMesher : public CommonMesher {
 	
 private:
 	static const unsigned int DEFAULT_LEAF_SIZE = 400;
 	
 public:
+	/**
+	 * constructor
+	 *
+	 * @param stock
+	 */
 	VoxelMesher(const StockDescription& stock) :
 		CommonMesher(stock,
 				new BoxMesherCallback(stock),

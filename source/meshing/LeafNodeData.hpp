@@ -1,4 +1,4 @@
-/*
+/**
  * LeafNodeData.hpp
  *
  *  Created on: 24/ott/2012
@@ -14,6 +14,11 @@
 #include "OctreeNodeData.hpp"
 #include "milling/graphics_info.hpp"
 
+/**
+ * @class LeafNodeData
+ *
+ * contains the data of a leaf of the scene tree.
+ */
 class LeafNodeData: public OctreeNodeData {
 	
 	
@@ -32,15 +37,53 @@ private:
 	bool dirty;
 	
 public:
+	/**
+	 * constructor
+	 *
+	 * @param bbox the data
+	 * @param depth the level of the tree the data is
+	 */
 	LeafNodeData(const osg::BoundingBoxd &bbox, unsigned char depth);
 	
+	/**
+	 *
+	 * @return the type of the node
+	 */
 	virtual NodeDataType getType() const;
 	
+	/**
+	 * insert the given element
+	 *
+	 * @param info
+	 * @return
+	 */
 	GraphicData::Elm insertElm(const GraphicData &info);
+
+	/**
+	 * delete specified element
+	 *
+	 * @param ref
+	 */
 	void deleteElm(const GraphicData::Elm &ref);
+
+	/**
+	 * update specified element
+	 *
+	 * @param ref
+	 * @param info
+	 */
 	void updateElm(const GraphicData::Elm &ref, const GraphicData &info);
+
+	/**
+	 *
+	 * @return the size of the data
+	 */
 	unsigned int getSize() const;
 	
+	/**
+	 *
+	 * @return list of elements containing the leaf data
+	 */
 	const GraphicData::List &getElements() const;
 	GraphicData::List &getElements();
 	

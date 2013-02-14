@@ -1,4 +1,4 @@
-/*
+/**
  * IntersectionResult.hpp
  *
  *  Created on: 11/ott/2012
@@ -12,6 +12,11 @@
 
 #include <boost/chrono.hpp>
 
+/**
+ * @class IntersectionResult
+ *
+ * contains the effects of a milling step
+ */
 class IntersectionResult {
 	
 public:
@@ -22,6 +27,7 @@ public:
 	double waste;
 	
 	unsigned long analyzed_leaves;
+
 	unsigned long purged_leaves;
 	
 	unsigned long pushed_leaves;
@@ -29,8 +35,15 @@ public:
 	unsigned long updated_data_leaves;
 	
 	boost::chrono::microseconds elapsedTime;
-	
+
+	/**
+	 * constructor
+	 */
 	IntersectionResult();
+	
+	/**
+	 * constructor
+	 */
 	virtual ~IntersectionResult();
 	
 	boost::chrono::nanoseconds meanTimePerLeaf() const;

@@ -1,4 +1,4 @@
-/*
+/**
  * cutters.hpp
  *
  *  Created on: 23/ago/2012
@@ -28,6 +28,11 @@
 #include "common/Utilities.hpp"
 #include "visualizer/VisualizationUtils.hpp"
 
+/**
+ * @class SphereCutter
+ *
+ * defines a spherical cutter
+ */
 class SphereCutter : public Cutter {
 
 private:
@@ -36,6 +41,12 @@ private:
 	const double SQUARE_RADIUS;
 	
 public:
+	/**
+	 * constructor
+	 *
+	 * @param geom
+	 * @param color
+	 */
 	SphereCutter(const Sphere &geom, const Color &color):
 		Cutter(color), RADIUS(geom.RADIUS), DIAMETER(RADIUS * 2.0),
 		SQUARE_RADIUS(RADIUS * RADIUS)
@@ -44,12 +55,20 @@ public:
 			throw std::invalid_argument("negative diameter (or too small)");
 	}
 	
-	
+	/**
+	 *
+	 * @return the bounding box of the cutter
+	 */
 	virtual BoundingBoxInfo getBoundingBox() const {
 		static const Eigen::Vector3d EXTENTS(DIAMETER, DIAMETER, DIAMETER);
 		return BoundingBoxInfo(EXTENTS, Eigen::Isometry3d::Identity());
 	}
 	
+	/**
+	 *
+	 * @param point
+	 * @return minimum distance of the cutter from the given point
+	 */
 	virtual double getDistance(const Eigen::Vector3d &point) const {
 		/* in our specification <0 means "outside" and >0 "inside"
 		 */
@@ -68,6 +87,10 @@ public:
 		return os;
 	}
 	
+	/**
+	 *
+	 * @return the mesh of the cutter to be drawed
+	 */
 	virtual Mesh::Ptr getMeshing() {
 		static const Mesh::Ptr mesh = buildMesh();
 		
@@ -88,6 +111,11 @@ private:
 	
 };
 
+/**
+ * @class CylinderCutter
+ *
+ * defines a cylinder-shaped cutter
+ */
 class CylinderCutter : public Cutter {
 	
 	const double RADIUS;
@@ -98,6 +126,12 @@ class CylinderCutter : public Cutter {
 	const double DIAMETER;
 	
 public:
+	/**
+	 * constructor
+	 *
+	 * @param geom
+	 * @param color
+	 */
 	CylinderCutter(const Cylinder &geom, const Color &color) :
 		Cutter(color),
 		RADIUS(geom.RADIUS), LENGTH(geom.HEIGHT),
@@ -111,6 +145,10 @@ public:
 			throw std::invalid_argument("negative length (or too small)");
 	}
 	
+	/**
+	 *
+	 * @return the bounding box of the cutter
+	 */
 	virtual BoundingBoxInfo getBoundingBox() const {
 		
 		Eigen::Vector3d extents(DIAMETER, DIAMETER, LENGTH);
@@ -119,6 +157,11 @@ public:
 		return BoundingBoxInfo(extents, Eigen::Isometry3d(originTraslation));
 	}
 	
+	/**
+	 *
+	 * @param point
+	 * @return minimum distance of the cutter from the given point
+	 */
 	virtual double getDistance(const Eigen::Vector3d &point) const {
 		if (point[2] < 0)
 			return -1;
@@ -167,7 +210,10 @@ public:
 		return os;
 	}
 	
-	
+	/**
+	 *
+	 * @return the mesh of the cutter to be drawed
+	 */
 	virtual Mesh::Ptr getMeshing() {
 		static const Mesh::Ptr mesh = buildMesh();
 		

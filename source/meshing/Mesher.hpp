@@ -1,4 +1,4 @@
-/*
+/**
  * Mesher.hpp
  *
  *  Created on: 22/set/2012
@@ -13,6 +13,9 @@
 #include "common/Mesh.hpp"
 
 template < typename T >
+/**
+ * @class Mesher
+ */
 class Mesher {
 
 public:

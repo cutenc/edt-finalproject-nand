@@ -20,6 +20,11 @@
 #include "milling/VoxelInfo.hpp"
 #include "meshing/MeshingUtils.hpp"
 
+/**
+ * @class MeshingVoxel
+ *
+ * describes the voxel for Marching Cubes algorithm
+ */
 class MeshingVoxel {
 
 private:

@@ -1,4 +1,4 @@
-/*
+/**
  * Face.hpp
  *
  *  Created on: 19/nov/2012
@@ -10,6 +10,11 @@
 
 #include "MeshingUtils.hpp"
 
+/**
+ * @class Face
+ *
+ * builds the face of a voxel
+ */
 class Face {
 	
 public:
@@ -40,7 +45,11 @@ public:
 	}
 };
 
-
+/**
+ * @class FaceIterator
+ *
+ * builds all the needed faces
+ */
 class FaceIterator : public std::iterator<std::input_iterator_tag, Face::Type> {
 
 private:
@@ -48,11 +57,19 @@ private:
 	Face::Type curr;
 	
 public:
+	/**
+	 * constructor
+	 * @param face
+	 */
 	FaceIterator(Face::Type face) : curr(face) { }
 	FaceIterator() : curr(END_FLAG) { }
 	
 	virtual ~FaceIterator() { }
 	
+	/**
+	 * overrides the ++ operator to go iterate through the faces
+	 * @return
+	 */
 	FaceIterator& operator++() {
 		assert(!isEnded());
 		
@@ -66,21 +83,44 @@ public:
 		return *this;
 	}
 	
+	/**
+	 * overrides the == operator
+	 * @param oi
+	 * @return
+	 */
 	bool operator==(const FaceIterator &oi) {
 		return this->curr == oi.curr;
 	}
 	
+	/**
+	 * overrides the != operator
+	 * @param oi
+	 * @return
+	 */
 	bool operator!=(const FaceIterator &oi) {
 		return this->curr != oi.curr;
 	}
 	
+	/**
+	 * overrides the * operator
+	 * @return
+	 */
 	Face::Type operator*() {
 		assert(!isEnded());
 		
 		return this->curr;
 	}
 	
+	/**
+	 *
+	 * @return first face
+	 */
 	static FaceIterator begin() { return FaceIterator(Face::LEFT); }
+
+	/**
+	 *
+	 * @return last face
+	 */
 	static FaceIterator end() { return FaceIterator(); }
 	
 private:

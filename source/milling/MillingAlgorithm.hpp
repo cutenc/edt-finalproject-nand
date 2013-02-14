@@ -1,4 +1,4 @@
-/*
+/**
  * MillingAlgorithm.hpp
  *
  *  Created on: 23/ago/2012

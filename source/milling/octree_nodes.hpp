@@ -1,4 +1,4 @@
-/*
+/**
  * octree_nodes.hpp
  *
  *  Created on: 22/ago/2012
@@ -23,6 +23,11 @@
 #include "Adjacencies.hpp"
 #include "VoxelInfo.hpp"
 
+/**
+ * @class OctreeNode
+ *
+ * defines a node of the octree
+ */
 class OctreeNode {
 	
 public:
@@ -62,11 +67,23 @@ private:
 	unsigned int firstChangeVersion;
 	
 public:
+	/**
+	 * constructor
+	 * @param box
+	 * @param vinfo
+	 */
 	OctreeNode(const ShiftedBox::ConstPtr &box, const VersionInfo &vinfo) :
 		father(), childIdx(255), sbox(box), NODE_ID(NodeIDs::getNodeID()),
 		DEPTH(0), firstChangeVersion(vinfo.currVersion)
 	{ }
 	
+	/**
+	 * constructor
+	 * @param father
+	 * @param childIdx
+	 * @param sbox
+	 * @param vinfo
+	 */
 	OctreeNode(const OctreeNode::Ptr &father, unsigned char childIdx,
 			const ShiftedBox::ConstPtr &sbox, const VersionInfo &vinfo) :
 			father(father), childIdx(childIdx), sbox(sbox),
@@ -80,13 +97,28 @@ public:
 			throw std::invalid_argument("Given childIdx must be in [0, 7]");
 	}
 	
+	/**
+	 * destructor
+	 */
 	virtual ~OctreeNode() { }
 	
+	/**
+	 *
+	 * @return the node type
+	 */
 	virtual OctreeNodeType getType() const =0;
 	
+	/**
+	 *
+	 * @return True if the node is the root of the octree
+	 */
 	inline
 	bool isRoot() const { return (this->father == NULL); }
 	
+	/**
+	 *
+	 * @return pointer to the ancestor of the node
+	 */
 	inline
 	OctreeNode::Ptr getFather() const {
 		assert(!isRoot());
@@ -95,6 +127,10 @@ public:
 		return this->father;
 	}
 	
+	/**
+	 *
+	 * @return childIdx
+	 */
 	inline
 	unsigned char getChildIdx() const {
 		assert(!isRoot());
@@ -103,21 +139,37 @@ public:
 		return this->childIdx;
 	}
 	
+	/**
+	 *
+	 * @return the ShiftedBox of the node
+	 */
 	inline
 	const ShiftedBox::ConstPtr & getBox() const {
 		return this->sbox;
 	}
 	
+	/**
+	 *
+	 * @return depth of the node
+	 */
 	inline
 	unsigned int getDepth() const {
 		return this->DEPTH;
 	}
 	
+	/**
+	 *
+	 * @return ID of the node
+	 */
 	inline
 	unsigned long getID() const {
 		return this->NODE_ID;
 	}
 	
+	/**
+	 * set first change version
+	 * @param vinfo
+	 */
 	void setFirstChangeVersion(const VersionInfo &vinfo) {
 		if (isChanged(vinfo)) {
 			// we already set our 'first change' version
@@ -145,10 +197,21 @@ public:
 	
 	virtual std::ostream & toOutStream(std::ostream &os) const =0;
 	
+	/**
+	 * overrides <<
+	 * @param os
+	 * @param node
+	 * @return
+	 */
 	friend std::ostream & operator<<(std::ostream & os, const OctreeNode& node) {
 		return node.toOutStream(os);
 	}
 	
+	/**
+	 *
+	 * @param dir
+	 * @return pointer to the adjacent node in the given direction
+	 */
 	OctreeNode::Ptr getAdjacent(Adjacencies::Direction dir) {
 		assert(!isRoot());
 		
@@ -156,14 +219,30 @@ public:
 		return getFather()->getAdjacentUp(getChildIdx(), dir, path);
 	}
 	
+	/**
+	 *
+	 * @param childIdx
+	 * @param dir
+	 * @param path
+	 * @return pointer to the adjacent node in upper level
+	 */
 	virtual OctreeNode::Ptr getAdjacentUp(unsigned char childIdx,
 			const Adjacencies::Direction &dir,
 			std::vector< unsigned char > &path) =0;
 	
+	/**
+	 *
+	 * @param path
+	 * @return pointer to the adjacent node in the lower level
+	 */
 	virtual OctreeNode::Ptr getAdjacentDown(std::vector< unsigned char > &path) =0;
 };
 
-
+/**
+ * @class BranchNode
+ *
+ * internal node of the octree
+ */
 class BranchNode : public OctreeNode {
 	
 public:
@@ -183,13 +262,28 @@ private:
 	unsigned char childrenMask;
 	
 public:
+	/**
+	 * constructor
+	 * @param box
+	 * @param vinfo
+	 */
 	BranchNode(const ShiftedBox::ConstPtr &box, const VersionInfo &vinfo) :
 		OctreeNode(box, vinfo)
 	{ initChildren(); }
 	
+	/**
+	 * constructor
+	 * @param father
+	 * @param childIdx
+	 * @param sbox
+	 * @param vinfo
+	 */
 	BranchNode(OctreeNode::Ptr father, unsigned char childIdx, const ShiftedBox::ConstPtr &sbox, const VersionInfo &vinfo) :
 		OctreeNode(father, childIdx, sbox, vinfo) { initChildren(); }
 	
+	/**
+	 * destructor
+	 */
 	virtual ~BranchNode() {
 		for (int i = 0; i < N_CHILDREN; i++) {
 			if (hasChild(i))
@@ -197,17 +291,31 @@ public:
 		}
 	}
 	
+	/**
+	 *
+	 * @return the type of the node (internal)
+	 */
 	inline
 	virtual OctreeNodeType getType() const {
 		return BRANCH_NODE;
 	}
 	
+	/**
+	 *
+	 * @param i
+	 * @return True if the node has children
+	 */
 	inline
 	bool hasChild(int i) const {
 		assert(i >= 0 && i < N_CHILDREN);
 		return childrenMask & (0x01 << i);
 	}
 	
+	/**
+	 *
+	 * @param i
+	 * @return selected children
+	 */
 	inline
 	OctreeNode::Ptr getChild(int i) const {
 		assert(hasChild(i));
@@ -237,6 +345,11 @@ public:
 		children[i] = NULL;
 	}
 	
+	/**
+	 * set a child to the assigned branch
+	 * @param i
+	 * @param child
+	 */
 	inline
 	void setChild(int i, const OctreeNode::Ptr &child) {
 		assert(!hasChild(i));
@@ -263,6 +376,13 @@ public:
 		return os;
 	}
 	
+	/**
+	 *
+	 * @param childIdx
+	 * @param dir
+	 * @param path
+	 * @return pointer to the adjacent node in upper level
+	 */
 	virtual OctreeNode::Ptr getAdjacentUp(unsigned char childIdx, const Adjacencies::Direction &dir,
 			std::vector< unsigned char > &path) {
 		
@@ -298,6 +418,11 @@ public:
 		}
 	}
 	
+	/**
+	 *
+	 * @param path
+	 * @return pointer to the adjacent node in lower level
+	 */
 	virtual OctreeNode::Ptr getAdjacentDown(std::vector< unsigned char > &path) {
 		if (path.empty()) {
 			return this;
@@ -318,7 +443,11 @@ private:
 	}
 };
 
-
+/**
+ * @class LeafNode
+ *
+ * leaf node
+ */
 class LeafNode : public OctreeNode {
 	
 public:
@@ -330,11 +459,25 @@ private:
 	VoxelInfo::Ptr voxelInfo;
 	
 public:
+	/**
+	 * constructor
+	 *
+	 * @param box
+	 * @param vinfo
+	 */
 	LeafNode(const ShiftedBox::ConstPtr &box, const VersionInfo &vinfo) :
 			OctreeNode(box, vinfo)
 	{
 	}
 	
+	/**
+	 * constructor
+	 *
+	 * @param father
+	 * @param childIdx
+	 * @param sbox
+	 * @param vinfo
+	 */
 	LeafNode(const OctreeNode::Ptr &father, unsigned char childIdx,
 			const ShiftedBox::ConstPtr &sbox, const VersionInfo &vinfo) :
 				OctreeNode(father, childIdx, sbox, vinfo),
@@ -342,13 +485,24 @@ public:
 	{
 	}
 	
+	/**
+	 * destructor
+	 */
 	virtual ~LeafNode() { }
 	
+	/**
+	 *
+	 * @return type of the node (internal)
+	 */
 	inline
 	virtual OctreeNodeType getType() const {
 		return LEAF_NODE;
 	}
 	
+	/**
+	 *
+	 * @return the VoxelInfos
+	 */
 	VoxelInfo::Ptr getData() {
 		return this->voxelInfo;
 	}
@@ -357,11 +511,23 @@ public:
 		return os << *voxelInfo;
 	}
 	
+	/**
+	 *
+	 * @param childIdx
+	 * @param dir
+	 * @param path
+	 * @return pointer to the adjacent node in upper level
+	 */
 	virtual OctreeNode::Ptr getAdjacentUp(unsigned char, const Adjacencies::Direction &,
 			std::vector< unsigned char > &) {
 		throw std::runtime_error("Adjacent up request to a leaf");
 	}
 	
+	/**
+	 *
+	 * @param path
+	 * @return pointer to the adjacent node in lower level
+	 */
 	virtual OctreeNode::Ptr getAdjacentDown(std::vector< unsigned char > &) {
 		return this;
 	}

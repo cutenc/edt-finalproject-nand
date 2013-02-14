@@ -1,4 +1,4 @@
-/*
+/**
  * Adjacencies.hpp
  *
  *  Created on: 17/ott/2012
@@ -13,6 +13,9 @@
 
 #include "Corner.hpp"
 
+/**
+ * @class Adjacencies
+ */
 class Adjacencies {
 	
 public:

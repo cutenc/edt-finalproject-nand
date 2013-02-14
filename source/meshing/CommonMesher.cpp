@@ -1,5 +1,5 @@
-/*
- * VoxelMesher.cpp
+/**
+ * CommonMesher.cpp
  *
  *  Created on: 26/ott/2012
  *      Author: socket
@@ -32,7 +32,7 @@ Mesh::Ptr CommonMesher::buildMesh(const StoredData &data) {
 	
 	/* using an octree it's better to start freeing space and then appending
 	 * new leaves. However if a leaf appears in both sequences there will be
-	 * an incosistency: check this with an assert on the reference count
+	 * an inconsistency: check this with an assert on the reference count
 	 * of the graphic object (it must be always 2: one ref for the scene
 	 * and another for the voxelInfo)
 	 */

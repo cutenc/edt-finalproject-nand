@@ -1,4 +1,4 @@
-/*
+/**
  * MillingAlgorithmConf.hpp
  *
  *  Created on: 23/set/2012
@@ -12,8 +12,24 @@
 #include "Cutter.hpp"
 #include "configuration/CNCMoveIterator.hpp"
 
+/**
+ * @class MillingAlgorithmConf
+ *
+ * initialization for the milling algo
+ */
 class MillingAlgorithmConf {
 public:
+
+	/**
+	 * constructor
+	 *
+	 * @param stock
+	 * @param cutter
+	 * @param begin
+	 * @param end
+	 * @param waterRemotionRate
+	 * @param waterThreshold
+	 */
 	MillingAlgorithmConf(Stock::Ptr stock, Cutter::ConstPtr cutter,
 			const CNCMoveIterator &begin, const CNCMoveIterator &end,
 			float waterRemotionRate, float waterThreshold) :

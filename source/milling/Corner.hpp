@@ -1,4 +1,4 @@
-/*
+/**
  * Corner.hpp
  *
  *  Created on: 28/ago/2012
@@ -13,6 +13,11 @@
 #include <stdexcept>
 #include <cassert>
 
+/**
+ * @class Corner
+ *
+ * defines a corner of the voxel, among 8 available ones
+ */
 class Corner {
 	
 public:
@@ -64,6 +69,11 @@ public:
 	
 };
 
+/**
+ * @class CornerIterator
+ *
+ * iterates through the 8 corners of a cuboid
+ */
 class CornerIterator : public std::iterator<std::input_iterator_tag, Corner> {
 
 private:
@@ -72,10 +82,26 @@ private:
 	Corner::CornerType curr;
 	
 public:
+	/**
+	 * constructor
+	 */
 	CornerIterator() : curr(END_FLAG) { }
+
+	/**
+	 * constructor
+	 * @param c
+	 */
 	CornerIterator(Corner::CornerType c) : curr(c) { }
+
+	/**
+	 * constructor
+	 * @param oi
+	 */
 	CornerIterator(const CornerIterator &oi) : curr(oi.curr) { }
 	
+	/**
+	 * destructor
+	 */
 	virtual ~CornerIterator() { }
 	
 	CornerIterator& operator++() {
@@ -91,21 +117,44 @@ public:
 		return *this;
 	}
 	
+	/**
+	 * overrides ==
+	 * @param oi
+	 * @return
+	 */
 	bool operator==(const CornerIterator &oi) {
 		return this->curr == oi.curr;
 	}
 	
+	/**
+	 * overrides !=
+	 * @param oi
+	 * @return
+	 */
 	bool operator!=(const CornerIterator &oi) {
 		return this->curr != oi.curr;
 	}
 	
+	/**
+	 * overrides *
+	 * @return
+	 */
 	Corner::CornerType operator*() {
 		assert(!isEnded());
 		
 		return this->curr;
 	}
 	
+	/**
+	 *
+	 * @return first corner (bottom-front-left)
+	 */
 	static CornerIterator begin() { return CornerIterator(Corner::BottomFrontLeft); }
+
+	/**
+	 *
+	 * @return last corner (upper-rear-left)
+	 */
 	static CornerIterator end() { return CornerIterator(); }
 	
 private:

@@ -1,4 +1,4 @@
-/*
+/**
  * MarchingCubeMesher.hpp
  *
  *  Created on: 26/ott/2012
@@ -12,6 +12,10 @@
 
 #include "leaf_node_callbacks.hpp"
 
+/**
+ * @class MarchingCubeMesher
+ *
+ */
 class MarchingCubeMesher : public CommonMesher {
 	
 private:

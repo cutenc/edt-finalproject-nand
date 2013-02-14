@@ -1,4 +1,4 @@
-/*
+/**
  * graphics_info.hpp
  *
  *  Created on: 25/ott/2012
@@ -18,6 +18,9 @@
 
 class VoxelInfo;
 
+/**
+ * data (voxel+infos) to be displayed
+ */
 struct GraphicData {
 	typedef std::list< GraphicData > List;
 	typedef List::iterator Elm;
@@ -32,6 +35,9 @@ struct GraphicData {
 	VoxelInfoPtr vinfo;
 };
 
+/**
+ * pointer for GraphicData
+ */
 struct GraphicPointer {
 	GraphicPointer() { }
 	GraphicPointer(const GraphicData::Elm &item, const osg::ref_ptr< osg::Node > &node) :

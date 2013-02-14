@@ -19,6 +19,8 @@
 #include "MeshingUtils.hpp"
 
 /**
+ * @class LeafNodeCallback
+ *
  * Class used to convert LeafNodeData stored inside a node into a graphic
  * object. This conversion will be performed only each time data has been
  * flagged as dirty by MeshOctree methods.
@@ -34,6 +36,12 @@ public:
 public:
 	LeafNodeCallback() { }
 	
+	/**
+	 * the callback
+	 *
+	 * @param node the scene node to be updated
+	 * @param nv the osg object that traverses the scene
+	 */
 	virtual void operator() ( osg::Node* node, osg::NodeVisitor* nv ) {
 		
 		osg::Group *group = node->asGroup();

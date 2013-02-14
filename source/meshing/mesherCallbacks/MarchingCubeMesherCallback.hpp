@@ -25,6 +25,12 @@
 #include "configuration/StockDescription.hpp"
 #include "MeshingVoxel.hpp"
 
+/**
+ * @class MarchingCubeMesherCallback
+ *
+ * Marching Cubes algorithm is implemented here.
+ * Tables are borrowed from http://paulbourke.net/geometry/polygonise/ (many thanks)
+ */
 class MarchingCubeMesherCallback : public LeafNodeCallback {
 	
 private:

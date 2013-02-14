@@ -1,4 +1,4 @@
-/*
+/**
  * ShiftedBox.hpp
  *
  *  Created on: 07/set/2012

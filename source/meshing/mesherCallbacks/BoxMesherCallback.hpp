@@ -23,6 +23,11 @@
 #include "common/Utilities.hpp"
 #include "meshing/Face.hpp"
 
+/**
+ * @class BoxMesherCallback
+ *
+ *Callback for updating the scene in the box video mode.
+ */
 class BoxMesherCallback : public LeafNodeCallback {
 	
 	const osg::ref_ptr< osg::Vec3Array > normalArray;
@@ -31,14 +36,18 @@ class BoxMesherCallback : public LeafNodeCallback {
 	const Eigen::Vector3d STOCK_HALF_EXTENTS;
 	
 public:
+	/**
+	 * constructor
+	 *
+	 * build normal and color array: they will be shared among all builded objects
+	 *
+	 * @param desc StockDescription
+	 */
 	BoxMesherCallback(const StockDescription& desc) :
 		normalArray(new osg::Vec3Array(Face::N_FACES)), colorArray(new osg::Vec4Array(Face::N_FACES)),
 		STOCK_HALF_EXTENTS(desc.getGeometry()->asEigen() * 0.5)
 	{
 		
-		/* build normal and color array: they will be shared among all builded
-		 * objects
-		 */
 		(*normalArray)[Face::LEFT] = osg::Vec3(-1, 0, 0);
 		(*normalArray)[Face::FRONT] = osg::Vec3(0, -1, 0);
 		(*normalArray)[Face::BOTTOM] = osg::Vec3(0, 0, -1);
@@ -54,7 +63,13 @@ public:
 		(*colorArray)[Face::TOP] = osg::Vec4(.5, 0, .5, 1);
 		
 	}
-	
+
+	/**
+	 * creates the box to be inserted into the scene tree
+	 *
+	 * @param data
+	 * @return
+	 */
 	virtual osg::ref_ptr< osg::Node > buildNode(const LeafNodeData &data) {
 		assert(data.isDirty() && !data.isEmpty());
 		

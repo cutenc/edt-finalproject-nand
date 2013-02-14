@@ -1,4 +1,4 @@
-/*
+/**
  * MeshOctree.hpp
  *
  *  Created on: 24/ott/2012
@@ -17,6 +17,11 @@
 #include "LeafNodeData.hpp"
 #include "LeafNodeCallback.hpp"
 
+/**
+ * @class MeshOctree
+ *
+ * the octree containing the mesh to be visualized
+ */
 class MeshOctree {
 	
 private:
@@ -33,20 +38,44 @@ private:
 	osg::ref_ptr< osg::Group > ROOT;
 	
 public:
+	/**
+	 * constructor
+	 *
+	 * @param bbox
+	 * @param nodeCallback
+	 * @param dataPerLeaf
+	 * @param maxDepth
+	 */
 	MeshOctree(const osg::BoundingBoxd &bbox, LeafNodeCallback *nodeCallback, 
 			unsigned int dataPerLeaf, unsigned int maxDepth);
 	
 	virtual ~MeshOctree();
 	
 	/**
+	 * insert a node
 	 * 
 	 * @param gdata
 	 * @return \c true if added, \c false otherwise
 	 */
 	bool addData(const GraphicData &gdata);
+
+	/**
+	 * updates a node
+	 * @param ref
+	 * @param gdata
+	 */
 	void updateData(const GraphicPointer &ref, const GraphicData &gdata);
+
+	/**
+	 * delete a node
+	 * @param ref
+	 */
 	void removeData(const GraphicPointer &ref);
 	
+	/**
+	 *
+	 * @return the root of the scene (oc)tree
+	 */
 	osg::Group * getRoot();
 	
 private:

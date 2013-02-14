@@ -1,4 +1,4 @@
-/*
+/**
  * MeshingInfo.hpp
  *
  *  Created on: 23/ago/2012
@@ -17,7 +17,11 @@
 #include "Corner.hpp"
 #include "graphics_info.hpp"
 
-
+/**
+ * @class VoxelInfo
+ *
+ * infos associated to each voxel
+ */
 class VoxelInfo {
 	
 public:
@@ -31,20 +35,41 @@ private:
 	GraphicPointer graphics;
 	
 public:
+	/**
+	 * constructor
+	 * @param val
+	 */
 	VoxelInfo(double val);
 	
+	/**
+	 * destructor
+	 */
 	virtual ~VoxelInfo();
 	
+	/**
+	 *
+	 * @return True if voxel is inside the cutter
+	 */
 	inline
 	bool isIntersecting() const {
 		return insideCorners > 0;
 	}
 	
+	/**
+	 *
+	 * @return True if voxel is entirely contained by the cutter
+	 * (therefore, to be deleted)
+	 */
 	inline
 	bool isContained() const {
 		return insideCorners == 0xff;
 	}
 	
+	/**
+	 *
+	 * @param c corner to check
+	 * @return True if selected corner is cut
+	 */
 	inline
 	bool isCornerCut(Corner::CornerType c) const {
 		int i = static_cast<int>(c);
@@ -85,20 +110,47 @@ public:
 		return oldInside ^ insideCorners;
 	}
 	
+	/**
+	 * overrides << operator
+	 * @param os
+	 * @param vinfo
+	 * @return
+	 */
 	friend std::ostream & operator<<(std::ostream &os, const VoxelInfo &vinfo);
 	
+	/**
+	 *
+	 * @return the graphic element associated to the voxel
+	 */
 	const GraphicPointer &getGraphics() const;
 	
+	/**
+	 * associate a graphic element to the voxel
+	 * @param graphics
+	 */
 	void setGraphics(const GraphicPointer &graphics);
 	
+	/**
+	 *
+	 * @return True if voxel has an associated graphic element
+	 */
 	bool hasGraphics() const;
 	
+	/**
+	 *
+	 * @return - infinity
+	 */
 	inline
 	static double DEFAULT_INSIDENESS() {
 		static const double DEF_INSIDENESS = -CommonUtils::INFINITE();
 		return DEF_INSIDENESS;
 	}
 	
+	/**
+	 *
+	 * @param d
+	 * @return True if value d is negative
+	 */
 	inline
 	static bool isInside(double d) {
 		// -0,0 because -0.0 < 0.0
