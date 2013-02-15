@@ -81,33 +81,59 @@ public:
 	 */
 	ShiftedBox() { }
 	
+	/**
+	 * destructor
+	 */
 	virtual ~ShiftedBox() { }
 	
+	/**
+	 *
+	 * @return volume of the box
+	 */
 	inline
 	double getVolume() const {
 		return this->VOLUME;
 	}
 	
+	/**
+	 *
+	 * @return maximum elements of the box
+	 */
 	inline
 	MinMaxMatrix::ConstColXpr getMax() const {
 		return MIN_MAX.col(1);
 	}
 	
+	/**
+	 *
+	 * @return minimum elements of the box
+	 */
 	inline
 	MinMaxMatrix::ConstColXpr getMin() const {
 		return MIN_MAX.col(0);
 	}
 	
+	/**
+	 *
+	 * @return box matrix
+	 */
 	inline
 	const MinMaxMatrix &getMatrix() const {
 		return MIN_MAX;
 	}
 	
+	/**
+	 *
+	 * @return box matrix
+	 */
 	inline
 	MinMaxMatrix &getMatrix() {
 		return MIN_MAX;
 	}
 	
+	/**
+	 * compute extents and volume of the box
+	 */
 	inline
 	void calculateExtentsAndVolume() {
 		EXTENTS.noalias() = MIN_MAX.col(MAX_IDX) - MIN_MAX.col(MIN_IDX);
@@ -117,26 +143,49 @@ public:
 		assert(VOLUME > 0);
 	}
 	
+	/**
+	 *
+	 * @return extents of the box
+	 */
 	inline
 	const Eigen::Vector3d &getExtents() const {
 		return this->EXTENTS;
 	}
 	
+	/**
+	 *
+	 * @param corner
+	 * @param rototras
+	 * @return desidered corner, rototraslated according to the given rototraslation
+	 */
 	inline
 	Eigen::Vector3d getCorner(const Corner::CornerType &corner, const Eigen::Isometry3d &rototras) const {
 		return rototras * getCorner(corner);
 	}
 	
+	/**
+	 *
+	 * @param corner
+	 * @return desidered corner
+	 */
 	inline
 	Eigen::Vector3d getCorner(const Corner::CornerType &corner) const {
 		return getCornerImp(corner, MIN_MAX);
 	}
 	
+	/**
+	 *
+	 * @return vector of means of each row
+	 */
 	inline
 	Eigen::Vector3d getShift() const {
 		return MIN_MAX.rowwise().mean();
 	}
 	
+	/**
+	 *
+	 * @return shifted box as bounding box.
+	 */
 	inline
 	osg::BoundingBoxd asBoundingBox() const {
 		/* specify every coord in order to avoid some useless vector
@@ -148,6 +197,11 @@ public:
 		);
 	}
 	
+	/**
+	 *
+	 * @param minMax
+	 * @return True if given matrix intersects the box
+	 */
 	bool isIntersecting(const MinMaxMatrix &minMax) const {
 		const MinMaxMatrix &thisMM = getMatrix();
 		
@@ -166,11 +220,15 @@ public:
 	}
 	
 	/**
+	 *	Use the separating axis test for all 15 potential
+	 *	separating axes. If a separating axis could not be found, the two
+	 *	boxes overlap
 	 * 
 	 * @param accurate tells wether check should be accurate or not:
 	 * if this flag is set to false some NON colliding cases will be threated
 	 * as collinding ones but method execution will be ~3/7 times faster.
-	 * @return
+	 *
+	 * @return True if given vector intersects the box
 	 */
 	bool isIntersecting(const Eigen::Vector3d &extents,
 			const Eigen::Isometry3d &rototras,
@@ -298,6 +356,12 @@ public:
 //		return os;
 //	}
 	
+	/**
+	 * calculates MinMax matrix
+	 * @param minMax
+	 * @param isom
+	 * @param extents
+	 */
 	static void calculateMinMax(MinMaxMatrix &minMax, const Eigen::Isometry3d &isom, const Eigen::Vector3d &extents) {
 		// first build a origin-centerd minMax
 		MinMaxMatrix tmp;
@@ -322,6 +386,12 @@ public:
 		}
 	}
 	
+	/**
+	 * calculates MinMax matrix
+	 * @param minMax
+	 * @param center
+	 * @param extents
+	 */
 	static void calculateMinMax(MinMaxMatrix &minMax, const Eigen::Vector3d &center, const Eigen::Vector3d &extents) {
 		minMax.col(0).noalias() = center - extents * 0.5;
 		minMax.col(1).noalias() = center + extents * 0.5;

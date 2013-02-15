@@ -1,4 +1,4 @@
-/*
+/**
  * Octree.hpp
  *
  *  Created on: 22/ago/2012
@@ -26,6 +26,11 @@
 
 #include "octree_nodes.hpp"
 
+/**
+ * @class Octree
+ *
+ * defines an octree and the operations it can perform
+ */
 class Octree {
 	
 public:
@@ -44,6 +49,10 @@ private:
 	
 public:
 	
+	/**
+	 * constructor
+	 * @param extent
+	 */
 	Octree(Eigen::Vector3d extent) :
 			EXTENT(extent)
 	{
@@ -66,30 +75,57 @@ public:
 		ROOT = createLevel(fakeRoot.get(), fakeVinfo);
 	}
 	
+	/**
+	 * destructor
+	 */
 	virtual ~Octree() {
 		delete ROOT;
 	}
 	
 	
-	
+	/**
+	 *
+	 * @return pointer to root node
+	 */
 	inline
 	BranchPtr getRoot() const {
 		return ROOT;
 	}
 	
+	/**
+	 * updates the content of a leaf
+	 * @param lpt
+	 * @param vinfo
+	 */
 	void updateData(LeafPtr lpt, const VersionInfo &vinfo) {
 		lpt->setFirstChangeVersion(vinfo);
 	}
 	
+	/**
+	 * deletes selected leaf
+	 * @param lpt
+	 */
 	void deleteLeaf(LeafPtr &lpt) {
 		deleteNode(lpt);
 	}
 	
+	/**
+	 * deletes a whole branch of the octree
+	 *
+	 * @param bpt
+	 */
 	void deleteBranch(BranchPtr &bpt) {
 		// I have to signal nothing when an internal node is deleted
 		deleteNode(bpt);
 	}
 	
+	/**
+	 * expands a leaf into 8 branches
+	 *
+	 * @param lpt
+	 * @param vinfo
+	 * @return
+	 */
 	BranchNode::Ptr pushLeaf(LeafPtr &lpt, const VersionInfo &vinfo) {
 		
 		lpt->getFather()->setFirstChangeVersion(vinfo);
@@ -116,6 +152,11 @@ public:
 	
 private:
 	
+	/**
+	 * deletes a generic node, plus all of its children, if any
+	 *
+	 * @param node
+	 */
 	void deleteNode(OctreeNode::Ptr node) {
 		// tells father to forget its children
 		BranchNode::Ptr bnp = static_cast< BranchNode::Ptr >(node->getFather());
@@ -195,6 +236,12 @@ private:
 		return newBranch;
 	}
 	
+	/**
+	 * overrides <<
+	 * @param os
+	 * @param tree
+	 * @return
+	 */
 	friend std::ostream & operator<<(std::ostream &os, const Octree &tree) {
 		os << "Octree(extent=[" << tree.EXTENT.transpose() << "])" << "->"
 				<< *tree.ROOT;

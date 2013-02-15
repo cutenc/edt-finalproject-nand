@@ -1,4 +1,4 @@
-/*
+/**
  * SteppableController.hpp
  *
  *  Created on: 07/set/2012
@@ -11,6 +11,11 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 
+/**
+ * @class SteppableController
+ *
+ * controls the advancing of milling ops, securing the multithreading consistency
+ */
 class SteppableController {
 	
 public:
@@ -31,7 +36,16 @@ private:
 	volatile unsigned long remainingStep;
 	
 public:
+	/**
+	 * constructor
+	 *
+	 * @param startPaused
+	 */
 	SteppableController(bool startPaused = false);
+
+	/**
+	 * destructor
+	 */
 	virtual ~SteppableController();
 	
 	/**
@@ -43,11 +57,35 @@ public:
 	 */
 	bool canStep();
 	
+	/**
+	 * stop milling ops
+	 */
 	void stop();
+
+	/**
+	 * start milling ops
+	 */
 	void play();
+
+	/**
+	 * pause milling ops
+	 */
 	void pause();
+
+	/**
+	 * resume milling ops after pause
+	 */
 	void resume();
+
+	/**
+	 * execute one step
+	 */
 	void stepOnce();
+
+	/**
+	 * execute n steps
+	 * @param n
+	 */
 	void step(unsigned long n);
 	
 private:

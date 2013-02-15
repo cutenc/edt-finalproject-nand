@@ -1,4 +1,4 @@
-/*
+/**
  * CyclicRunnable.hpp
  *
  *  Created on: 07/set/2012
@@ -13,6 +13,11 @@
 #include "common/AtomicNumber.hpp"
 #include "Runnable.hpp"
 
+/**
+ * @class CyclicRunnable
+ *
+ * manages running of operations
+ */
 class CyclicRunnable: public Runnable {
 	
 private:
@@ -41,11 +46,25 @@ protected:
 	virtual void onEnd() throw() { }
 	
 public:
+	/**
+	 * constructor
+	 */
 	CyclicRunnable();
+
+	/**
+	 * destructor
+	 */
 	virtual ~CyclicRunnable();
 	
+	/**
+	 * overriding of run(), advances operations while there are any
+	 */
 	void run();
 	
+	/**
+	 *
+	 * @return the number of steps performed
+	 */
 	unsigned long getCycleCount();
 	
 };

@@ -15,6 +15,11 @@
 #include <boost/shared_ptr.hpp>
 
 template < typename DataT >
+/**
+ * @class PtrVersioner
+ *
+ * not used
+ */
 class PtrVersioner {
 
 public:
@@ -102,7 +107,7 @@ public:
 			assert(readerV == writerPrevV);
 			assert((free >= 0) && (free < ARRAY_SIZE));
 			
-			/* the outcome here depends on wether reader is running or
+			/* the outcome here depends on whether reader is running or
 			 * not and at what version
 			 */
 			if (v.isReaderActive() && (v.readerVersion < versionArray[writerV].first)) {
