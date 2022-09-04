@@ -24,7 +24,7 @@
 #include "visualizer/DisplayTextual.hpp"
 #include "visualizer/KeyboardManager.hpp"
 
-#define LOG_2 0.69314718055994530941723212145817656807550013436025
+//#define LOG_2 0.69314718055994530941723212145817656807550013436025
 
 
 using namespace std;
