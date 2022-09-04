@@ -1,1 +1,1 @@
-set scheduler-locking on off
+set scheduler-locking on
